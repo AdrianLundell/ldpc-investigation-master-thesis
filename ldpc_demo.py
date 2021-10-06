@@ -41,9 +41,96 @@ class Detector:
 
 class TannerGraph:
 
-    class bit_node:
-        pass 
+    message : Message
+    bit_nodes : list 
+    check_nodes : list
 
-    class check_node:
-        pass 
+    correct_bit_ratio : float 
+    n_iterations : float 
 
+    max_iterations = 5 
+
+    def __init__(self, parity_check_matrix) -> None:
+        """Initialise a tanners graph from a parity_check_matrix H"""
+        m, n = parity_check_matrix.size
+        self.bit_nodes = [self.BitNode() for row in range(m)]
+        self.check_nodes = [self.BitNode() for row in range(n)]
+
+        for bit_node_index in range(m):
+            self.bit_nodes[bit_node_index].init()
+
+        for check_node_index in range(n):
+            pass
+            
+    def init_message(self, message, detector):
+        pass
+    
+    def upward_pass(self):
+        for bit_node in self.bit_nodes:
+            bit_node.upward_pass
+
+    def downward_pass(self):
+        for check_node in self.check_nodes:
+            check_node.downward_pass
+
+    def read_hard(self):
+        pass
+
+    def validate(self):
+        pass
+
+    class BitNode:
+
+        init_value : float
+        recieved_values_dict : dict         
+
+        def upward_pass(self):
+            """Perform one upward pass of the standard LDPC demo"""
+            base_value = self.init_value + sum(self.recieved_values_dict.values())
+            
+            for check_node, recieved_value in self.recieved_values_dict.items():
+                check_node.recieved_values_dict[self] = base_value - recieved_value
+
+    class CheckNode:
+        
+        recieved_values_dict : dict 
+
+        def downward_pass(self):
+            """Perform one downward pass of the standard LDPC demo"""
+
+            for bit_node, recieved_value in self.recieved_values_dict.items():
+                pass
+
+#Initialise parts 
+detector = Detector()
+message = Message([1,0])
+graph = TannerGraph([[1,1],
+                     [0,1]])
+
+#Initialise the algorithm, reading the message into the graph
+graph.init_message(message, detector)
+
+#Print true and recieved message
+print(message.bits)
+print(graph.read_hard(message))
+
+#Run algorithm unitl conditions are fullfilled 
+while graph.correct_bit_ratio < 1 and graph.n_iterations < graph.max_iterations:
+
+    graph.upward_pass()
+    graph.downward_pass()
+    graph.validate()
+
+    graph.n_iterations += 1
+
+#Print corrected message
+print(graph.read_hard)
+
+#%%
+import numpy as np 
+
+a = np.array([[1,1],
+             [0,1]])
+
+for r in a:
+    print(r)
