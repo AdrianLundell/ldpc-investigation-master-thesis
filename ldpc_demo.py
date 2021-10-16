@@ -1,3 +1,4 @@
+from cmath import inf
 import numpy as np 
 
 class Message:
@@ -15,6 +16,8 @@ class Message:
         assert len(self.bits) == len(recovered_bits), "Messages must be of equal length"
         return sum([bit1 == bit2 for bit1, bit2 in zip(self.bits, recovered_bits)]) / len(self.bits)
 
+    def syndrome(self):
+        pass
 
 class Detector:
     
@@ -98,8 +101,22 @@ class TannerGraph:
         def downward_pass(self):
             """Perform one downward pass of the standard LDPC demo"""
 
+            least_reliable_bit = inf
+            next_least_reliable_bit = inf
+
+            for recieved_value in self.recieved_values_dict.values():
+                if abs(recieved_value) <= least_reliable_bit:
+                    next_least_reliable_bit = least_reliable_bit
+                    least_reliable_bit = recieved_value
+
+
             for bit_node, recieved_value in self.recieved_values_dict.items():
-                pass
+
+                send_value = least_reliable_bit                
+                if recieved_value == least_reliable_bit:
+                    send_value = next_least_reliable_bit
+
+                bit_node.recieved_values_dict[self] = send_value
 
 #Initialise parts 
 detector = Detector()
