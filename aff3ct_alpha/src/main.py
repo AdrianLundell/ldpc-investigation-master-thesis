@@ -2,6 +2,7 @@
 #using namespace aff3ct;
 #%%i
 import numpy as np
+import matplotlib.pyplot as plt 
 
 class Module():
         """Base class for modules"""
@@ -27,9 +28,9 @@ class Modem(Module):
                 binary_symbols = np.packbits(reshaped_bits, axis=-1, bitorder="little").flatten()
 
                 #Generate mapping from binary symbols to voltage levels
-                #Example: (2,1) is in gray code mapped to bin (3,1) with given voltage levels (v3, v1)
+                #Example: (2,1) is in gray code mapped to (3,1) with given voltage levels (v3, v1)
                 if self.p["bit_mapping"] == "gray":
-                        mapping = {i^(i>>1) : self.p["voltage_levels"][i] for i in range(q)}
+                        mapping = {i^(i>>1) : self.p["voltage_levels"][i] for i in range(len(self.p["voltage_levels"]))}
                         
                 #Apply mapping
                 symbols[:] = np.vectorize(mapping.get)(binary_symbols)
@@ -41,8 +42,13 @@ class Modem(Module):
 
 class Channel(Module):
         
-        def add_noise(self):
-                pass
+        def add_noise(self, symbols, noisy_symbols):
+                """Adds noise to the signal"""
+                if self.p["voltage_distribution"] == "AWGN":
+                        m = int(np.log2(len(self.p["voltage_levels"])))
+                        q = int(self.p["block_length"]//m) 
+                        noisy_symbols[:] = symbols + np.random.normal(loc=0, scale=0.2, size=q)
+
 
 class Monitor(Module):
 
@@ -61,12 +67,12 @@ class Tools:
 
 def init_params():
         return {
-            "block_length": 8,                #Length of full encoded bit sequence
+            "block_length": 16000,             #Length of full encoded bit sequence
             "bit_mapping": "gray",            #Mapping from bit sequences to voltage levels
-            "voltage_levels": [0, 0.2, 0.4, 0.6],   #Target levels for each voltage  
+            "voltage_levels": [0, 2, 4, 6],   #Target levels for each voltage  
             "voltage_distribution" : "AWGN",  #Model of actual voltage distributions
             "threshold_selection": "static",  #Thresholding algorithm
-            "threshold_levels" : [0.3],       #Static thresholding levels
+            "threshold_levels" : [5],       #Static thresholding levels
 
             "eb0_min" : 10,
             "eb0_max" : 12,
@@ -117,16 +123,25 @@ def main():
                 #u.terminal->start_temp_report();
 
                 # run the simulation chain
-                for i in range(10):
-                
-                        m["source"].generate(b["ref_bits"])
-                        #m.encoder->encode      (b.ref_bits,      b.enc_bits     );
-                        m["modem"].modulate(b["ref_bits"], b["symbols"])
-                        #m["channel"].add_noise(b["symbols"], b["noisy_symbols"])
-                        #m["modem"].demodulate(b["noisy_symbols"], b["LLRs"])
-                        #m.decoder->decode_siho (b.LLRs,          b.dec_bits     );
-                        #m["monitor"].check_errors(b["dec_bits"], b["ref_bits"])
-                
+                #for i in range(10):
+        
+                m["source"].generate(b["ref_bits"])
+                #m.encoder->encode      (b.ref_bits,      b.enc_bits     );
+                m["modem"].modulate(b["ref_bits"], b["symbols"])
+                m["channel"].add_noise(b["symbols"], b["noisy_symbols"])
+
+                plt.figure()
+                plt.subplot(1,1,1)
+                plt.hist(b["noisy_symbols"], 50)
+                plt.hist(b["symbols"], 50)
+                plt.show()
+
+
+
+                #m["modem"].demodulate(b["noisy_symbols"], b["LLRs"])
+                #m.decoder->decode_siho (b.LLRs,          b.dec_bits     );
+                #m["monitor"].check_errors(b["dec_bits"], b["ref_bits"])
+        
                 # display the performance (BER and FER) in the terminal
                 #u.terminal->final_report();
 
