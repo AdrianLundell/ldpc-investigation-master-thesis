@@ -9,6 +9,8 @@
 #endif
 #include <cli.hpp>
 
+#include "lib/aff3ct/include/Tools/types.h"
+
 #include "Tools/types.h"
 #include "Tools/version.h"
 #include "Tools/Display/rang_format/rang_format.h"
