@@ -7,228 +7,159 @@
 #ifdef AFF3CT_MPI
 #include <mpi.h>
 #endif
-#include <cli.hpp>
-
-#include "lib/aff3ct/include/Tools/types.h"
-
-#include "Tools/types.h"
-#include "Tools/version.h"
-#include "Tools/Display/rang_format/rang_format.h"
-#include "Launcher/Launcher.hpp"
-#include "Factory/Launcher/Launcher.hpp"
+#include <aff3ct.hpp>
+#include "Module/Channel/Channel.hpp"
+#include "Module/Source/Random/Source_random.hpp"
+#include "Module/Encoder/Repetition/Encoder_repetition_sys.hpp"
+#include "Module/Modem/BPSK/Modem_BPSK.hpp"
+#include "Module/Channel/AWGN/Channel_AWGN_LLR.hpp"
+#include "Module/Decoder/Repetition/Decoder_repetition_std.hpp"
+#include "Module/Monitor/BFER/Monitor_BFER.hpp"
+#include "Tools/Display/Terminal/Standard/Terminal_std.hpp"
+#include "Tools/general_utils.h"
 
 using namespace aff3ct;
 
-void print_version()
+struct params
 {
-#if defined(_WIN64) || defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
-	std::string os = "Windows";
-#elif defined(__linux__) || defined(__linux)
-	std::string os = "Linux";
-#elif defined(__APPLE__)
-	std::string os = "Mac OS X";
-#else
-	std::string os = "Unknown OS";
-#endif
+	int   K         =  32;     // number of information bits
+	int   N         = 128;     // codeword size
+	int   fe        = 100;     // number of frame errors
+	int   seed      =   0;     // PRNG seed for the AWGN channel
+	float ebn0_min  =   0.00f; // minimum SNR value
+	float ebn0_max  =  10.01f; // maximum SNR value
+	float ebn0_step =   1.00f; // SNR step
+	float R;                   // code rate (R=K/N)
+};
+void init_params(params &p);
 
-#if defined(__x86_64) || defined(__x86_64__) || defined(_WIN64) || defined(__aarch64__)
-	std::string prec = " 64-bit";
-#elif defined(__i386) || defined(__i386__) || defined(i386) || defined(_WIN32) || defined(__ARM_ARCH_7__)
-	std::string prec = " 32-bit";
-#else
-	std::string prec = "";
-#endif
-
-#if defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC)
-	std::string compiler = "icpc";
-#if defined(__INTEL_COMPILER)
-	std::string compiler_version = std::to_string(__INTEL_COMPILER);
-#elif defined(__ICL)
-	std::string compiler_version = std::to_string(__ICL);
-#else
-	std::string compiler_version = std::to_string(__ICC);
-#endif
-	compiler_version = compiler_version.substr(0,2) + "." + compiler_version.substr(2,compiler_version.size());
-#elif defined(__clang__) || defined(__llvm__)
-	std::string compiler = "clang++";
-	std::string compiler_version = std::to_string(__clang_major__);
-	compiler_version += "." + std::to_string(__clang_minor__);
-#elif defined(__GNUG__) || (defined(__GNUC__) && defined(__cplusplus))
-	std::string compiler = "g++";
-	std::string compiler_version = std::to_string(__GNUC__);
-	compiler_version += "." + std::to_string(__GNUC_MINOR__);
-#elif defined(_MSC_VER)
-	std::string compiler = "MSVC++";
-	std::string compiler_version = std::to_string(_MSC_VER);
-#else
-	std::string compiler = "Unknown compiler";
-	std::string compiler_version = "";
-#endif
-	std::string affect_version = tools::version() == "GIT-NOTFOUND" ? "" : tools::version();
-
-#if defined(AFF3CT_MULTI_PREC)
-	std::string precision = "8/16/32/64-bit";
-#elif defined(AFF3CT_8BIT_PREC)
-	std::string precision = "8-bit";
-#elif defined(AFF3CT_16BIT_PREC)
-	std::string precision = "16-bit";
-#elif defined(AFF3CT_32BIT_PREC)
-	std::string precision = "32-bit";
-#elif defined(AFF3CT_64BIT_PREC)
-	std::string precision = "64-bit";
-#else
-	std::string precision = "Unknown";
-#endif
-
-#if defined(AFF3CT_POLAR_BIT_PACKING)
-	std::string bit_packing = "on";
-#else
-	std::string bit_packing = "off";
-#endif
-
-#if defined(AFF3CT_POLAR_BOUNDS)
-	std::string polar_bounds = "on";
-#else
-	std::string polar_bounds = "off";
-#endif
-
-#if defined(AFF3CT_COLORS)
-	std::string terminal_colors = "on";
-#else
-	std::string terminal_colors = "off";
-#endif
-
-#if defined(AFF3CT_BACKTRACE)
-	std::string backtrace = "on";
-#else
-	std::string backtrace = "off";
-#endif
-
-#if defined(AFF3CT_EXT_STRINGS)
-	std::string ext_strings = "on";
-#else
-	std::string ext_strings = "off";
-#endif
-
-#if defined(AFF3CT_MPI)
-	std::string mpi = "on";
-#else
-	std::string mpi = "off";
-#endif
-
-#if defined(AFF3CT_CHANNEL_GSL)
-	std::string gsl = "on";
-#else
-	std::string gsl = "off";
-#endif
-
-#if defined(AFF3CT_CHANNEL_MKL)
-	std::string mkl = "on";
-#else
-	std::string mkl = "off";
-#endif
-
-	std::cout << "aff3ct (" << os << prec << ", " << compiler << "-" << compiler_version << ", "
-	          << mipp::InstructionFullType << ") " << affect_version << std::endl;
-	std::cout << "Compilation options:"                                                        << std::endl;
-	std::cout << "  - Precision:         " << precision                                        << std::endl;
-	std::cout << "  - Polar bit packing: " << bit_packing                                      << std::endl;
-	std::cout << "  - Polar bounds:      " << polar_bounds                                     << std::endl;
-	std::cout << "  - Terminal colors:   " << terminal_colors                                  << std::endl;
-	std::cout << "  - Backtrace:         " << backtrace                                        << std::endl;
-	std::cout << "  - External strings:  " << ext_strings                                      << std::endl;
-	std::cout << "  - MPI:               " << mpi                                              << std::endl;
-	std::cout << "  - GSL:               " << gsl                                              << std::endl;
-	std::cout << "  - MKL:               " << mkl                                              << std::endl;
-	std::cout << "Copyright (c) 2016-2021 - MIT license."                                      << std::endl;
-	std::cout << "This is free software; see the source for copying conditions.  There is NO"  << std::endl;
-	std::cout << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << std::endl;
-	exit(EXIT_SUCCESS);
-}
-
-int read_arguments(const int argc, const char** argv, factory::Launcher &params)
+struct modules
 {
-	cli::Argument_handler ah(argc, argv);
+	std::unique_ptr<module::Source_random<>>          source;
+	std::unique_ptr<module::Encoder_repetition_sys<>> encoder;
+	std::unique_ptr<module::Modem_BPSK<>>             modem;
+	std::unique_ptr<module::Channel_AWGN_LLR<>>       channel;
+	std::unique_ptr<module::Decoder_repetition_std<>> decoder;
+	std::unique_ptr<module::Monitor_BFER<>>           monitor;
+};
+void init_modules(const params &p, modules &m);
 
-	cli::Argument_map_info args;
-	cli::Argument_map_group arg_group;
+struct buffers
+{
+	std::vector<int  > ref_bits;
+	std::vector<int  > enc_bits;
+	std::vector<float> symbols;
+	std::vector<float> noisy_symbols;
+	std::vector<float> LLRs;
+	std::vector<int  > dec_bits;
+};
+void init_buffers(const params &p, buffers &b);
 
-	std::vector<std::string> cmd_warn, cmd_error;
-
-	params.get_description(args);
-
-	auto arg_vals = ah.parse_arguments(args, cmd_warn, cmd_error);
-
-	bool display_help = false;
-	try
-	{
-		params.store(arg_vals);
-		ah.set_help_display_keys(params.display_keys);
-	}
-	catch(std::exception&)
-	{
-		display_help = true;
-	}
-
-	if (params.display_version)
-		print_version();
-
-	if (cmd_error.size() || display_help)
-	{
-		arg_group["sim"] = "Simulation parameter(s)";
-		ah.print_help(args, arg_group, params.display_adv_help);
-
-		if (cmd_error.size()) std::cerr << std::endl;
-		for (auto w = 0; w < (int)cmd_error.size(); w++)
-			std::cerr << rang::tag::error << cmd_error[w] << std::endl;
-
-		if (cmd_warn.size()) std::cerr << std::endl;
-		for (auto w = 0; w < (int)cmd_warn.size(); w++)
-			std::cerr << rang::tag::warning << cmd_warn[w] << std::endl;
-	}
-	return (cmd_error.size() || display_help) ? EXIT_FAILURE : EXIT_SUCCESS;
-}
+struct utils
+{
+	std::unique_ptr<tools::Sigma<>>               noise;     // a sigma noise type
+	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
+	std::unique_ptr<tools::Terminal_std>          terminal;  // manage the output text in the terminal
+};
+void init_utils(const modules &m, utils &u);
 
 int main(int argc, char **argv)
 {
+	
 	int exit_code = EXIT_SUCCESS;
-#ifdef AFF3CT_MPI
-	MPI_Init(nullptr, nullptr);
-#endif
 
-	factory::Launcher params("sim");
-	if (read_arguments(argc, (const char**)argv, params) == EXIT_FAILURE)
-		return EXIT_FAILURE;
+	params p;  init_params (p   ); // create and initialize the parameters defined by the user
+	modules m; init_modules(p, m); // create and initialize modules
+	buffers b; init_buffers(p, b); // create and initialize the buffers required by the modules
+	utils u;   init_utils  (m, u); // create and initialize utils
 
-	try
+	// display the legend in the terminal
+	u.terminal->legend();
+
+	// loop over SNRs range
+	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
-		launcher::Launcher *launcher;
-#ifdef AFF3CT_MULTI_PREC
-		switch (params.sim_prec)
-		{
-			case  8: launcher = params.build<B_8, R_8, Q_8 >(argc, (const char**)argv); break;
-			case 16: launcher = params.build<B_16,R_16,Q_16>(argc, (const char**)argv); break;
-			case 32: launcher = params.build<B_32,R_32,Q_32>(argc, (const char**)argv); break;
-			case 64: launcher = params.build<B_64,R_64,Q_64>(argc, (const char**)argv); break;
-			default: launcher = nullptr; break;
-		}
-#else
-		launcher = params.build<B,R,Q>(argc, (const char**)argv);
-#endif
-		if (launcher != nullptr)
-		{
-			exit_code = launcher->launch();
-			delete launcher;
-		}
-	}
-	catch(std::exception const& e)
-	{
-		rang::format_on_each_line(std::cerr, std::string(e.what()) + "\n", rang::tag::error);
-	}
+			// compute the current sigma for the channel noise
+			const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
+			const auto sigma = tools::esn0_to_sigma(esn0     );
 
-#ifdef AFF3CT_MPI
-	MPI_Finalize();
-#endif
+			u.noise->set_values(sigma, ebn0, esn0);
+
+			// update the sigma of the modem and the channel
+			m.modem  ->set_noise(*u.noise);
+			m.channel->set_noise(*u.noise);
+
+			// display the performance (BER and FER) in real time (in a separate thread)
+			u.terminal->start_temp_report();
+
+			// run the simulation chain
+			while (!m.monitor->fe_limit_achieved())
+			{
+					m.source ->generate    (                 b.ref_bits     );
+					m.encoder->encode      (b.ref_bits,      b.enc_bits     );
+					m.modem  ->modulate    (b.enc_bits,      b.symbols      );
+					m.channel->add_noise   (b.symbols,       b.noisy_symbols);
+					m.modem  ->_demodulate  (b.noisy_symbols, b.LLRs         );
+					m.decoder->decode_siho (b.LLRs,          b.dec_bits     );
+					m.monitor->check_errors(b.dec_bits,      b.ref_bits     );
+			}
+
+			// display the performance (BER and FER) in the terminal
+			u.terminal->final_report();
+
+			// reset the monitor for the next SNR
+			m.monitor->reset();
+			u.terminal->reset();
+	}
 
 	return exit_code;
+}
+
+void init_params(params &p)
+{
+	p.R = (float)p.K / (float)p.N;
+	std::cout << "# * Simulation parameters: "              << std::endl;
+	std::cout << "#    ** Frame errors   = " << p.fe        << std::endl;
+	std::cout << "#    ** Noise seed     = " << p.seed      << std::endl;
+	std::cout << "#    ** Info. bits (K) = " << p.K         << std::endl;
+	std::cout << "#    ** Frame size (N) = " << p.N         << std::endl;
+	std::cout << "#    ** Code rate  (R) = " << p.R         << std::endl;
+	std::cout << "#    ** SNR min   (dB) = " << p.ebn0_min  << std::endl;
+	std::cout << "#    ** SNR max   (dB) = " << p.ebn0_max  << std::endl;
+	std::cout << "#    ** SNR step  (dB) = " << p.ebn0_step << std::endl;
+	std::cout << "#"                                        << std::endl;
+}
+
+void init_modules(const params &p, modules &m)
+{
+	m.source  = std::unique_ptr<module::Source_random         <>>(new module::Source_random         <>(p.K        ));
+	m.encoder = std::unique_ptr<module::Encoder_repetition_sys<>>(new module::Encoder_repetition_sys<>(p.K, p.N   ));
+	m.modem   = std::unique_ptr<module::Modem_BPSK            <>>(new module::Modem_BPSK            <>(p.N        ));
+	m.channel = std::unique_ptr<module::Channel_AWGN_LLR      <>>(new module::Channel_AWGN_LLR      <>(p.N, p.seed));
+	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N   ));
+	m.monitor = std::unique_ptr<module::Monitor_BFER          <>>(new module::Monitor_BFER          <>(p.K, p.fe  ));
+};
+
+void init_buffers(const params &p, buffers &b)
+{
+	b.ref_bits      = std::vector<int  >(p.K);
+	b.enc_bits      = std::vector<int  >(p.N);
+	b.symbols       = std::vector<float>(p.N);
+	b.noisy_symbols = std::vector<float>(p.N);
+	b.LLRs          = std::vector<float>(p.N);
+	b.dec_bits      = std::vector<int  >(p.K);
+}
+
+void init_utils(const modules &m, utils &u)
+{
+	// create a sigma noise type
+	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
+	// report the noise values (Es/N0 and Eb/N0)
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_noise<>(*u.noise)));
+	// report the bit/frame error rates
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_BFER<>(*m.monitor)));
+	// report the simulation throughputs
+	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*m.monitor)));
+	// create a terminal that will display the collected data from the reporters
+	u.terminal = std::unique_ptr<tools::Terminal_std>(new tools::Terminal_std(u.reporters));
 }
