@@ -1,9 +1,6 @@
-# Using AFF3CT as a library for your codes
+# Using AFF3CT as a library
 
-[![pipeline status](https://gitlab.com/aff3ct/my_project_with_aff3ct/badges/master/pipeline.svg)](https://gitlab.com/aff3ct/my_project_with_aff3ct/pipelines)
-
-This repository contains some simple code examples. It helps to understand how to use the AFF3CT library in your code.
-The first step is to compile AFF3CT into a library.
+This part aims at building onto AFF3CT in order to make it compatible with simulations of NAND Flash Memories and assumes that a Linux system is used.
 
 Get the AFF3CT library:
 
@@ -18,3 +15,16 @@ Compile the library on Linux/MacOS/MinGW:
 	$ make -j4
 
 Now the AFF3CT library has been built in the `lib/aff3ct/build` folder.
+
+The next step is to build the additional files that enable NAND Flash simulations. In order to do so, copy the cmake configuration files from the AFF3CT build:
+
+	$ cd ../../../
+	$ mkdir cmake mkdir cmake/Modules
+	$ cp lib/aff3ct/build/lib/cmake/aff3ct-*/* cmake/Modules
+	
+Next, build the code:
+
+	$ mkdir build
+	$ cd build
+	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native"
+	$ make
