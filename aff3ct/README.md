@@ -19,7 +19,7 @@ Now the AFF3CT library has been built in the `lib/aff3ct/build` folder.
 The next step is to build the additional files that enable NAND Flash simulations. In order to do so, copy the cmake configuration files from the AFF3CT build:
 
 	$ cd ../../../
-	$ mkdir cmake && mkdir cmake/Modules
+	$ mkdir cmake mkdir cmake/Modules
 	$ cp ../../lib/aff3ct/build/lib/cmake/aff3ct-*/* cmake/Modules
 	
 Next, build the code:
