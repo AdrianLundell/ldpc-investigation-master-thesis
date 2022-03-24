@@ -20,7 +20,7 @@ The next step is to build the additional files that enable NAND Flash simulation
 
 	$ cd ../../../
 	$ mkdir cmake mkdir cmake/Modules
-	$ cp ../../lib/aff3ct/build/lib/cmake/aff3ct-*/* cmake/Modules
+	$ cp lib/aff3ct/build/lib/cmake/aff3ct-*/* cmake/Modules
 	
 Next, build the code:
 
