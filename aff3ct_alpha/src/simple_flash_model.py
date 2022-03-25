@@ -1,9 +1,13 @@
-#include <aff3ct.hpp>
-#using namespace aff3ct;
+"""
+This script implements the modulation -> channel -> demodulation signal chain for a Flash memory, only modelling neighbouring cells.
+Structure is inspired by the AFF3CT library examples for simple integration.
+https://aff3ct.readthedocs.io/en/latest/user/library/examples.html
+"""
 #%%i
 from cmath import inf
 import numpy as np
 import matplotlib.pyplot as plt 
+import scipy.stats as sp
 
 class Module():
         """Base class for modules"""
@@ -19,60 +23,40 @@ class Modem(Module):
         """Simulates storage and readout of a FLASH memory cell"""
 
         def modulate(self, ref_bits, symbols):
-                """Modulates a sequence of N bits into a sequence of Q=N/M symbols encdoing M bits per symbol"""
-                m = int(np.log2(len(self.p["voltage_levels"])))
-                q = int(self.p["block_length"]//m) 
-                
-                #Interpret bit sequence as a sequence of binary symbols
-                #Example: 1001 is rehaped to (10)(01) and converted to (2,1)
-                reshaped_bits = np.reshape(ref_bits, (q,m))
-                binary_symbols = np.packbits(reshaped_bits, axis=-1, bitorder="little").flatten()
+                """BPSK modulation"""
+                symbols[:] = -ref_bits*2 + 1
 
-                #Generate mapping from binary symbols to voltage levels
-                #Example: (2,1) is in gray code mapped to (3,1) with given voltage levels (v3, v1)
-                if self.p["bit_mapping"] == "gray":
-                        mapping = {i^(i>>1) : self.p["voltage_levels"][i] for i in range(len(self.p["voltage_levels"]))}
-                        
-                #Apply mapping
-                symbols[:] = np.vectorize(mapping.get)(binary_symbols)
-                
 
         def demodulate(self, noisy_symbols, LLRs):
                 """Demodulates a sequence of N/M symbols into a sequence of N*S bits, S being the number of soft bits per read"""
-                m = int(np.log2(len(self.p["voltage_levels"])))
-                q = int(self.p["block_length"]//m) 
-                binary_symbols = np.zeros(q, np.uint8)
-
-                if self.p["threshold_selection"] == "static_hard":
-                        if self.p["bit_mapping"] == "gray":
-                                mapping = {self.p["threshold_levels"][i+1] : i^(i>>1)for i in range(len(self.p["voltage_levels"]))} 
-                        
-                        for threshold1, threshold2 in zip(self.p["threshold_levels"][:-1], self.p["threshold_levels"][1:]):
-                                binary_symbols[np.logical_and(threshold1 <= noisy_symbols, noisy_symbols < threshold2)] = mapping[threshold2]
-                        binary_symbols = np.reshape(binary_symbols, (q,1))
-
-                if self.p["threshold_selection"] == "static_soft":
-                        pass 
-
-                if self.p["threshold_selection"] == "dynamic":
-                        pass
-
-                reshaped_bits = np.unpackbits(binary_symbols, axis=1, count=m, bitorder="little")
-                LLRs[:] = np.reshape(reshaped_bits, self.p["block_length"])
+                LLRs[:] = noisy_symbols
 
 class Channel(Module):
         """Simulates all noise sources in the FLASH memory cell"""
 
         def add_noise(self, symbols, noisy_symbols):
-                """Adds noise to the signal"""
-                if self.p["voltage_distribution"] == "AWGN":
-                        m = int(np.log2(len(self.p["voltage_levels"])))
-                        q = int(self.p["block_length"]//m) 
-                        noisy_symbols[:] = symbols + np.random.normal(loc=0, scale=0.0, size=q)
+                """BMC derived from average gaussian distributions"""
+                T = [-0.4, -0.2, 0, 0.2, 0.4]
+
+                for i in range(len(noisy_symbols)):
+                        sigma1 = np.random.rand()
+                        sigma2 = np.random.rand()
+                        p = np.random.rand()
+                        n_bin = 0
+
+                        for t in T:
+                                if symbols[i] == -1:
+                                        q = sp.norm.cdf(t, -1, sigma1)
+                                if symbols[i] == +1:
+                                        q = sp.norm.cdf(t, 1, sigma2)
+                                if q > p:
+                                        break 
+                                n_bin += 1
+
+                        noisy_symbols[i] = n_bin
 
 
 class Monitor(Module):
-
         def check_errors():
                 pass
 
@@ -88,7 +72,7 @@ class Tools:
 
 def init_params():
         return {
-            "block_length": 16000,            #Length of full encoded bit sequence
+            "block_length": 200,            #Length of full encoded bit sequence
             "bit_mapping": "gray",            #Mapping from bit sequences to voltage levels
             "voltage_levels": [0, 2, 4, 6],   #Target levels for each voltage  
             "voltage_distribution" : "AWGN",  #Model of actual voltage distributions
@@ -113,8 +97,8 @@ def init_buffers(p):
 
         return { 
                 "ref_bits" : np.zeros(p["block_length"], dtype=int),
-                "symbols"  : np.zeros(number_of_symbols),
-                "noisy_symbols" : np.zeros(number_of_symbols),
+                "symbols"  : np.zeros(p["block_length"]),
+                "noisy_symbols" : np.zeros(p["block_length"]),
                 "LLRs"  : np.zeros(p["block_length"]),
                 "dec_bits"  : np.zeros(p["block_length"]),
                 }
@@ -152,21 +136,17 @@ def main():
         m["channel"].add_noise(b["symbols"], b["noisy_symbols"])
         m["modem"].demodulate(b["noisy_symbols"], b["LLRs"])
 
-
         plt.figure()
         plt.subplot(1,2,1)
         plt.hist(b["noisy_symbols"], 50)
         plt.hist(b["symbols"], 50)                
 
-        difference = b["ref_bits"] - b["LLRs"]
-        difference = np.reshape(difference, (100,160))
-        plt.subplot(1,2,2)
-        plt.spy(difference)
+        #difference = b["ref_bits"] - b["LLRs"]
+        #difference = np.reshape(difference, (100,160))
+        #plt.subplot(1,2,2)
+        #plt.spy(difference)
         
         plt.show()
-
-
-
                 #m.decoder->decode_siho (b.LLRs,          b.dec_bits     );
                 #m["monitor"].check_errors(b["dec_bits"], b["ref_bits"])
         
