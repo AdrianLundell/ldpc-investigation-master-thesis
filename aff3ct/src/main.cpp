@@ -1,9 +1,23 @@
+#include <exception>
 #include <iostream>
-#include <memory>
+#include <cstdlib>
 #include <vector>
 #include <string>
-
+#include <mipp.h>
+#ifdef AFF3CT_MPI
+#include <mpi.h>
+#endif
 #include <aff3ct.hpp>
+#include "Module/Channel/Channel.hpp"
+#include "Module/Source/Random/Source_random.hpp"
+#include "Module/Encoder/Repetition/Encoder_repetition_sys.hpp"
+#include "Module/Modem/BPSK/Modem_BPSK.hpp"
+#include "Module/Channel/AWGN/Channel_AWGN_LLR.hpp"
+#include "Module/Decoder/Repetition/Decoder_repetition_std.hpp"
+#include "Module/Monitor/BFER/Monitor_BFER.hpp"
+#include "Tools/Display/Terminal/Standard/Terminal_std.hpp"
+#include "Tools/general_utils.h"
+
 using namespace aff3ct;
 
 struct params
@@ -27,9 +41,19 @@ struct modules
 	std::unique_ptr<module::Channel_AWGN_LLR<>>       channel;
 	std::unique_ptr<module::Decoder_repetition_std<>> decoder;
 	std::unique_ptr<module::Monitor_BFER<>>           monitor;
-	std::vector<const module::Module*>                list; // list of module pointers declared in this structure
 };
 void init_modules(const params &p, modules &m);
+
+struct buffers
+{
+	std::vector<int  > ref_bits;
+	std::vector<int  > enc_bits;
+	std::vector<float> symbols;
+	std::vector<float> noisy_symbols;
+	std::vector<float> LLRs;
+	std::vector<int  > dec_bits;
+};
+void init_buffers(const params &p, buffers &b);
 
 struct utils
 {
@@ -39,81 +63,56 @@ struct utils
 };
 void init_utils(const modules &m, utils &u);
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-	// get the AFF3CT version
-	const std::string v = "v" + std::to_string(tools::version_major()) + "." +
-	                            std::to_string(tools::version_minor()) + "." +
-	                            std::to_string(tools::version_release());
+	
+	int exit_code = EXIT_SUCCESS;
 
-	std::cout << "#----------------------------------------------------------"      << std::endl;
-	std::cout << "# This is a basic program using the AFF3CT library (" << v << ")" << std::endl;
-	std::cout << "# Feel free to improve it as you want to fit your needs."         << std::endl;
-	std::cout << "#----------------------------------------------------------"      << std::endl;
-	std::cout << "#"                                                                << std::endl;
-
-	params  p; init_params (p   ); // create and initialize the parameters defined by the user
-	modules m; init_modules(p, m); // create and initialize the modules
-	utils   u; init_utils  (m, u); // create and initialize the utils
+	params p;  init_params (p   ); // create and initialize the parameters defined by the user
+	modules m; init_modules(p, m); // create and initialize modules
+	buffers b; init_buffers(p, b); // create and initialize the buffers required by the modules
+	utils u;   init_utils  (m, u); // create and initialize utils
 
 	// display the legend in the terminal
 	u.terminal->legend();
 
-	// sockets binding (connect the sockets of the tasks = fill the input sockets with the output sockets)
-	using namespace module;
-	(*m.encoder)[enc::sck::encode      ::U_K ].bind((*m.source )[src::sck::generate   ::U_K ]);
-	(*m.modem  )[mdm::sck::modulate    ::X_N1].bind((*m.encoder)[enc::sck::encode     ::X_N ]);
-	(*m.channel)[chn::sck::add_noise   ::X_N ].bind((*m.modem  )[mdm::sck::modulate   ::X_N2]);
-	(*m.modem  )[mdm::sck::demodulate  ::Y_N1].bind((*m.channel)[chn::sck::add_noise  ::Y_N ]);
-	(*m.decoder)[dec::sck::decode_siho ::Y_N ].bind((*m.modem  )[mdm::sck::demodulate ::Y_N2]);
-	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.encoder)[enc::sck::encode     ::U_K ]);
-	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.decoder)[dec::sck::decode_siho::V_K ]);
-
-	// loop over the various SNRs
+	// loop over SNRs range
 	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
 	{
-		// compute the current sigma for the channel noise
-		const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
-		const auto sigma = tools::esn0_to_sigma(esn0     );
+			// compute the current sigma for the channel noise
+			const auto esn0  = tools::ebn0_to_esn0 (ebn0, p.R);
+			const auto sigma = tools::esn0_to_sigma(esn0     );
 
-		u.noise->set_noise(sigma, ebn0, esn0);
+			u.noise->set_values(sigma, ebn0, esn0);
 
-		// update the sigma of the modem and the channel
-		m.modem  ->set_noise(*u.noise);
-		m.channel->set_noise(*u.noise);
+			// update the sigma of the modem and the channel
+			m.modem  ->set_noise(*u.noise);
+			m.channel->set_noise(*u.noise);
 
-		// display the performance (BER and FER) in real time (in a separate thread)
-		u.terminal->start_temp_report();
+			// display the performance (BER and FER) in real time (in a separate thread)
+			u.terminal->start_temp_report();
 
-		// run the simulation chain
-		while (!m.monitor->fe_limit_achieved() && !u.terminal->is_interrupt())
-		{
-			(*m.source )[src::tsk::generate    ].exec();
-			(*m.encoder)[enc::tsk::encode      ].exec();
-			(*m.modem  )[mdm::tsk::modulate    ].exec();
-			(*m.channel)[chn::tsk::add_noise   ].exec();
-			(*m.modem  )[mdm::tsk::demodulate  ].exec();
-			(*m.decoder)[dec::tsk::decode_siho ].exec();
-			(*m.monitor)[mnt::tsk::check_errors].exec();
-		}
+			// run the simulation chain
+			while (!m.monitor->fe_limit_achieved())
+			{
+					m.source ->generate    (                 b.ref_bits     );
+					m.encoder->encode      (b.ref_bits,      b.enc_bits     );
+					m.modem  ->modulate    (b.enc_bits,      b.symbols      );
+					m.channel->add_noise   (b.symbols,       b.noisy_symbols);
+					m.modem  ->_demodulate  (b.noisy_symbols, b.LLRs         );
+					m.decoder->decode_siho (b.LLRs,          b.dec_bits     );
+					m.monitor->check_errors(b.dec_bits,      b.ref_bits     );
+			}
 
-		// display the performance (BER and FER) in the terminal
-		u.terminal->final_report();
+			// display the performance (BER and FER) in the terminal
+			u.terminal->final_report();
 
-		// reset the monitor and the terminal for the next SNR
-		m.monitor->reset();
-		u.terminal->reset();
-
-		// if user pressed Ctrl+c twice, exit the SNRs loop
-		if (u.terminal->is_over()) break;
+			// reset the monitor for the next SNR
+			m.monitor->reset();
+			u.terminal->reset();
 	}
 
-	// display the statistics of the tasks (if enabled)
-	std::cout << "#" << std::endl;
-	tools::Stats::show(m.list, true);
-	std::cout << "# End of the simulation" << std::endl;
-
-	return 0;
+	return exit_code;
 }
 
 void init_params(params &p)
@@ -139,23 +138,16 @@ void init_modules(const params &p, modules &m)
 	m.channel = std::unique_ptr<module::Channel_AWGN_LLR      <>>(new module::Channel_AWGN_LLR      <>(p.N, p.seed));
 	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N   ));
 	m.monitor = std::unique_ptr<module::Monitor_BFER          <>>(new module::Monitor_BFER          <>(p.K, p.fe  ));
+};
 
-	m.list = { m.source.get(), m.encoder.get(), m.modem.get(), m.channel.get(), m.decoder.get(), m.monitor.get() };
-
-	// configuration of the module tasks
-	for (auto& mod : m.list)
-		for (auto& tsk : mod->tasks)
-		{
-			tsk->set_autoalloc  (true ); // enable the automatic allocation of the data in the tasks
-			tsk->set_autoexec   (false); // disable the auto execution mode of the tasks
-			tsk->set_debug      (false); // disable the debug mode
-			tsk->set_debug_limit(16   ); // display only the 16 first bits if the debug mode is enabled
-			tsk->set_stats      (true ); // enable the statistics
-
-			// enable the fast mode (= disable the useless verifs in the tasks) if there is no debug and stats modes
-			if (!tsk->is_debug() && !tsk->is_stats())
-				tsk->set_fast(true);
-		}
+void init_buffers(const params &p, buffers &b)
+{
+	b.ref_bits      = std::vector<int  >(p.K);
+	b.enc_bits      = std::vector<int  >(p.N);
+	b.symbols       = std::vector<float>(p.N);
+	b.noisy_symbols = std::vector<float>(p.N);
+	b.LLRs          = std::vector<float>(p.N);
+	b.dec_bits      = std::vector<int  >(p.K);
 }
 
 void init_utils(const modules &m, utils &u)
