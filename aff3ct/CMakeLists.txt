@@ -12,6 +12,8 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 
 # Create the executable from sources
 add_executable(my_project ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+target_include_directories(my_project PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(my_project PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Link with the "Threads library (required to link with AFF3CT after)
 set(CMAKE_THREAD_PREFER_PTHREAD ON)
