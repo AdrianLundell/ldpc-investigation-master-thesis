@@ -14,7 +14,24 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 add_executable(aff3ct_nand_flash ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
 # Create library for extension code
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
+# Find all subdirectories macro
+#macro(subdirlist result curdir)
+#  file(GLOB children RELATIVE ${curdir} ${curdir}/*)
+#  set(dirlist "")
+#  foreach(child ${children})
+#    if(IS_DIRECTORY ${curdir}/${child})
+#      list(APPEND dirlist ${child})
+#    endif()
+#  endforeach()()
+#  set(${result} ${dirlist})
+#endmacro()
+
+#subdirlist(INCLUDE_SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+#subdirlist(SRC_SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+add_library(aff3ct_extension ${source_files}) #
+target_include_directories(aff3ct_extension PUBLIC include/)
+
 
 # Link with the "Threads library (required to link with AFF3CT after)
 set(CMAKE_THREAD_PREFER_PTHREAD ON)
@@ -24,4 +41,5 @@ find_package(Threads REQUIRED)
 # Link with AFF3CT
 set (AFF3CT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 find_package(AFF3CT CONFIG 2.3.2 REQUIRED)
-target_link_libraries(aff3ct_nand_flash PRIVATE aff3ct::aff3ct-static-lib)
+target_link_libraries(aff3ct_extension PRIVATE aff3ct::aff3ct-static-lib)
+target_link_libraries(aff3ct_nand_flash PRIVATE aff3ct::aff3ct-static-lib aff3ct_extension)
