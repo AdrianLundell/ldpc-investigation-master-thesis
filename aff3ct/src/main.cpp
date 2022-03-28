@@ -4,7 +4,8 @@
 #include <string>
 
 #include <aff3ct.hpp>
-#include "Module/Channel/Test/Channel_Test.hpp"
+#include "Module/Channel/Test/Channel_test.cpp"
+
 using namespace aff3ct;
 
 struct params
