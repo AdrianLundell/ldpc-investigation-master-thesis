@@ -28,3 +28,8 @@ Next, build the code:
 	$ cd build
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native"
 	$ make
+
+
+Run the simulations through:
+
+	$ ./bin/aff3ct_nand_flash
