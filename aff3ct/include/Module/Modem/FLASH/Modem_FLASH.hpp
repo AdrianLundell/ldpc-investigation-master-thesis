@@ -23,8 +23,8 @@ template <typename B = int, typename R = float, typename Q = R>
 class Modem_FLASH : public Modem<B,R,Q>
 {
 private:
-	const int bits_per_symbol;
-	const int nbr_symbols;
+	const int bits_per_symbol = 1;
+	const int nbr_symbols = 8;
 
 public:
 	Modem_FLASH(const int N, const tools::Noise<R>& noise = tools::Sigma<R>(), const int n_frames = 1);
