@@ -2,14 +2,11 @@
  * \file
  * \brief Class module::Channel_Test.
  */
-#ifndef CHANNEL_Test_HPP_
-#define CHANNEL_Test_HPP_
+#ifndef CHANNEL_TEST_HPP_
+#define CHANNEL_TEST_HPP_
 
 #include <memory>
-
-#include "Tools/Algo/Draw_generator/Gaussian_noise_generator/Gaussian_noise_generator.hpp"
-#include "Tools/Noise/Sigma.hpp"
-#include "Module/Channel/Channel.hpp"
+#include <aff3ct.hpp>
 
 namespace aff3ct
 {
