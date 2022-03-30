@@ -13,5 +13,12 @@
 #include <Tools/Constellation/Flash/Constellation_flash.hpp>
 #endif
 
+#ifndef THRESHOLDER_HPP_
+#include <Tools/Thresholder/Thresholder.hpp>
+#endif
+
+#ifndef THRESHOLDER_STATIC_HPP_
+#include <Tools/Thresholder/Static/Thresholder_static.hpp>
+#endif
 
 #endif

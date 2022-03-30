@@ -10,12 +10,12 @@ using namespace aff3ct;
 
 struct params
 {
-	int K = 32;				 // number of information bits
-	int N = 128;			 // codeword size
+	int K = 8;				 // number of information bits
+	int N = 8;			     // codeword size
 	int fe = 100;			 // number of frame errors
 	int seed = 0;			 // PRNG seed for the AWGN channel
 	float ebn0_min = 0.00f;	 // minimum SNR value
-	float ebn0_max = 10.01f; // maximum SNR value
+	float ebn0_max = 0.01f;  // maximum SNR value
 	float ebn0_step = 1.00f; // SNR step
 	float R;				 // code rate (R=K/N)
 };

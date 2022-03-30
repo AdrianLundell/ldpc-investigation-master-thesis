@@ -17,13 +17,16 @@ namespace module
 {
 template <typename B, typename R, typename Q, tools::proto_max<Q> MAX>
 Modem_flash<B,R,Q,MAX>
-::Modem_flash(const int N, std::unique_ptr<const tools::Constellation<R>>&& _cstl, const tools::Noise<R>& noise,
-				 const int n_frames)
+::Modem_flash(const int N, std::unique_ptr<const tools::Constellation<R>>&& _cstl, 
+				std::unique_ptr<const tools::Thresholder<R>>&& _thresholder,
+				const tools::Noise<R>& noise,
+				const int n_frames, )
 : Modem<B,R,Q>(N,
               (int)(std::ceil((float)N / (float)_cstl->get_n_bits_per_symbol())), // N_mod
               noise,
               n_frames),
   cstl           (std::move(_cstl)),
+  thresholder    (std::move(_thresholder)),
   bits_per_symbol(cstl->get_n_bits_per_symbol()),
   nbr_symbols    (cstl->get_n_symbols())
 {
@@ -32,6 +35,10 @@ Modem_flash<B,R,Q,MAX>
 
 	if (cstl == nullptr)
 		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No constellation given ('cstl' = nullptr).");
+
+
+	if (thresholder == nullptr)
+		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No thresholder given ('thresholder' = nullptr).");
 }
 
 template <typename B, typename R, typename Q, tools::proto_max<Q> MAX>
@@ -110,8 +117,22 @@ void Modem_flash<B,R,Q,MAX>
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, "No noise has been set");
 
 	auto size = this->N;
+	auto thresholds_per_symbol = thresholder->get_n_thresholds();
+	std::vector<Q> readout(nbr_symbols*thresholds_per_symbol); 
 
-	//TODO: Implement demodulation
+	//Loop over noised symbols and generate readout from thresholds
+	for (auto i_symbol =0; i_symbol < nbr_symbols, i_symbol++){
+		for (auto i_threshold = 0; i_threshold < thresholds_per_symbol, i_threshold++){
+			readout[i_symbol+i_threshold] = Y_N1[i_symbol] < thresholder->get_threshold(i_threshold) ? 0 : 1;
+		}
+	}
+
+	//Interpret sequences of readout info as demodulated signal
+	for (auto i_output; i_output < size; i_output++){
+		Y_N2[i_output] = thresholder->interpret_readout(Y_N1 + i_output*thresholds_per_symbol, Y_N1 + (i_output+1)*thresholds_per_symbol);
+	}
 }
+
+
 }
 }

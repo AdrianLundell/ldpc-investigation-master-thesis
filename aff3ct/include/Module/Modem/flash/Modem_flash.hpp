@@ -17,12 +17,15 @@ class Modem_flash : public Modem<B,R,Q>
 {
 private:
 	std::unique_ptr<const tools::Constellation<R>> cstl;
+	std::unique_ptr<<const tools::Thresholder<R>> thresholder;
 
 	const int bits_per_symbol;
 	const int nbr_symbols;
 
 public:
-	Modem_flash(const int N, std::unique_ptr<const tools::Constellation<R>>&& cstl, const tools::Noise<R>& noise = tools::Sigma<R>(),
+	Modem_flash(const int N, std::unique_ptr<const tools::Constellation<R>>&& cstl, 
+				std::unique_ptr<const tools::Thresholder<R>>&& thresholder,
+				const tools::Noise<R>& noise = tools::Sigma<R>(),
 	            const int n_frames = 1);
 
 	virtual ~Modem_flash() = default;
