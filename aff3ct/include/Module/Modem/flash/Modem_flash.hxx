@@ -117,7 +117,7 @@ void Modem_flash<B,R,Q,MAX>
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, "No noise has been set");
 
 	auto size = this->N;
-	auto thresholds_per_symbol = thresholder->get_n_thresholds();
+	auto thresholds_per_symbol = thresholder->get_n_thresholds_per_symbol();
 	std::vector<Q> readout(nbr_symbols*thresholds_per_symbol); 
 
 	//Loop over noised symbols and generate readout from thresholds
