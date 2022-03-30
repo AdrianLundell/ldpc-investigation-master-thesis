@@ -6,7 +6,12 @@
 #endif
 
 #ifndef MODEM_FLASH_HPP_
-#include <Module/Modem/FLASH/Modem_FLASH.hpp>
+#include <Module/Modem/flash/Modem_flash.hpp>
 #endif
+
+#ifndef CONSTELLATION_FLASH_HPP_
+#include <Tools/Constellation/Flash/Constellation_flash.hpp>
+#endif
+
 
 #endif
