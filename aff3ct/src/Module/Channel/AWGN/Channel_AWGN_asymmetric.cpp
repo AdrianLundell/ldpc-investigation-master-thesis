@@ -61,7 +61,7 @@ void Channel_AWGN_asymmetric<R>::add_noise(const R *X_N, R *Y_N, const int frame
 
 		for (auto f = f_start; f < f_stop; f++) {
 			for (auto n = 0; n < this->N; n++) {
-				noise_generator->generate(&this->noise[f * this->N + n],1,sigma[Y_N], this->n->get_noise());
+				noise_generator->generate(&this->noise[f * this->N + n],1,sigma[Y_N[f * this->N + n]], this->n->get_noise());
 				Y_N[f * this->N + n] = X_N[f * this->N + n] + this->noise[f * this->N + n];
 			}
 

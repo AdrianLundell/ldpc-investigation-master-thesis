@@ -19,7 +19,7 @@ namespace aff3ct
 		private:
 			const bool add_users;
 			std::unique_ptr<tools::Gaussian_gen<R>> noise_generator;
-			tools::Sigma_asymmetric<R> noise_map;
+			std::unique_ptr<tools::Sigma_asymmetric<R>> noise_map;
 
 		public:
 			Channel_AWGN_asymmetric(const int N, std::unique_ptr<tools::Gaussian_gen<R>> &&noise_generator,
