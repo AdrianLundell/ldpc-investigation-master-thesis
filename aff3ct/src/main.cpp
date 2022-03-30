@@ -141,7 +141,7 @@ void init_modules(const params &p, modules &m)
 	m.source = std::unique_ptr<module::Source_random<>>(new module::Source_random<>(p.K));
 	m.encoder = std::unique_ptr<module::Encoder_repetition_sys<>>(new module::Encoder_repetition_sys<>(p.K, p.N));
 	m.modem = std::unique_ptr<module::Modem_flash<>>(new module::Modem_flash<>(p.N, 
-			  std::unique_ptr<tools::Constellation<float>>(new tools::Constellation_flash<float>("voltage_levels.txt"))));
+			  std::unique_ptr<tools::Constellation<float>>(new tools::Constellation_flash<float>("SLC_bpsk_voltage_levels.txt"))));
 
 	m.channel = std::unique_ptr<module::Channel_Test<>>(new module::Channel_Test<>(p.N, p.seed));
 	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N));
