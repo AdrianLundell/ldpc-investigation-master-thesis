@@ -45,24 +45,15 @@ std::vector<typename Constellation_flash<R>::S> Constellation_flash<R>
 		std::istringstream buffer(temp);
 		std::vector<R> line((std::istream_iterator<R>(buffer)), std::istream_iterator<R>());
 
-		if (line.size() >= 3)
+		if (line.size() >= 2)
 		{
 			std::stringstream message;
-			message << "'line.size()' has to be smaller than 3 ('line.size()' = " << line.size() << ").";
+			message << "'line.size()' has to be of size 1 ('line.size()' = " << line.size() << ").";
 			throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 		}
-
-		if (line.size() == 2)
-			constellation.push_back(S(line[0],line[1]));
 		else
 			constellation.push_back(S(line[0]));
-
-		sqrt_es += std::norm(constellation.back());
 	}
-	sqrt_es = std::sqrt(sqrt_es/constellation.size());
-
-	for (unsigned i = 0; i < constellation.size(); i++)
-		constellation[i] /= S(sqrt_es);
 
 	return constellation;
 }
