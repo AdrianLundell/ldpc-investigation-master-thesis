@@ -22,7 +22,7 @@ template <typename R>
 void Random_sigma_generator<R>::generate(std::map<R, R> &sigma_map, const R sigma_tot, const R min_sigma)
 {
 	n_bins = (int)sigma_tot / min_sigma;
-	uniform_int_dist = std::uniform_int_distribution<R>(1, n_bins - 1);
+	uniform_int_dist = std::uniform_int_distribution<int>(1, n_bins - 1);
 
 	std::set<int> rand_bin_levels;
 	unsigned i = 0;
@@ -42,7 +42,7 @@ void Random_sigma_generator<R>::generate(std::map<R, R> &sigma_map, const R sigm
 	int previous_bin = 0;
 	for (auto sigma_it = sigma_map.begin(); sigma_it != sigma_it.end(); sigma_it++)
 	{
-		sigma_it->second = (R)(*bin_levels_it - previous_level) / sigma_tot;
+		sigma_it->second = (R)(*bin_levels_it - previous_bin) * min_sigma;
 		previous_bin = *bin_levels_it;
 		bin_levels_it++;
 	}
