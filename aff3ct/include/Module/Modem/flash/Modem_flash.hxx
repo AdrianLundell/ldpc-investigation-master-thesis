@@ -10,6 +10,7 @@
 #include <complex>
 
 #include <aff3ct.hpp>
+#include <aff3ct_extension.hpp>
 
 namespace aff3ct
 {
@@ -20,7 +21,7 @@ Modem_flash<B,R,Q,MAX>
 ::Modem_flash(const int N, std::unique_ptr<const tools::Constellation<R>>&& _cstl, 
 				std::unique_ptr<const tools::Thresholder<R>>&& _thresholder,
 				const tools::Noise<R>& noise,
-				const int n_frames, )
+				const int n_frames)
 : Modem<B,R,Q>(N,
               (int)(std::ceil((float)N / (float)_cstl->get_n_bits_per_symbol())), // N_mod
               noise,
@@ -118,17 +119,20 @@ void Modem_flash<B,R,Q,MAX>
 
 	auto size = this->N;
 	auto thresholds_per_symbol = thresholder->get_n_thresholds_per_symbol();
-	std::vector<Q> readout(nbr_symbols*thresholds_per_symbol); 
+	std::vector<Q> readout(nbr_symbols*thresholds_per_symbol);
+
+	//Update thresholds for specific noise
+	thresholder->update_thresholds();
 
 	//Loop over noised symbols and generate readout from thresholds
-	for (auto i_symbol =0; i_symbol < nbr_symbols, i_symbol++){
-		for (auto i_threshold = 0; i_threshold < thresholds_per_symbol, i_threshold++){
+	for (auto i_symbol = 0; i_symbol < nbr_symbols; i_symbol++){
+		for (auto i_threshold = 0; i_threshold < thresholds_per_symbol; i_threshold++){
 			readout[i_symbol+i_threshold] = Y_N1[i_symbol] < thresholder->get_threshold(i_threshold) ? 0 : 1;
 		}
 	}
 
 	//Interpret sequences of readout info as demodulated signal
-	for (auto i_output; i_output < size; i_output++){
+	for (auto i_output = 0; i_output < size; i_output++){
 		Y_N2[i_output] = thresholder->interpret_readout(Y_N1 + i_output*thresholds_per_symbol, Y_N1 + (i_output+1)*thresholds_per_symbol);
 	}
 }

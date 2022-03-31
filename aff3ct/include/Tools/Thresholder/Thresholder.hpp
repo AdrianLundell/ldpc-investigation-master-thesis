@@ -21,7 +21,11 @@ template <typename R>
 class Thresholder
 {
 public:
-
+	/*
+	 * \param n_tps is the number of thresholds per symbol
+	 * \param name is the name of the thresholder
+	 */
+	explicit Thresholder(const unsigned n_tps, const std::string& name);
 	virtual ~Thresholder() = default;
 
 	/*
@@ -35,6 +39,12 @@ public:
 	unsigned get_n_thresholds_per_symbol() const;
 
 	/*
+	 * \param noise is the noise of the input. NOTE: For future updates update to a noise estimation - The algorithm in general does not know about the noise level.  
+	 * \brief updates the thresholds according to the noise. 
+	 */ 
+	virtual void update_thresholds() const;
+
+	/*
 	 * \param idx is the index of the wanted threshold.
 	 * \return the threshold level of the thresholder at the given index
 	 */
@@ -46,16 +56,10 @@ public:
 	 * \param read_stop is a pointer to the end of the readout
 	 * \return a demodulated value interpreted from the readout
 	 */ 
-	virtual R interpret_readout(const Q *read_start, const Q *read_stop);
+	virtual R interpret_readout(const R* read_start, const R* read_stop) const;
+
 
 protected:
-	/*
-	 * \param n_tps is the number of thresholds per symbol
-	 * \param name is the name of the thresholder
-	 */
-	Thresholder(const unsigned n_tps, const std::string& name);
-
-private:
 	const unsigned n_tps;  // the number of thresholds per symbol
 	const std::string name; // the name of the thresholder
 	std::vector<R> thresholder; // The tresholds of the thresholder

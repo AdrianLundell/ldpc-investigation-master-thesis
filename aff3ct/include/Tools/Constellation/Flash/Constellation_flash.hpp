@@ -1,4 +1,4 @@
-/*!
+/*
  * \file
  * \brief Class tools::Constellation_user.
  */

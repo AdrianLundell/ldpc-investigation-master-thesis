@@ -1,4 +1,4 @@
-/*!
+/*
  * \file
  * \brief Class module::Modem_flash.
  */
@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <aff3ct.hpp>
+#include <aff3ct_extension.hpp>
 
 namespace aff3ct
 {
@@ -17,7 +18,7 @@ class Modem_flash : public Modem<B,R,Q>
 {
 private:
 	std::unique_ptr<const tools::Constellation<R>> cstl;
-	std::unique_ptr<<const tools::Thresholder<R>> thresholder;
+	std::unique_ptr<const tools::Thresholder<R>> thresholder;
 
 	const int bits_per_symbol;
 	const int nbr_symbols;
