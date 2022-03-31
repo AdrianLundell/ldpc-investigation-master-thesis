@@ -1,4 +1,4 @@
-/*!
+/*
  * \file
  * \brief Class tools::Thresholder_static.
  */
@@ -17,15 +17,16 @@ template <typename R>
 class Thresholder_static : public Thresholder<R>
 {
 public:
-	using typename Thresholder<R>::S;
 
 	/*
-	 * \param n_bps is the number of bits per symbol
+	 * \param threshold_path is the path to static thresholds
 	 */
-	explicit Thresholder_static(const std::string& const_path);
+	explicit Thresholder_static(const std::string& threshold_path);
+
+	R interpret_readout(const Q *read_start, const Q *read_stop);
 
 private:
-	static std::vector<S> read_thresholder(const std::string& const_path);
+	static std::vector<S> read_thresholds(const std::string& const_path);
 };
 
 }

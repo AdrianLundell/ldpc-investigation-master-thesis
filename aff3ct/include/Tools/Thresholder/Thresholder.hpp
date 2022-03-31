@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <string>
+#include <aff3ct.hpp>
 
 namespace aff3ct
 {
@@ -17,11 +18,11 @@ namespace tools
  * \brief describe a thresholder
  */
 template <typename R>
-class Constellation
+class Thresholder
 {
 public:
 
-	virtual ~Constellation() = default;
+	virtual ~Thresholder() = default;
 
 	/*
 	 * \brief get the name of the thresholder
@@ -45,17 +46,19 @@ public:
 	 * \param read_stop is a pointer to the end of the readout
 	 * \return a demodulated value interpreted from the readout
 	 */ 
-	R interpret_readout(const Q *read_start, const Q *read_stop);
+	virtual R interpret_readout(const Q *read_start, const Q *read_stop);
 
 protected:
 	/*
 	 * \param n_tps is the number of thresholds per symbol
 	 * \param name is the name of the thresholder
 	 */
-	Thresholder(const unsigned n_bps, const std::string& name);
+	Thresholder(const unsigned n_tps, const std::string& name);
 
 private:
 	const unsigned n_tps;  // the number of thresholds per symbol
+	const std::string name; // the name of the thresholder
+	std::vector<R> thresholder; // The tresholds of the thresholder
 };
 
 }
