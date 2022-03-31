@@ -6,81 +6,83 @@
 using namespace aff3ct;
 using namespace aff3ct::tools;
 
-template<typename R>
+template <typename R>
 Sigma_asymmetric<R>::Sigma_asymmetric()
-: Sigma<R>()
+	: Sigma<R>()
 {
-
 }
 
-template<typename R>
-Sigma_asymmetric<R>::Sigma_asymmetric(R tot_noise)
-: Sigma<R>(tot_noise)
+template <typename R>
+Sigma_asymmetric<R>::Sigma_asymmetric(R tot_noise, R min_sig)
+	: Sigma<R>(tot_noise),
+	  min_sigma(min_sig)
 {
-	sigma_map = std::map<R,R>();
-	this -> generate_sigmas();
+	sigma_map = std::map<R, R>();
+	this->generate_sigmas();
 }
 
-template<typename R>
-Sigma_asymmetric<R>::Sigma_asymmetric(R tot_noise, R tot_ebn0, R tot_esn0)
-: Sigma<R>(tot_noise, tot_ebn0, tot_esn0)
+template <typename R>
+Sigma_asymmetric<R>::Sigma_asymmetric(R tot_noise, R min_sig, R tot_ebn0, R tot_esn0)
+	: Sigma<R>(tot_noise, tot_ebn0, tot_esn0),
+	  min_sigma(min_sig)
 {
-	sigma_map = std::map<R,R>();
-	this -> generate_sigmas();
+	sigma_map = std::map<R, R>();
+	this->generate_sigmas();
 	sigmas_exist = true;
 }
 
 template <typename R>
 template <typename T>
 Sigma_asymmetric<R>::
-Sigma_asymmetric(const Sigma_asymmetric<T>& other)
-: Sigma<R>(other)
+	Sigma_asymmetric(const Sigma_asymmetric<T> &other)
+	: Sigma<R>(other)
 {
 	if (other.has_sigmas())
 	{
-		sigma_map = std::map<R,R>();
-		auto other_sigma_map = other.get_sigmas();
-		for (auto pair: other_sigma_map) {
-			R voltage_level = (R) pair.first;
-			R sigma = (R) pair.second;
-			sigma_map[voltage_level] = sigma; 
+		sigma_map = std::map<R, R>();
+		std::map<T, T> other_sigma_map = other.get_sigmas();
+		for (auto pair : other_sigma_map)
+		{
+			R voltage_level = (R)pair.first;
+			R sigma = (R)pair.second;
+			sigma_map[voltage_level] = sigma;
 		}
 	}
 	else
 	{
-		sigma_map = std::map<R,R>();
+		sigma_map = std::map<R, R>();
 		sigmas_exist = false;
 	}
 }
 
 template <typename R>
 void Sigma_asymmetric<R>::
-copy(const Sigma_asymmetric<R>& other)
+	copy(const Sigma_asymmetric<R> &other)
 {
 	sigma_map = other.sigma_map;
 	sigmas_exist = other.sigma_exist;
 	Sigma<R>::copy(other);
 }
 
-
-template<typename R>
+template <typename R>
 void Sigma_asymmetric<R>::generate_sigmas()
 {
-	return _ebn0.second;
+	this->sigma_generator.generate(sigma_map, this->get_noise(), min_sigma)
 }
 
-template<typename R>
-R Sigma_asymmetric<R>::get_sigma(R voltage_level) const {
+template <typename R>
+R Sigma_asymmetric<R>::get_sigma(R voltage_level) const
+{
 	return sigma_map[voltage_level];
 }
 
-template<typename R>
-std::map<R,R> Sigma_asymmetric<R>::get_sigmas() const {
+template <typename R>
+std::map<R, R> Sigma_asymmetric<R>::get_sigmas() const
+{
 	return sigma_map;
 }
 
-
-template<typename R>
+template <typename R>
 bool Sigma_asymmetric<R>::has_sigmas() const noexcept
 {
 	return sigmas_exist;
@@ -88,7 +90,7 @@ bool Sigma_asymmetric<R>::has_sigmas() const noexcept
 
 template <typename R>
 void Sigma_asymmetric<R>::
-check()
+	check()
 {
 	auto n = this->get_noise();
 	if (n <= (R)0)
@@ -99,25 +101,23 @@ check()
 	}
 }
 
-template<typename R>
+template <typename R>
 Noise_type Sigma_asymmetric<R>::get_type() const
 {
 	// Add SIGMA_ASYMMETRIC to noise types
 	return Noise_type::SIGMA;
 }
 
-template<typename R>
-Sigma_asymmetric<R>* Sigma_asymmetric<R>::clone() const
+template <typename R>
+Sigma_asymmetric<R> *Sigma_asymmetric<R>::clone() const
 {
 	return new Sigma_asymmetric<R>(*this);
 }
-
-
 
 // ==================================================================================== explicit template instantiation
 template class aff3ct::tools::Sigma_asymmetric<float>;
 template class aff3ct::tools::Sigma_asymmetric<double>;
 
-template aff3ct::tools::Sigma_asymmetric<double>::Sigma_asymmetric(const Sigma_asymmetric<float >&);
-template aff3ct::tools::Sigma_asymmetric<float >::Sigma_asymmetric(const Sigma_asymmetric<double>&);
+template aff3ct::tools::Sigma_asymmetric<double>::Sigma_asymmetric(const Sigma_asymmetric<float> &);
+template aff3ct::tools::Sigma_asymmetric<float>::Sigma_asymmetric(const Sigma_asymmetric<double> &);
 // ==================================================================================== explicit template instantiation

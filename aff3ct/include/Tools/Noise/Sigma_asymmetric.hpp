@@ -12,40 +12,42 @@
 
 namespace aff3ct
 {
-namespace tools
-{
+	namespace tools
+	{
 
-template <typename R = float>
-class Sigma_asymmetric : public Sigma<R>
-{
-public:
-	Sigma_asymmetric();
-	explicit Sigma_asymmetric(R tot_noise);
-	Sigma_asymmetric(R tot_noise, R tot_ebn0, R tot_esn0);
-	template<typename T>
-	explicit Sigma_asymmetric(const Sigma_asymmetric<T>& other);
-	virtual ~Sigma_asymmetric() = default;
+		template <typename R = float>
+		class Sigma_asymmetric : public Sigma<R>
+		{
+		public:
+			Sigma_asymmetric();
+			explicit Sigma_asymmetric(R tot_noise, R min_sigma);
+			Sigma_asymmetric(R tot_noise, R min_sigma, R tot_ebn0, R tot_esn0);
+			template <typename T>
+			explicit Sigma_asymmetric(const Sigma_asymmetric<T> &other);
+			virtual ~Sigma_asymmetric() = default;
 
-	R get_sigma(R voltage_level) const;
-    std::map<R,R> get_sigmas() const;
-    void generate_sigmas();
+			R get_sigma(R voltage_level) const;
+			std::map<R, R> get_sigmas() const;
+			void generate_sigmas();
 
-    virtual Noise_type get_type() const;
+			virtual Noise_type get_type() const;
 
-    bool has_sigmas() const noexcept;
+			bool has_sigmas() const noexcept;
 
-	virtual void copy(const Sigma_asymmetric& other); // set this noise as the 'other' one
+			virtual void copy(const Sigma_asymmetric &other); // set this noise as the 'other' one
 
-	virtual Sigma_asymmetric<R>* clone() const;
+			virtual Sigma_asymmetric<R> *clone() const;
 
-protected:
-    std::map<R, R> sigma_map; // Maps a sigma to a given voltage level 
-    bool sigmas_exist = false;
+		protected:
+			std::map<R, R> sigma_map; // Maps a sigma to a given voltage level
+			bool sigmas_exist = false;
+			R min_sigma;
+			tools::Random_sigma_generator<R> sigma_generator;
 
-	virtual void check();
-};
+			virtual void check();
+		};
 
+	}
 }
-}
 
-#endif //SIGMA_ASYMMETRIC_HPP_
+#endif // SIGMA_ASYMMETRIC_HPP_
