@@ -23,20 +23,18 @@ public:
 	 */
 	explicit Thresholder_soft(const std::string& threshold_path);
 
-	void update_thresholds();
+	void update_thresholds(float sigma_ratio);
 
 	R interpret_readout(const Q *read_start, const Q *read_stop);
 
 private:
  
 	void init_data(const std::string& const_path, 
-					std::vector<std::unordered_map<float, R>> threshold_data,
-					std::vector<std::unordered_map<float, R>> llr_data);
+					std::map<float, std::vector<R>> data);
 	
-	std::vector<S> llrs;
-	std::vector<S> thresholds;
-	std::vector<std::unorderd_map<float,R>> threshold_data;
-	std::vector<std::unorderd_map<float,R>> llr_data;
+	std::vector<R> llrs;
+	std::vector<R> thresholds;
+	std::map<float,std::vector<R>> data;
 
 };
 

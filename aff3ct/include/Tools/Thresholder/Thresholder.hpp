@@ -62,7 +62,7 @@ public:
 protected:
 	const unsigned n_tps;  // the number of thresholds per symbol
 	const std::string name; // the name of the thresholder
-	std::vector<R> thresholder; // The tresholds of the thresholder
+	std::vector<R> thresholds; // The tresholds of the thresholder
 };
 
 }

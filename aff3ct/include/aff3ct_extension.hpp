@@ -17,4 +17,8 @@
 #include <Tools/Thresholder/Thresholder.hpp>
 #endif
 
+#ifndef THRESHOLDER_HPP_
+#include <Tools/Thresholder/Soft/Thresholder_soft.hpp>
+#endif
+
 #endif

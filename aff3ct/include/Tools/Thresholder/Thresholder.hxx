@@ -38,14 +38,14 @@ template <typename R>
 const R Thresholder<R>
 ::operator[](const size_t idx) const
 {
-	return thresholder[idx];
+	return thresholds[idx];
 }
 
 template <typename R>
 const R Thresholder<R>
 ::get_threshold(const size_t idx) const
 {
-	return thresholder[idx];
+	return thresholds[idx];
 }
 
 template <typename R>
