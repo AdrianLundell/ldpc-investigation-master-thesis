@@ -13,15 +13,47 @@ namespace aff3ct
 namespace tools
 {
 template <typename R>
-Thresholder_user<R>
-::Thresholder_user(const std::string& const_path)
-: Thresholder<R>(read_Thresholder(const_path), "User<C>")
+Thresholder_soft<R>
+::Thresholder_soft(const std::string& const_path)
+: Thresholder<R>(read_Thresholder(const_path), "soft<R>")
 {
+	std::vector<R> thresholds(3);
+	std::vector<R> llrs(4);
+	std::vector<std::unordered_map<float, R>> threshold_data(3);
+	std::vector<std::unordered_map<float, R>> llr_data(4);
+	
+	init_data(const_path, threshold_data, llr_data);
 }
 
 template <typename R>
-std::vector<typename Thresholder_user<R>::S> Thresholder_user<R>
-::read_Thresholder(const std::string& const_path)
+R Thresholder_soft<R>
+::interpret_readout(const Q *read_start, const Q *read_stop){
+	
+	for (auto i = 0; i < read_stop; i++){
+		if (Q + i == 1)
+			return llr_data[i]
+	}
+	return llr_data[3]
+}
+
+template <typename R>
+void Thresholder_soft<R>
+::update_thresholds(float sigma_ratio){
+
+	for 
+
+	data = datapoints<
+}
+
+template <typename R>
+R thresholder_soft<R>
+::interpolate
+
+template <typename R>
+void Thresholder_soft<R>
+::init_data(const std::string& const_path,
+			std::vector<std::unorderd_map<float,R>> threshold_data, 
+			std::vector<std::unorderd_map<float,R>> llr_data)
 {
 	if (const_path.empty())
 		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "'const_path' should not be empty.");
@@ -35,8 +67,6 @@ std::vector<typename Thresholder_user<R>::S> Thresholder_user<R>
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
-	std::vector<S> Thresholder;
-	auto sqrt_es = (R)0;
 	std::string temp;
 	while (std::getline(const_file, temp))
 	{
@@ -45,26 +75,25 @@ std::vector<typename Thresholder_user<R>::S> Thresholder_user<R>
 		std::istringstream buffer(temp);
 		std::vector<R> line((std::istream_iterator<R>(buffer)), std::istream_iterator<R>());
 
-		if (line.size() >= 3)
+		if (!line.size()== 8) //We want to read one sigma_ratio, n_tps thresholds and n_tps+1 llrs 
 		{
 			std::stringstream message;
-			message << "'line.size()' has to be smaller than 3 ('line.size()' = " << line.size() << ").";
+			message << "'line.size()' has to be 3 ('line.size()' = " << line.size() << ").";
 			throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 		}
 
-		if (line.size() == 2)
-			Thresholder.push_back(S(line[0],line[1]));
 		else
-			Thresholder.push_back(S(line[0]));
+			sigma_ratio = R(line[0]);
 
-		sqrt_es += std::norm(Thresholder.back());
+			threshold_data[0].insert({sigma_ratio, line[1]});
+			threshold_data[1].insert({sigma_ratio, line[2]});
+			threshold_data[2].insert({sigma_ratio, line[3]});
+
+			threshold_data[0].insert({sigma_ratio, line[4]});
+			threshold_data[1].insert({sigma_ratio, line[5]});
+			threshold_data[2].insert({sigma_ratio, line[6]});
+			threshold_data[3].insert({sigma_ratio, line[7]});
 	}
-	sqrt_es = std::sqrt(sqrt_es/Thresholder.size());
-
-	for (unsigned i = 0; i < Thresholder.size(); i++)
-		Thresholder[i] /= S(sqrt_es);
-
-	return Thresholder;
 }
 
 }

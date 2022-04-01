@@ -1,9 +1,9 @@
 /*
  * \file
- * \brief Class tools::Thresholder_static.
+ * \brief Class tools::Thresholder_soft.
  */
-#ifndef THRESHOLDER_STATIC_HPP__
-#define THRESHOLDER_STATIC_HPP__
+#ifndef THRESHOLDER_soft_HPP__
+#define THRESHOLDER_soft_HPP__
 
 #include <vector>
 
@@ -14,26 +14,37 @@ namespace aff3ct
 namespace tools
 {
 template <typename R>
-class Thresholder_static : public Thresholder<R>
+class Thresholder_soft : public Thresholder<R>
 {
 public:
 
 	/*
-	 * \param threshold_path is the path to static thresholds
+	 * \param threshold_path is the path to soft thresholds
 	 */
-	explicit Thresholder_static(const std::string& threshold_path);
+	explicit Thresholder_soft(const std::string& threshold_path);
+
+	void update_thresholds();
 
 	R interpret_readout(const Q *read_start, const Q *read_stop);
 
 private:
-	static std::vector<S> read_thresholds(const std::string& const_path);
+ 
+	void init_data(const std::string& const_path, 
+					std::vector<std::unordered_map<float, R>> threshold_data,
+					std::vector<std::unordered_map<float, R>> llr_data);
+	
+	std::vector<S> llrs;
+	std::vector<S> thresholds;
+	std::vector<std::unorderd_map<float,R>> threshold_data;
+	std::vector<std::unorderd_map<float,R>> llr_data;
+
 };
 
 }
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-#include "Tools/Thresholder/Static/Thresholder_static.hxx"
+#include "Tools/Thresholder/Soft/Thresholder_soft.hxx"
 #endif
 
-#endif // THRESHOLDER_STATIC_HPP__
+#endif // THRESHOLDER_soft_HPP__
