@@ -17,6 +17,7 @@ Constellation_flash<R>
 ::Constellation_flash(const std::string& const_path)
 : Constellation<R>(read_constellation(const_path), "Flash<C>")
 {
+	
 }
 
 template <typename R>
