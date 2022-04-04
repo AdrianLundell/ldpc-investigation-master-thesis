@@ -10,7 +10,7 @@
 using namespace aff3ct;
 
 
-TEST(ConstellationFlashTest, IntSLC) {
+TEST(ConstellationFlashTest, ReadIntSLCFile) {
 	
 	tools::Constellation_flash<int> c("test_data/test_constellation_SLC.txt");
 
@@ -24,7 +24,7 @@ TEST(ConstellationFlashTest, IntSLC) {
 	EXPECT_EQ(c.get_symbol(1), -1);
 }
 
-TEST(ConstellationFlashTest, FloatTLC) {
+TEST(ConstellationFlashTest, ReadFloatTLCFile) {
 	
 	tools::Constellation_flash<float> c("test_data/test_constellation_TLC.txt");
 
@@ -34,6 +34,6 @@ TEST(ConstellationFlashTest, FloatTLC) {
 	
 	EXPECT_EQ(c.get_n_bits_per_symbol(), 3);
 	EXPECT_EQ(c.get_n_symbols(), 8);
-	EXPECT_FLOAT_EQ(c[7], 10.f);
-	EXPECT_FLOAT_EQ(c.get_symbol(2), 6.f);
+	EXPECT_EQ(c[7], 10.f);
+	EXPECT_EQ(c.get_symbol(2), 6.f);
 }

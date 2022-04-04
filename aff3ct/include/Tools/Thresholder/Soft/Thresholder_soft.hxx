@@ -26,14 +26,14 @@ Thresholder_soft<R>
 
 template <typename R>
 R Thresholder_soft<R>
-::interpret_readout(const Q *read_start, const Q *read_stop){
+::interpret_readout(const std::vector<R> &readout){
 	
 	//Return LLR left of the first positive readout bit
-	for (auto i = read_start; i < read_stop; i++){
-		if (*i == 1)
+	for (int i = 0; i < readout.size(); i++){
+		if (readout[i] == 1)
 			return llrs[i];
 	}
-	return llrs[3];
+	return llrs.back();
 }
 
 template <typename R>
@@ -52,7 +52,7 @@ void Thresholder_soft<R>
 	//TODO: Corner case handling
 	for (auto it = data.begin(); it != data.end(); it++)
 	{
-		if (data->first > x)
+		if (it->first > x)
 		{
 			x0 = it->first;
 			y0 = it->second;
@@ -107,7 +107,7 @@ void Thresholder_soft<R>
 			//Store each line in a vector mapped to its sigma_ratio
 			for (auto i = 1; i < line.size(); i++){
 				sigma_ratio = line[0];
-				data[sigma_ratio][i-1] = line[i];
+				//data[sigma_ratio][i-1] = line[i];
 			}
 		}
 	}

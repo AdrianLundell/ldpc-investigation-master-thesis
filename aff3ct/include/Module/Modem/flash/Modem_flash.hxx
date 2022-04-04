@@ -119,22 +119,20 @@ void Modem_flash<B,R,Q,MAX>
 
 	auto size = this->N;
 	auto thresholds_per_symbol = thresholder->get_n_thresholds_per_symbol();
-	std::vector<Q> readout(nbr_symbols*thresholds_per_symbol);
-
+	
 	//Update thresholds for specific noise
 	thresholder->update_thresholds();
 
-	//Loop over noised symbols and generate readout from thresholds
+	//Loop over noised symbols, check and interpret thresholds
+	std::vector<R> readout(thresholds_per_symbol);
 	for (auto i_symbol = 0; i_symbol < nbr_symbols; i_symbol++){
 		for (auto i_threshold = 0; i_threshold < thresholds_per_symbol; i_threshold++){
-			readout[i_symbol+i_threshold] = Y_N1[i_symbol] < thresholder->get_threshold(i_threshold) ? 0 : 1;
+			
+			readout[i_threshold] = Y_N1[i_symbol] < thresholder->get_threshold(i_threshold) ? 0 : 1;
+			Y_N2[i_symbol] = thresholder->interpret_readout(readout);
 		}
 	}
-
-	//Interpret sequences of readout info as demodulated signal
-	for (auto i_output = 0; i_output < size; i_output++){
-		Y_N2[i_output] = thresholder->interpret_readout(Y_N1 + i_output*thresholds_per_symbol, Y_N1 + (i_output+1)*thresholds_per_symbol);
-	}
+	
 }
 
 

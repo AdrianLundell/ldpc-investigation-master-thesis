@@ -25,7 +25,7 @@ public:
 
 	void update_thresholds(float sigma_ratio);
 
-	R interpret_readout(const Q *read_start, const Q *read_stop);
+	R interpret_readout(const std::vector<R> &readout);
 
 private:
  

@@ -50,7 +50,7 @@ const R Thresholder<R>
 
 template <typename R>
 R Thresholder<R>
-::interpret_readout(const R* read_start, const R* read_stop) const
+::interpret_readout(const std::vector<R> &readout) const
 {
 	throw tools::unimplemented_error(__FILE__, __LINE__, __func__);
 }
