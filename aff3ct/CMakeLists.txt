@@ -44,12 +44,12 @@ endif()
 # Create the executable from sources
 set(source_dir "")
 if (AFF3CT_COMPILE_EXE)
-    set (source_dir "src")
+    set (source_dir "src") 
+    add_executable(aff3ct_nand_flash ${CMAKE_CURRENT_SOURCE_DIR}/${source_dir}/main.cpp)
 endif()
 if (AFF3CT_COMPILE_TESTS)
     set (source_dir "tests")
 endif()
-add_executable(aff3ct_nand_flash ${CMAKE_CURRENT_SOURCE_DIR}/${source_dir}/main.cpp)
 
 file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 add_library(aff3ct_extension ${source_files}) #
@@ -64,11 +64,12 @@ find_package(Threads REQUIRED)
 
 # Link with google tests
 if (AFF3CT_COMPILE_TESTS)
-    target_link_libraries(
-    aff3ct_nand_flash PRIVATE
-    gtest_main
-    )
-    target_include_directories(aff3ct_nand_flash PUBLIC tests/)
+    file(GLOB_RECURSE test_source_files ${CMAKE_CURRENT_SOURCE_DIR}/tests/*)
+    add_executable(aff3ct_nand_flash ${test_source_files})
+    #add_library(aff3ct_tests ${test_source_files}) 
+    #target_include_directories(aff3ct_tests PUBLIC tests/)
+    #target_link_libraries(aff3ct_tests PRIVATE aff3ct::aff3ct-static-lib aff3ct_extension gtest_main)
+    target_link_libraries(aff3ct_nand_flash PRIVATE gtest_main)
 endif()
     
 
