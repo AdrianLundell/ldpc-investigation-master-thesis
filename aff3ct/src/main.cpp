@@ -10,12 +10,12 @@ using namespace aff3ct;
 
 struct params
 {
-	int K = 32;				 // number of information bits
-	int N = 128;			 // codeword size
+	int K = 8;				 // number of information bits
+	int N = 8;			     // codeword size
 	int fe = 100;			 // number of frame errors
 	int seed = 0;			 // PRNG seed for the AWGN channel
 	float ebn0_min = 0.00f;	 // minimum SNR value
-	float ebn0_max = 10.01f; // maximum SNR value
+	float ebn0_max = 0.01f;  // maximum SNR value
 	float ebn0_step = 1.00f; // SNR step
 	float R;				 // code rate (R=K/N)
 };
@@ -25,7 +25,7 @@ struct modules
 {
 	std::unique_ptr<module::Source_random<>> source;
 	std::unique_ptr<module::Encoder_repetition_sys<>> encoder;
-	std::unique_ptr<module::Modem_BPSK<>> modem;
+	std::unique_ptr<module::Modem_flash<>> modem;
 	std::unique_ptr<module::Channel_Test<>> channel;
 	std::unique_ptr<module::Decoder_repetition_std<>> decoder;
 	std::unique_ptr<module::Monitor_BFER<>> monitor;
@@ -140,7 +140,9 @@ void init_modules(const params &p, modules &m)
 {
 	m.source = std::unique_ptr<module::Source_random<>>(new module::Source_random<>(p.K));
 	m.encoder = std::unique_ptr<module::Encoder_repetition_sys<>>(new module::Encoder_repetition_sys<>(p.K, p.N));
-	m.modem = std::unique_ptr<module::Modem_BPSK<>>(new module::Modem_BPSK<>(p.N));
+	m.modem = std::unique_ptr<module::Modem_flash<>>(new module::Modem_flash<>(p.N, 
+			  std::unique_ptr<tools::Constellation<float>>(new tools::Constellation_flash<float>("SLC_bpsk_voltage_levels.txt")),
+			  std::unique_ptr<tools::Thresholder<float>>(new tools::Thresholder_soft<float>("test_thresholds.txt"))));
 	m.channel = std::unique_ptr<module::Channel_Test<>>(new module::Channel_Test<>(p.N, p.seed));
 	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N));
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(new module::Monitor_BFER<>(p.K, p.fe));
