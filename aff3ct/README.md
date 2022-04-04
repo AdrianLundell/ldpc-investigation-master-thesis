@@ -26,10 +26,19 @@ Next, build the code:
 
 	$ mkdir build
 	$ cd build
-	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native"
+	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native" -DAFF3CT_COMPILE_EXE="ON" -DAFF3CT_COMPILE_TESTS="OFF"
 	$ make
 
 
 Run the simulations through:
 
 	$ ./bin/aff3ct_nand_flash
+
+If you have created some tests, you can choose to compile those instead:
+
+	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_TESTS="ON"
+	$ make
+	
+Run the tests through:
+
+	$ ./tests/aff3ct_nand_flash
