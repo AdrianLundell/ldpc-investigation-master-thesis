@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.13) # Need FetchContent
 cmake_policy(SET CMP0054 NEW)
 
-
-option(AFF3CT_COMPILE_EXE "Compile the src/main.cpp executable"                                                OFF)
-option(AFF3CT_COMPILE_TESTS "Compile the tests in tests/main.cpp"                                                OFF)
+# Compilation options
+option(AFF3CT_COMPILE_EXE "Compile the src/main.cpp executable" OFF)
+option(AFF3CT_COMPILE_TESTS "Compile the tests in tests/main.cpp" OFF)
 
 if (AFF3CT_COMPILE_EXE)
     message(STATUS "AFF3CT_COMPILE_EXE -ON")
@@ -27,16 +27,18 @@ if (AFF3CT_COMPILE_TESTS)
 endif()
 
 # Fetch googletest
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest
-  GIT_TAG release-1.11.0
-)
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-    FetchContent_Populate(googletest)
-    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BUILD_DIR})
+if (AFF3CT_COMPILE_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest
+    GIT_TAG release-1.11.0
+    )
+    FetchContent_GetProperties(googletest)
+    if(NOT googletest_POPULATED)
+        FetchContent_Populate(googletest)
+        add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BUILD_DIR})
+    endif()
 endif()
 
 # Create the executable from sources
@@ -66,6 +68,7 @@ if (AFF3CT_COMPILE_TESTS)
     aff3ct_nand_flash PRIVATE
     gtest_main
     )
+    target_include_directories(aff3ct_nand_flash PUBLIC tests/)
 endif()
     
 
