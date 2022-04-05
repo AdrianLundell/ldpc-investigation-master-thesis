@@ -23,19 +23,29 @@ public:
 	 */
 	explicit Thresholder_soft(const std::string& threshold_path);
 
-	void update_thresholds(float sigma_ratio);
+	void update_thresholds(const tools::Noise<R>& noise);
 
 	R interpret_readout(const std::vector<R> &readout);
 
 private:
  
+	/*
+	 * \brief load data from txt file
+	 */
 	void init_data(const std::string& const_path, 
-					std::map<float, std::vector<R>> data);
-	
+					std::vector<std::vector<R>>& data);
+
+	/*
+	 * \bried count number of unique numbers, floating precision compatible
+	 */
+	int count_unique(const std::vector<R>& x);
+
 	std::vector<R> llrs;
 	std::vector<R> thresholds;
-	std::map<float,std::vector<R>> data;
+	std::vector<std::vector<R>> data;
 
+	int n_snrs;
+	int n_ratios;
 };
 
 }

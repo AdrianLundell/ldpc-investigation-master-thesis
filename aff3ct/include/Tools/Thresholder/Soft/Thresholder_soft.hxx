@@ -19,7 +19,7 @@ Thresholder_soft<R>
 {
 	thresholds = std::vector<R>(3);
 	llrs = std::vector<R>(4);
-	data = std::map<float, std::vector<R>>();
+	data = std::vector<std::vector<R>>();
 
 	init_data(const_path, data);
 }
@@ -38,44 +38,33 @@ R Thresholder_soft<R>
 
 template <typename R>
 void Thresholder_soft<R>
-::update_thresholds(float sigma_ratio){
+::update_thresholds(const tools::Noise<R>& noise){
 
-	std::vector<R> y0;
-	std::vector<R> y1;
-	float x0; 
-	float x1;
 
-	std::vector<R> y(8);
-	float x = sigma_ratio;
+	// float sigma_db = noise.get_sigmas();
+	// float sigma_ratio = noise.get_sigmas();
 
-	//Find stored data points closest to sigma_ratio
-	//TODO: Corner case handling
-	for (auto it = data.begin(); it != data.end(); it++)
-	{
-		if (it->first > x)
-		{
-			x0 = it->first;
-			y0 = it->second;
-			it++;
-			x1 = it->first;
-			y1 = it->second;
-			break;
-		}
-	}
+	// thresholds = data[];
+	// llrs = data[];
 
-	//Interpolate all values
-	for (auto i = 0; i < y.size(); i++) {
-    	y[i] = y0[i] + (x-x0)*(y1[i] - y0[i])/(x1-x0);
-	}
+	// std::vector<R>& x0, x1, x2, x3; 
 
-	thresholds = std::vector<R>(y.begin(), y.begin() + 3);
-	llrs = std::vector<R>(y.begin() + 3, y.end());
+	// //Find references to 
+	// for (auto const &x : data)
+	// {
+	// 	if (x[0] >= sigma_db && x[1] >= sigma_ratio)
+	// 	{
+	// 		x1 = x;
+	// 		break;
+	// 	}
+	// 	x0 = x1;
+	// }
 }
 
 template <typename R>
 void Thresholder_soft<R>
 ::init_data(const std::string& const_path,
-			std::map<float, std::vector<R>> data)
+			std::vector<std::vector<R>>& data)
 {
 	if (const_path.empty())
 		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "'const_path' should not be empty.");
@@ -89,6 +78,11 @@ void Thresholder_soft<R>
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
+
+	std::vector<R> snrs = {};
+	std::vector<R> ratios = {};
+	data.clear();
+
 	std::string temp;
 	while (std::getline(const_file, temp))
 	{
@@ -97,20 +91,38 @@ void Thresholder_soft<R>
 		std::istringstream buffer(temp);
 		std::vector<R> line((std::istream_iterator<R>(buffer)), std::istream_iterator<R>());
 
-		float sigma_ratio;
-		if (!line.size()== 8) //We want to read one sigma_ratio, n_tps thresholds and n_tps+1 llrs 
+		if (!line.size()== 9) //We want to read sigma_db, sigma_ratio, n_tps thresholds and n_tps+1 llrs 
 		{
 			std::stringstream message;
-			message << "'line.size()' has to be 8 ('line.size()' = " << line.size() << ").";
+			message << "'line.size()' has to be 9 ('line.size()' = " << line.size() << ").";
 			throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 		} else {
-			//Store each line in a vector mapped to its sigma_ratio
-			for (auto i = 1; i < line.size(); i++){
-				sigma_ratio = line[0];
-				//data[sigma_ratio][i-1] = line[i];
+			data.push_back(line);
+			snrs.push_back(line[0]);
+			ratios.push_back(line[1]);
+		}
+	}
+
+	this->n_snrs = count_unique(snrs);
+	this->n_ratios = count_unique(ratios);
+}
+
+template <typename R>
+int Thresholder_soft<R>
+::count_unique(const std::vector<R>& x)
+{
+	std::vector<R> unique_elements = {x[0]};
+
+	for (auto x1 : x){
+		for (auto x2 : unique_elements) {
+			if (std::abs(x1 - x2) > 0.0001)
+			{
+				unique_elements.push_back(x1);
 			}
 		}
 	}
+
+	return unique_elements.size();
 }
 
 }
