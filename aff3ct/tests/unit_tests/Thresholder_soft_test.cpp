@@ -16,7 +16,7 @@ TEST(ThresholderSoftTest, IntReadTestThresholds) {
 	std::vector<int> r = {1,1,1};
 
 	t.update_thresholds();
-	//ASSERT_EQ(t.interpret_readout(r), 1);
+	ASSERT_EQ(t.interpret_readout(r), 1);
 	//t.update_thresholds(1.f);
 	//ASSERT_EQ(t.interpret_readout(r), 1);
 }

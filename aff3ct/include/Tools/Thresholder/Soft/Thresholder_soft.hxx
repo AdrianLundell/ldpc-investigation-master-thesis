@@ -49,10 +49,10 @@ void Thresholder_soft<R>
 		if ((this->data)[i][0] >= x && this->data[i][1] >= y)
 		{
 			//Weighted mean interpolation: https://en.wikipedia.org/wiki/Bilinear_interpolation#Weighted_mean
-			std::vector<R> q22 = this->data[i];
-			std::vector<R> q21 = this->data[i - 1];
-			std::vector<R> q12 = this->data[i - this->n_snrs];
-			std::vector<R> q11 = this->data[i - this->n_snrs - 1];
+			std::vector<R>& q22 = this->data[i];
+			std::vector<R>& q21 = this->data[i - 1];
+			std::vector<R>& q12 = this->data[i - this->n_snrs];
+			std::vector<R>& q11 = this->data[i - this->n_snrs - 1];
 
 			x1 = q11[0];
 			x2 = q22[0];
@@ -70,13 +70,13 @@ void Thresholder_soft<R>
 			for (auto i = 0; i < this->n_thresholds; i++)
 			{
 				j = i + 2;
-				thresholds[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] * w22*q22[j];	
+				thresholds[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 
 			for (auto i = 0; i < this->n_llrs; i++)
 			{
 				j = i + 2 + this->n_thresholds;
-				llrs[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] * w22*q22[j];	
+				llrs[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 			
 			break;
