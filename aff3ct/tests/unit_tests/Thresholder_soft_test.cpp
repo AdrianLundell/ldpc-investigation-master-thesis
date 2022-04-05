@@ -15,6 +15,7 @@ TEST(ThresholderSoftTest, IntReadTestThresholds) {
 	tools::Thresholder_soft<int> t("test_data/test_thresholder.txt");
 	std::vector<int> r = {1,1,1};
 
+	t.update_thresholds();
 	//ASSERT_EQ(t.interpret_readout(r), 1);
 	//t.update_thresholds(1.f);
 	//ASSERT_EQ(t.interpret_readout(r), 1);

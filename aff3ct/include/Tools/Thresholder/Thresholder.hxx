@@ -14,7 +14,8 @@ namespace tools
 template <typename R>
 Thresholder<R>
 ::Thresholder(const unsigned n_tps, const std::string& name)
-: n_tps(n_tps),
+: n_thresholds(n_tps),
+  n_llrs(n_tps + 1),
   name(name)
 {
 
@@ -31,7 +32,7 @@ template <typename R>
 unsigned Thresholder<R>
 ::get_n_thresholds_per_symbol() const
 {
-	return n_tps;
+	return n_thresholds;
 }
 
 template <typename R>

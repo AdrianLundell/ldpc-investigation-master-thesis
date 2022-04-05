@@ -23,7 +23,7 @@ public:
 	 */
 	explicit Thresholder_soft(const std::string& threshold_path);
 
-	void update_thresholds(const tools::Noise<R>& noise);
+	void update_thresholds();
 
 	R interpret_readout(const std::vector<R> &readout);
 

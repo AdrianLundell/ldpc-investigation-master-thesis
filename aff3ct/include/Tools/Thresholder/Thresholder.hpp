@@ -60,7 +60,8 @@ public:
 
 
 protected:
-	const unsigned n_tps;  // the number of thresholds per symbol
+	const unsigned n_thresholds;  // the number of thresholds per symbol
+	const unsigned n_llrs;  // the number of thresholds per symbol
 	const std::string name; // the name of the thresholder
 	std::vector<R> thresholds; // The tresholds of the thresholder
 };
