@@ -17,16 +17,16 @@ Thresholder_soft<R>
 ::Thresholder_soft(const std::string& const_path)
 : Thresholder<R>(3, "soft<R>")
 {
-	thresholds = std::vector<R>(3);
-	llrs = std::vector<R>(4);
-	data = std::vector<std::vector<R>>();
+	this->thresholds = std::vector<R>(3);
+	this->llrs = std::vector<R>(4);
+	this->data = std::vector<std::vector<R>>();
 
 	init_data(const_path, data);
 }
 
 template <typename R>
 R Thresholder_soft<R>
-::interpret_readout(const std::vector<R> &readout){
+::interpret_readout(const std::vector<int> &readout){
 	
 	//Return LLR left of the first positive readout bit
 	for (int i = 0; i < readout.size(); i++){
@@ -70,13 +70,13 @@ void Thresholder_soft<R>
 			for (auto i = 0; i < this->n_thresholds; i++)
 			{
 				j = i + 2;
-				thresholds[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
+				this->thresholds[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 
 			for (auto i = 0; i < this->n_llrs; i++)
 			{
 				j = i + 2 + this->n_thresholds;
-				llrs[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
+				this->llrs[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 			
 			break;

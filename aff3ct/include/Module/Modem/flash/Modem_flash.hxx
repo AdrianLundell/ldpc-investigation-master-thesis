@@ -124,7 +124,7 @@ void Modem_flash<B,R,Q,MAX>
 	thresholder->update_thresholds();
 
 	//Loop over noised symbols, check and interpret thresholds
-	std::vector<R> readout(thresholds_per_symbol);
+	std::vector<int> readout(thresholds_per_symbol);
 	for (auto i_symbol = 0; i_symbol < nbr_symbols; i_symbol++){
 		for (auto i_threshold = 0; i_threshold < thresholds_per_symbol; i_threshold++){
 			

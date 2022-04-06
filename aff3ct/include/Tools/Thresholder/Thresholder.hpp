@@ -56,7 +56,7 @@ public:
 	 * \param read_stop is a pointer to the end of the readout
 	 * \return a demodulated value interpreted from the readout
 	 */ 
-	virtual R interpret_readout(const std::vector<R> &readout) const;
+	virtual R interpret_readout(const std::vector<int> &readout) const;
 
 
 protected:

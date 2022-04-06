@@ -25,7 +25,7 @@ public:
 
 	void update_thresholds();
 
-	R interpret_readout(const std::vector<R> &readout);
+	R interpret_readout(const std::vector<int> &readout);
 
 private:
  
@@ -41,7 +41,7 @@ private:
 	int count_unique(const std::vector<R>& x);
 
 	std::vector<R> llrs;
-	std::vector<R> thresholds;
+	//std::vector<R> thresholds;
 	std::vector<std::vector<R>> data;
 
 	int n_snrs;
