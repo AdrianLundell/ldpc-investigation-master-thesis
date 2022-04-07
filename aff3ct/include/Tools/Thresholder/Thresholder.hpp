@@ -56,11 +56,12 @@ public:
 	 * \param read_stop is a pointer to the end of the readout
 	 * \return a demodulated value interpreted from the readout
 	 */ 
-	virtual R interpret_readout(const R* read_start, const R* read_stop) const;
+	virtual R interpret_readout(const std::vector<int> &readout) const;
 
 
 protected:
-	const unsigned n_tps;  // the number of thresholds per symbol
+	const unsigned n_thresholds;  // the number of thresholds per symbol
+	const unsigned n_llrs;  // the number of thresholds per symbol
 	const std::string name; // the name of the thresholder
 	std::vector<R> thresholds; // The tresholds of the thresholder
 };
