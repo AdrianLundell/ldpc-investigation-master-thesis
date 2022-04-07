@@ -14,20 +14,18 @@ namespace aff3ct
 namespace tools
 {
 template <typename R, typename Q>
-class Flash_reader : Flash_reader<R, Q>
+class Flash_reader
 {
 public:
+	explicit Flash_reader(const int read_type, const std::string& fpath);
 
-	explicit Flash_reader(const std::string& fpath);
-
-	void update(const tools::Noise);
+	void update(const tools::Noise<R>& n);
 
 	Q read(const R level, const std::vector<unsigned>& threshold_indexes);
 
-	enum read_type {hard = 1, soft_single = 3, soft_double = 5}
+	enum read_type {hard = 1, soft_single = 3, soft_double = 5};
 
 private:
-
 	void init_data(const std::string& fpath);
 	int count_unique(const std::vector<R>& x);
 
@@ -50,7 +48,7 @@ private:
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-#include "Tools/Thresholder/Soft/Thresholder_soft.hxx"
+#include "Tools/Flash/Reader/Flash_reader.hpp"
 #endif
 
 #endif // THRESHOLDER_soft_HPP__

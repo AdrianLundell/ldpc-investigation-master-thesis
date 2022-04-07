@@ -13,7 +13,7 @@ namespace aff3ct
 namespace tools
 {
 template <typename R>
-class Flash_cell : public Flash_cell<R>
+class Flash_cell
 {
 public:
 	explicit Flash_cell(const int cell_type);

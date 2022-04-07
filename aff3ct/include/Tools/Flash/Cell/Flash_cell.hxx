@@ -15,7 +15,7 @@ namespace tools
 template <typename R>
 Flash_cell<R>
 ::Flash_cell(const int cell_type) :
-	n_thresholds(cell_type - 1),
+	n_threshold_indexes(cell_type - 1),
 	n_levels(cell_type),
 	n_pages(std::log2(cell_type)),
 
@@ -25,11 +25,11 @@ Flash_cell<R>
 	
 	//Could be automated
 	switch (cell_type){
-		case this->cell_type.SLC:
+		case SLC:
 			this -> threshold_indexes = {{0}};
-		case this->cell_type.MLC:
+		case MLC:
 			this -> threshold_indexes = {{1},{0,2}};
-		case this->cell_type.TLC:
+		case TLC:
 			this -> threshold_indexes = {{3}, {1,5}, {0, 2, 4, 6}};
 		default:
 			//Throw error
@@ -85,9 +85,9 @@ unsigned int Flash_cell<R>
 
 template <typename R>
 unsigned int Flash_cell<R>
-::get_n_thresholds()
+::get_n_threshold_indexes()
 {
-	return this->n_thresholds;
+	return this->n_threshold_indexes;
 }
 
 }

@@ -25,7 +25,7 @@ Flash_reader<R,Q>
 
 template <typename R, typename Q>
 void Flash_reader<R,Q>
-::update(){
+::update(const tools::Noise<R>& n){
 	float x = calculate_snr(); 
 	float y = calculate_ratio();
 
