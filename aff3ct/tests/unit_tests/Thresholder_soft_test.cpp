@@ -56,3 +56,14 @@ TEST(ThresholderSoftTest, FloatReadTestThresholds) {
 	r = {0,0,0};
 	ASSERT_FLOAT_EQ(t.interpret_readout(r), 75.f);
 }
+
+TEST(PackBits, Pack) {
+	std::vector<int> in = {0,0,0,
+						   0,0,1};
+						   //0,1,0,
+						   //1,0,0};
+	std::vector<int> out = {-1,-1,-1,-1,-1,-1,-1};
+
+	tools::Bit_packer::pack(in, out, 1, false, true, 3);
+	std::cout << "Hello world" << std::endl;
+}
