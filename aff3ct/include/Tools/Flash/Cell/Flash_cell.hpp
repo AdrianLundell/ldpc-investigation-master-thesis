@@ -28,14 +28,14 @@ public:
 
 	unsigned int get_n_pages();
 	unsigned int get_n_levels();
-	unsigned int get_n_thresholds();
+	unsigned int get_n_threshold_indexes();
 
 	enum page_type {lower, upper, extra};
 	enum cell_type {SLC = 2, MLC = 4, TLC = 8};
 
 private:
 	
-	unsigned int n_thresholds;
+	unsigned int n_threshold_indexes;
 	unsigned int n_levels;
 	unsigned int n_pages;
 

@@ -12,35 +12,22 @@ namespace aff3ct
 {
 namespace tools
 {
-template <typename R>
-Thresholder_soft<R>
-::Thresholder_soft(const std::string& const_path)
-: Thresholder<R>(3, "soft<R>")
+template <typename R, typename Q>
+Flash_reader<R,Q>
+::Flash_reader(const int read_type, const std::string& fpath) :
+	n_thresholds(read_type),
+	n_bin_values(read_type)
+	bin_values(read_type),
+	thresholds(read_type-1),
 {
-	this->thresholds = std::vector<R>(3);
-	this->llrs = std::vector<R>(4);
-	this->data = std::vector<std::vector<R>>();
-
-	init_data(const_path, data);
+	init_data(fpath);
 }
 
-template <typename R>
-R Thresholder_soft<R>
-::interpret_readout(const std::vector<int> &readout){
-	
-	//Return LLR left of the first positive readout bit
-	for (int i = 0; i < readout.size(); i++){
-		if (readout[i] == 1)
-			return llrs[i];
-	}
-	return llrs.back();
-}
-
-template <typename R>
-void Thresholder_soft<R>
-::update_thresholds(){
-	float x = 5.f; //Should be calculated from noise
-	float y = 5.f; //Should be calculated from noisetypedef vector <int> ints_t;
+template <typename R, typename Q>
+void Flash_reader<R,Q>
+::update(){
+	float x = calculate_snr(); 
+	float y = calculate_ratio();
 
 	float x1, x2, y1, y2;
 	//Loop over data to find boundary points assuming increasing values row wise and (snr, ratio) within limits
@@ -51,8 +38,8 @@ void Thresholder_soft<R>
 			//Weighted mean interpolation: https://en.wikipedia.org/wiki/Bilinear_interpolation#Weighted_mean
 			std::vector<R>& q22 = this->data[i];
 			std::vector<R>& q21 = this->data[i - 1];
-			std::vector<R>& q12 = this->data[i - this->n_snrs];
-			std::vector<R>& q11 = this->data[i - this->n_snrs - 1];
+			std::vector<R>& q12 = this->data[i - this->n_x;
+			std::vector<R>& q11 = this->data[i - this->n_x - 1];
 
 			x1 = q11[0];
 			x2 = q22[0];
@@ -76,21 +63,22 @@ void Thresholder_soft<R>
 			for (auto i = 0; i < this->n_llrs; i++)
 			{
 				j = i + 2 + this->n_thresholds;
-				this->llrs[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
+				this->bin_values[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 			
 			break;
 		}
 	}
-
-	
 }
 
-template <typename R>
-void Thresholder_soft<R>
-::init_data(const std::string& const_path,
-			std::vector<std::vector<R>>& data)
+template <typename R, typename Q>
+void Flash_reader<R,Q>
+::init_data(const std::string& fpath)
 {
+	//Reads a file describing discretized functions z_i = f_i(x, y) 
+	//with columns x, y, z_1, z_2, ... z_n
+	//And counts the dimension of the grid (x,y)
+
 	if (const_path.empty())
 		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "'const_path' should not be empty.");
 
@@ -103,10 +91,9 @@ void Thresholder_soft<R>
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
-
-	std::vector<R> snrs = {};
-	std::vector<R> ratios = {};
-	data.clear();
+	std::vector<R> x_vec = {};
+	std::vector<R> y_vec = {};
+	this->data = 
 
 	std::string temp;
 	while (std::getline(const_file, temp))
@@ -116,29 +103,29 @@ void Thresholder_soft<R>
 		std::istringstream buffer(temp);
 		std::vector<R> line((std::istream_iterator<R>(buffer)), std::istream_iterator<R>());
 
-		if (!line.size()== 9) //We want to read sigma_db, sigma_ratio, n_tps thresholds and n_tps+1 llrs 
+		if (!line.size() == 2 + this->n_thresholds + this->n_bin_values)
 		{
 			std::stringstream message;
-			message << "'line.size()' has to be 9 ('line.size()' = " << line.size() << ").";
+			message << "'line.size()' has to match read type ('line.size()' = " << line.size() << ").";
 			throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 		} else {
 			data.push_back(line);
-			snrs.push_back(line[0]);
-			ratios.push_back(line[1]);
+			x_vec.push_back(line[0]);
+			y_vec.push_back(line[1]);
 		}
 	}
 
-	this->n_snrs = count_unique(snrs);
-	this->n_ratios = count_unique(ratios);
+	this->n_x = count_unique(x_vec);
+	this->n_y = count_unique(y_vec);
 }
 
-template <typename R>
-int Thresholder_soft<R>
+template <typename R, typename Q>
+int Flash_reader<R,Q>
 ::count_unique(const std::vector<R>& x)
 {
 	std::vector<R> unique_elements = {x[0]};
-
 	bool is_unique;
+
 	for (auto x1 : x){
 		is_unique = true;
 		for (auto x2 : unique_elements)
@@ -149,6 +136,36 @@ int Thresholder_soft<R>
 	}
 
 	return unique_elements.size();
+}
+
+template <typename R, typename Q>
+Q Flash_reader<R,Q>
+::read(const R level, const std::vector<unsigned>& threshold_indexes)
+{
+	for (auto i : threshold_indexes)
+	{
+		for (auto j = 0; j < this->get_n_thresholds(), j++)
+		{
+			if (this->get_threshold(*i, j) < level)
+				return get_bin_value(*i,j); 
+		}
+	}
+
+	return this->(bin_values.back()).back();
+}
+
+template <typename R, typename Q>
+R Flash_reader<R,Q>
+::get_threshold(const unsigned threshold_index, const unsigned soft_index)
+{
+	return this->thresholds[threshold_index][soft_index];
+}
+
+template <typename R, typename Q>
+Q Flash_reader<R,Q>
+::get_bin_value(const unsigned threshold_index, const unsigned bin_index)
+{
+	return this->bin_values[threshold_index][bin_index]
 }
 
 }
