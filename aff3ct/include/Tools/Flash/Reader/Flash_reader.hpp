@@ -1,9 +1,9 @@
 /*
  * \file
- * \brief Class tools::Thresholder_soft.
+ * \brief Class tools::Flash_reader
  */
-#ifndef THRESHOLDER_soft_HPP__
-#define THRESHOLDER_soft_HPP__
+#ifndef FLASH_READER_HPP__
+#define FLASH_READER_HPP__
 
 #include <vector>
 
@@ -13,39 +13,37 @@ namespace aff3ct
 {
 namespace tools
 {
-template <typename R>
-class Thresholder_soft : public Thresholder<R>
+template <typename R, typename Q>
+class Flash_reader : Flash_reader<R, Q>
 {
 public:
 
-	/*
-	 * \param threshold_path is the path to soft thresholds
-	 */
-	explicit Thresholder_soft(const std::string& threshold_path);
+	explicit Flash_reader(const std::string& fpath);
 
-	void update_thresholds();
+	void update(const tools::Noise);
 
-	R interpret_readout(const std::vector<int> &readout);
+	Q read(const R level, const std::vector<unsigned>& threshold_indexes);
+
+	enum read_type {hard = 1, soft_single = 3, soft_double = 5}
 
 private:
- 
-	/*
-	 * \brief load data from txt file
-	 */
-	void init_data(const std::string& const_path, 
-					std::vector<std::vector<R>>& data);
 
-	/*
-	 * \bried count number of unique numbers, floating precision compatible
-	 */
+	void init_data(const std::string& fpath);
 	int count_unique(const std::vector<R>& x);
 
-	std::vector<R> llrs;
-	//std::vector<R> thresholds;
+	float calculate_snr();
+	float calculate_ratio();
+
+	unsigned get_n_thresholds();
+	R get_threshold(const unsigned threshold_index, const unsigned soft_index);
+	Q get_bin_value(const unsigned threshold_index, const unsigned bin_index);
+
+	std::vector<std::vector<Q>> bin_values;
+	std::vector<std::vector<R>> thresholds;
 	std::vector<std::vector<R>> data;
 
-	int n_snrs;
-	int n_ratios;
+	int n_x;
+	int n_y;
 };
 
 }
