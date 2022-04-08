@@ -32,6 +32,7 @@ void Flash_reader<R,Q>
 	
 	float x, y;
 	for (auto i = 0; i < this->get_page_type(); i++);
+	{
 		x = channel.get_snr(i);
 		y = channel.get_ratio(i);
 		this->thresholds[i] = new std::vector<R>(this->get_n_thresholds());
@@ -54,7 +55,7 @@ void Flash_reader<R,Q>
 			//Weighted mean interpolation: https://en.wikipedia.org/wiki/Bilinear_interpolation#Weighted_mean
 			std::vector<R>& q22 = this->data[i];
 			std::vector<R>& q21 = this->data[i - 1];
-			std::vector<R>& q12 = this->data[i - this->n_x;
+			std::vector<R>& q12 = this->data[i - this->n_x];
 			std::vector<R>& q11 = this->data[i - this->n_x - 1];
 
 			x1 = q11[0];
@@ -95,15 +96,15 @@ void Flash_reader<R,Q>
 	//with columns x, y, z_1, z_2, ... z_n
 	//And counts the dimension of the grid (x,y)
 
-	if (const_path.empty())
-		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "'const_path' should not be empty.");
+	if (fpath.empty())
+		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "'fpath' should not be empty.");
 
-	std::ifstream const_file(const_path);
+	std::ifstream file(fpath);
 
-	if (const_file.fail())
+	if (file.fail())
 	{
 		std::stringstream message;
-		message << "Opening 'const_path' (= " << const_path << ") has failed.";
+		message << "Opening 'fpath' (= " << fpath << ") has failed.";
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
@@ -112,7 +113,7 @@ void Flash_reader<R,Q>
 	this->data = new std::vector<std::vector<R>>();
 
 	std::string temp;
-	while (std::getline(const_file, temp))
+	while (std::getline(file, temp))
 	{
 		if (temp[0] == '#') continue;
 
@@ -160,14 +161,14 @@ Q Flash_reader<R,Q>
 {
 	for (auto i : threshold_indexes)
 	{
-		for (auto j = 0; j < this->get_n_thresholds(), j++)
+		for (auto j = 0; j < this->get_n_thresholds(); j++)
 		{
-			if (this->get_threshold(*i, j) < level)
-				return get_bin_value(*i,j); 
+			if (this->get_threshold(i, j) < level)
+				return get_bin_value(i,j); 
 		}
 	}
 
-	return this->(bin_values.back()).back();
+	return bin_values.back().back();
 }
 
 template <typename R, typename Q>
@@ -181,7 +182,7 @@ template <typename R, typename Q>
 Q Flash_reader<R,Q>
 ::get_bin_value(const unsigned threshold_index, const unsigned bin_index)
 {
-	return this->bin_values[threshold_index][bin_index]
+	return this->bin_values[threshold_index][bin_index];
 }
 
 template <typename R, typename Q>
@@ -200,3 +201,4 @@ int Flash_reader<R,Q>
 
 }
 }
+

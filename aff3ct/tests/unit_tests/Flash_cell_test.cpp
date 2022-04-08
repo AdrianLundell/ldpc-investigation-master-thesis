@@ -13,7 +13,6 @@ TEST(FlashCellTest, slc)
 
     ASSERT_EQ(slc.get_level_index(0), 0);
     ASSERT_EQ(slc.get_level_index(1), 1);
-
 }
 
 TEST(FlashCellTest, mlc)
@@ -40,8 +39,6 @@ TEST(FlashCellTest, tlc)
     ASSERT_EQ(tlc.get_level_index(5), 7);
     ASSERT_EQ(tlc.get_level_index(6), 5);
     ASSERT_EQ(tlc.get_level_index(7), 4);
-
-
 }
 
 }

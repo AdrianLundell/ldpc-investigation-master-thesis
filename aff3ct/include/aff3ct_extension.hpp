@@ -13,9 +13,9 @@
 #include <Tools/Flash/Cell/Flash_cell.hpp>
 #endif
 
-// #ifndef FLASH_READER_HPP_
-// #include <Tools/Flash/Reader/Flash_reader.hpp>
-// #endif
+#ifndef FLASH_READER_HPP_
+#include <Tools/Flash/Reader/Flash_reader.hpp>
+#endif
 
 // #ifndef CHANNEL_AWGN_ASYMMETRIC_HPP_
 // #include <Module/Channel/AWGN/Channel_AWGN_asymmetric.hpp>

@@ -42,6 +42,8 @@ private:
 	std::vector<std::vector<R>> thresholds;
 	std::vector<std::vector<R>> data;
 
+	int n_thresholds;
+	int n_bin_values;
 	int n_x;
 	int n_y;
 	int my_page_type; //Change enumeration index
