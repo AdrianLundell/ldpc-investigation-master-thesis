@@ -11,13 +11,10 @@ import numpy as np
 import matplotlib.pyplot as plt 
 
 #%% Help functions
-sigma1 = sigma2 = 0
+sigma1 = sigma2 = mu1 = mu2 = 1
 
 def mid_point():
     """Calculate the point of intersection for two gaussian distributions"""
-    mu1 = -1
-    mu2 = 1
-
     if sigma1 == sigma2:
         return (mu1+mu2)/2
 
@@ -29,11 +26,11 @@ def mid_point():
 
 def plot(t):
     """Plot two gaussian distributions with thresholds t"""
-    x = np.linspace(norm.ppf(0.01, loc=-1, scale=sigma1), norm.ppf(0.99, loc=1, scale=sigma2), 100)
+    x = np.linspace(norm.ppf(0.01, loc=mu1, scale=sigma1), norm.ppf(0.99, loc=mu2, scale=sigma2), 100)
     
     plt.figure()
-    plt.plot(x, norm.pdf(x, loc=-1, scale=sigma1), 'black')
-    plt.plot(x, norm.pdf(x, loc=1, scale=sigma2), 'black')
+    plt.plot(x, norm.pdf(x, loc=mu1, scale=sigma1), 'black')
+    plt.plot(x, norm.pdf(x, loc=mu2, scale=sigma2), 'black')
     for threshold in t:
         plt.plot([threshold, threshold], [0,0.7], '--')
 
@@ -41,8 +38,8 @@ def plot(t):
 
 def LLR(t):
     """Calculate LLRs for BI-GAWN channel with thresholds t"""
-    p = (np.array([[norm.cdf(t[0], -1, sigma1), norm.cdf(t[1], -1, sigma1), norm.cdf(t[2], -1, sigma1), 1],
-            [norm.cdf(t[0], 1, sigma2), norm.cdf(t[1], 1, sigma2),norm.cdf(t[2], 1, sigma2), 1]]))
+    p = (np.array([[norm.cdf(t[0], mu1, sigma1), norm.cdf(t[1], mu1, sigma1), norm.cdf(t[2], mu1, sigma1), 1],
+            [norm.cdf(t[0], mu2, sigma2), norm.cdf(t[1], mu2, sigma2),norm.cdf(t[2], mu2, sigma2), 1]]))
     
     yx_prob = np.array([p[0, 0], p[0, 1] - p[0, 0], p[0,2] - p[0, 1], p[0, 3] - p[0, 2], 
                         p[1, 0], p[1, 1] - p[1, 0], p[1,2] - p[1, 1], p[1, 3] - p[1, 2]])
@@ -54,6 +51,8 @@ noise_db = 4
 N0 = 2/10**(noise_db/10)
 sigma_ratio = 0.75 #Distribution of noise between the distributions
 
+mu1 = -1
+mu2 = 1
 sigma1 = np.sqrt(N0*sigma_ratio)
 sigma2 = np.sqrt(N0*(1-sigma_ratio))
 m = mid_point()
@@ -77,16 +76,15 @@ def mutual_info(t):
     y_entropy = -(y_prob @ np.log2(y_prob))
     yx_entropy = -(yx_prob @ np.log2(yx_prob))
 
-
-
     #Note: H(Y|X) = 1/2H(Y|X=0) + 1/2H(Y|X=1)
     #here both terms are concatenated.
     return y_entropy - yx_entropy*0.5
 
 #Demonstration
+m = mid_point()
 positive_offset = 0.2
-negative_offset = -0.2
-t = [negative_offset, 0, positive_offset]
+negative_offset = 0.2
+t = [m-negative_offset, m, m+positive_offset]
 
 plot(t)
 print(f"MI(X,Y) = {mutual_info(t)}")
@@ -113,6 +111,7 @@ print(f"MAX MI(X,Y) = {max_mi} for offset {offsets[max_mi_index]}")
 
 #%%Exhausive search of optimal mutual info for asymmetric thresholds
 def optimize_threhsolds():
+    m = middle
     offsets = np.arange(7.5e-3, 1, 7.5e-3)
     mi_result = np.zeros((len(offsets), len(offsets)))
 
@@ -215,3 +214,37 @@ max_mi_index = np.argmax(mi_result)
 print(f"Max mean mutual info={max_mi} for offsets +-{offsets[max_mi_index]}")
 # %%Save resuts
 #Max mean mutual info=0.842982434826849 for offsets +-0.5099999999999999
+
+#%% Compare different mus
+snr_range = np.arange(4)
+ratio_range = [0.4]
+mu1_range = [-0.2, -0.5, -0.5, -1] 
+mu2_range = [0.2, 0.5, 1, 2]
+result = np.zeros((len(snr_range)*len(ratio_range)*len(mu1_range)*len(mu2_range), 12))
+i = 0
+
+for mu1 in mu1_range:
+    for mu2 in mu2_range:
+        for snr in snr_range:
+            for ratio in ratio_range:
+                
+                sigma = np.sqrt((mu1-mu2)**2/10**(snr / 10))
+                sigma1 = np.sqrt(ratio * sigma**2)
+                sigma2 = np.sqrt((1-ratio) * sigma**2)
+                
+                middle = mid_point()
+
+                print(f"Calculating thresholds for SNR={noise_db}dB, sigma ratio={sigma_ratio}.")
+
+                max_mi, pos_offset, neg_offset = optimize_threhsolds()
+                llr = LLR(np.array([middle-neg_offset, middle, middle+pos_offset]))
+
+                result[i,:] = np.array([mu1, mu2, snr, ratio, max_mi, middle, neg_offset, pos_offset, llr[0], llr[1], llr[2], llr[3]])
+
+                i+=1
+
+np.savetxt(fname = "Thresholds_mu.csv", 
+            X = result, 
+            delimiter=", ",
+            fmt='%f',
+            header ="mu1, mu2, snr, ratio, max_mi, middle, neg_offset, pos_offset, llr1, llr2, llr3, llr4")

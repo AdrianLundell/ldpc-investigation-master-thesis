@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np 
 
 data = pd.read_csv("python-files/Thresholds.csv", sep=", ", header=0)
-data["x1"] = data["sigma1"]**2/(data["sigma1"]**2+data["sigma2"]**2) #Ratio
-data["x2"] = data.noise_db #Total Snr
+data["x1"] = data["sigma1"]**2/(data["sigma2"]**2) #Ratio
+data["x2"] = 10*np.log10(2**2/(data["sigma1"]**2 + data["sigma2"]**2)) #Total SnR
 
 #Plot 2D
 fig1 = plt.figure()
