@@ -18,6 +18,8 @@ struct params
 	float ebn0_max = 0.01f;  // maximum SNR value
 	float ebn0_step = 1.00f; // SNR step
 	float R;				 // code rate (R=K/N)
+	float min_sigma = 0.05;  // Set minimum value for individual sigmas
+	std::vector<float> voltage_levels{0.0, 0.3, 0.7, 1.1}; // Set voltage levels
 };
 void init_params(params &p);
 
@@ -26,7 +28,7 @@ struct modules
 	std::unique_ptr<module::Source_random<>> source;
 	std::unique_ptr<module::Encoder_repetition_sys<>> encoder;
 	std::unique_ptr<module::Modem_flash<>> modem;
-	std::unique_ptr<module::Channel_Test<>> channel;
+	std::unique_ptr<module::Channel_AWGN_asymmetric<>> channel;
 	std::unique_ptr<module::Decoder_repetition_std<>> decoder;
 	std::unique_ptr<module::Monitor_BFER<>> monitor;
 };
@@ -36,7 +38,7 @@ struct buffers
 {
 	std::vector<int> ref_bits;
 	std::vector<int> enc_bits;
-	std::vector<float> symbols;
+	std::vector<unsigned> voltage_level_indexes;
 	std::vector<float> noisy_symbols;
 	std::vector<float> LLRs;
 	std::vector<int> dec_bits;
@@ -45,7 +47,7 @@ void init_buffers(const params &p, buffers &b);
 
 struct utils
 {
-	std::unique_ptr<tools::Sigma<>> noise;					 // a sigma noise type
+	std::unique_ptr<tools::Sigma_asymmetric<>> noise;					 // a sigma noise type
 	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
 	std::unique_ptr<tools::Terminal_std> terminal;			 // manage the output text in the terminal
 };
@@ -81,10 +83,11 @@ int main(int argc, char **argv)
 	{
 		// compute the current sigma for the channel noise
 		const auto esn0 = tools::ebn0_to_esn0(ebn0, p.R);
-		const auto sigma = tools::esn0_to_sigma(esn0);
+		const auto tot_sigma = tools::esn0_to_sigma(esn0);
 
-		u.noise->set_noise(sigma, ebn0, esn0);
+		//u.noise->set_noise(sigma, ebn0, esn0);
 
+		u.noise->set_sigmas(tot_sigma, p.voltage_levels.size(), p.min_sigma ,ebn0, esn0);
 		// update the sigma of the modem and the channel
 		m.modem->set_noise(*u.noise);
 		m.channel->set_noise(*u.noise);
@@ -95,10 +98,8 @@ int main(int argc, char **argv)
 		// run the simulation chain
 		while (!m.monitor->fe_limit_achieved() && !u.terminal->is_interrupt())
 		{
-			m.source->generate(b.ref_bits);
-			m.encoder->encode(b.ref_bits, b.enc_bits);
-			m.modem->modulate(b.enc_bits, b.symbols);
-			m.channel->add_noise(b.symbols, b.noisy_symbols);
+			u.noise->generate_sigmas();
+			m.channel->add_noise(b.voltage_level_indexes.data(), b.noisy_symbols.data());
 			m.modem->demodulate(b.noisy_symbols, b.LLRs);
 			m.decoder->decode_siho(b.LLRs, b.dec_bits);
 			m.monitor->check_errors(b.dec_bits, b.ref_bits);
@@ -143,7 +144,7 @@ void init_modules(const params &p, modules &m)
 	m.modem = std::unique_ptr<module::Modem_flash<>>(new module::Modem_flash<>(p.N, 
 			  std::unique_ptr<tools::Constellation<float>>(new tools::Constellation_flash<float>("SLC_bpsk_voltage_levels.txt")),
 			  std::unique_ptr<tools::Thresholder<float>>(new tools::Thresholder_soft<float>("test_thresholds.txt"))));
-	m.channel = std::unique_ptr<module::Channel_Test<>>(new module::Channel_Test<>(p.N, p.seed));
+	m.channel = std::unique_ptr<module::Channel_AWGN_asymmetric<>>(new module::Channel_AWGN_asymmetric<>(p.N, p.voltage_levels, p.seed));
 	m.decoder = std::unique_ptr<module::Decoder_repetition_std<>>(new module::Decoder_repetition_std<>(p.K, p.N));
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(new module::Monitor_BFER<>(p.K, p.fe));
 };
@@ -152,7 +153,7 @@ void init_buffers(const params &p, buffers &b)
 {
 	b.ref_bits = std::vector<int>(p.K);
 	b.enc_bits = std::vector<int>(p.N);
-	b.symbols = std::vector<float>(p.N);
+	b.voltage_level_indexes = std::vector<unsigned>(p.N,0);
 	b.noisy_symbols = std::vector<float>(p.N);
 	b.LLRs = std::vector<float>(p.N);
 	b.dec_bits = std::vector<int>(p.K);
@@ -161,7 +162,7 @@ void init_buffers(const params &p, buffers &b)
 void init_utils(const modules &m, utils &u)
 {
 	// create a sigma noise type
-	u.noise = std::unique_ptr<tools::Sigma<>>(new tools::Sigma<>());
+	u.noise = std::unique_ptr<tools::Sigma_asymmetric<>>(new tools::Sigma_asymmetric<>());
 	// report the noise values (Es/N0 and Eb/N0)
 	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_noise<>(*u.noise)));
 	// report the bit/frame error rates
