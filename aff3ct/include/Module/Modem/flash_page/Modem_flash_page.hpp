@@ -2,8 +2,8 @@
  * \file
  * \brief Class module::Modem_flash.
  */
-#ifndef MODEM_FLASH_HPP_
-#define MODEM_FLASH_HPP_
+#ifndef MODEM_FLASH_PAGE_HPP_
+#define MODEM_FLASH_PAGE_HPP_
 
 #include <memory>
 #include <aff3ct.hpp>
@@ -18,17 +18,18 @@ class Modem_flash_page : public Modem<B,R,Q>
 {
 private:
 
+	tools::Flash_cell cell;
+	tools::Flash_reader reader
+
 	const int bits_per_symbol;
 	const int N_symbols;
 
 	void init_levels(const std::string& level_path);
 	void init_thresholds(const std::string& threshold_path);
 
-
 public:
-	Modem_flash(const int N,
+	Modem_flash_page(const int N,
 				const std::string& level_path,
-				const std::string& threshold_path, 
 				const tools::Noise<R>& noise = tools::Sigma<R>(),
 	            const int n_frames = 1);
 
