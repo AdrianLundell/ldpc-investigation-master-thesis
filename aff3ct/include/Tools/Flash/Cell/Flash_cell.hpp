@@ -12,38 +12,35 @@ namespace aff3ct
 {
 namespace tools
 {
-template <typename R>
 class Flash_cell
 {
 public:
-	explicit Flash_cell(const int cell_type);
-
-	R get_level(const unsigned int level_index);
+	explicit Flash_cell(const unsigned cell_type);
 
 	//Reads n_pages of data from Q and returns the mapped level index
-	unsigned int get_level_index(const int symbol);
+	unsigned get_level_index(const unsigned symbol);
 
-	unsigned int get_symbol(const unsigned int level_index);
-	std::vector<unsigned int>& get_threshold_indexes(const unsigned int page_type);
+	unsigned get_symbol(const unsigned level_index);
+	std::vector<unsigned> get_threshold_indexes(const unsigned page_type);
 
-	unsigned int get_n_pages();
-	unsigned int get_n_levels();
-	unsigned int get_n_threshold_indexes();
+	unsigned get_n_pages();
+	unsigned get_n_levels();
+	unsigned get_n_threshold_indexes();
 
 	enum page_type {lower, upper, extra};
 	enum cell_type {SLC = 2, MLC = 4, TLC = 8};
 
 private:
 	
-	unsigned int n_threshold_indexes;
-	unsigned int n_levels;
-	unsigned int n_pages;
+	unsigned n_threshold_indexes;
+	unsigned n_levels;
+	unsigned n_pages;
 
-	std::vector<std::vector<unsigned int>> threshold_indexes;
+	std::vector<std::vector<unsigned>> threshold_indexes;
 
-	std::vector<unsigned int> level_index_map;
-	std::vector<unsigned int> symbol_map;
-	std::vector<unsigned int> init_gray(const int cell_type);
+	std::vector<unsigned> level_index_map;
+	std::vector<unsigned> symbol_map;
+	void init_gray(const unsigned cell_type);
 };
 
 }

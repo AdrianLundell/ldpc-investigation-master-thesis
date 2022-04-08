@@ -7,34 +7,42 @@ namespace aff3ct
 namespace tools
 {
 
-// template <typename R>
-// class FlashCellFixture : public ::testing::Test {
-//     protected:
-//         void SetUp() override {
-//             slc_cell = new Flash_cell<R>(Flash_cell<R>::SLC);
-//             mlc_cell = new Flash_cell<R>(Flash_cell<R>::MLC);
-//             tlc_cell = new Flash_cell<R>(Flash_cell<R>::TLC);
-//         }
-
-//         Flash_cell<R> slc_cell;
-//         Flash_cell<R> mlc_cell;
-//         Flash_cell<R> tlc_cell;
-// };
-
-// //See types.h
-// using rTypes = ::testing::Types<float, double>;
-// TYPED_TEST_SUITE(FlashCellFixture, rTypes);
-
-// Demonstrate some basic assertions.
-TEST(FlashCellFixture, slc)
+TEST(FlashCellTest, slc)
 {
-    Flash_cell<float> slc_cell(Flash_cell<float>::SLC);
-    Flash_cell<float> mlc_cell(Flash_cell<float>::MLC);
-    Flash_cell<float> tlc_cell(Flash_cell<float>::TLC);
+    Flash_cell slc = Flash_cell(Flash_cell::SLC);
+
+    ASSERT_EQ(slc.get_level_index(0), 0);
+    ASSERT_EQ(slc.get_level_index(1), 1);
+
+}
+
+TEST(FlashCellTest, mlc)
+{
+    Flash_cell mlc = Flash_cell(Flash_cell::MLC);
+
+    ASSERT_EQ(mlc.get_level_index(0), 0);
+    ASSERT_EQ(mlc.get_level_index(1), 1);
+    ASSERT_EQ(mlc.get_level_index(2), 3);
+    ASSERT_EQ(mlc.get_level_index(3), 2);
 }
 
 
 
+TEST(FlashCellTest, tlc)
+{
+    Flash_cell tlc(Flash_cell::TLC);
+
+    ASSERT_EQ(tlc.get_level_index(0), 0);
+    ASSERT_EQ(tlc.get_level_index(1), 1);
+    ASSERT_EQ(tlc.get_level_index(2), 3);
+    ASSERT_EQ(tlc.get_level_index(3), 2);
+    ASSERT_EQ(tlc.get_level_index(4), 6);
+    ASSERT_EQ(tlc.get_level_index(5), 7);
+    ASSERT_EQ(tlc.get_level_index(6), 5);
+    ASSERT_EQ(tlc.get_level_index(7), 4);
+
+
+}
 
 }
 }

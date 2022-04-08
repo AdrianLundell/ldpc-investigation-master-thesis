@@ -12,82 +12,79 @@ namespace aff3ct
 {
 namespace tools
 {
-template <typename R>
-Flash_cell<R>
-::Flash_cell(const int cell_type) :
+Flash_cell
+::Flash_cell(const unsigned cell_type) :
 	n_threshold_indexes(cell_type - 1),
-	n_levels(cell_type),
-	n_pages(std::log2(cell_type)),
-
-	level_index_map(cell_type),
-	symbol_map(cell_type)
+	n_levels(cell_type)
 {
-	
+	n_pages = (unsigned)std::log2(cell_type);
+
+	level_index_map = std::vector<unsigned>(n_levels);
+	symbol_map = std::vector<unsigned>(n_levels);
+	init_gray(cell_type);
+
 	//Could be automated
 	switch (cell_type){
 		case SLC:
-			this -> threshold_indexes = {{0}};
+			threshold_indexes.push_back({0});
 		case MLC:
-			this -> threshold_indexes = {{1},{0,2}};
+			threshold_indexes.push_back({1});
+			threshold_indexes.push_back({0,2});
 		case TLC:
-			this -> threshold_indexes = {{3}, {1,5}, {0, 2, 4, 6}};
+			threshold_indexes.push_back({3});
+			threshold_indexes.push_back({1,5});
+			threshold_indexes.push_back({0,2,4,6});
 		default:
 			//Throw error
 			break;
 	}
 }
 
-template <typename R>
-std::vector<unsigned int> Flash_cell<R>
-::init_gray(const int cell_type){	
-	int gray_i;
-	for (int i = 0; i < cell_type; i++){
+
+void Flash_cell
+::init_gray(const unsigned cell_type){	
+	unsigned gray_i;
+	for (auto i = 0; i < (unsigned)cell_type; i++){
 		gray_i = i^(i>>1);
 
-		this->level_index_map[i] = gray_i;
-		this->symbol_map[gray_i] = i;
+		level_index_map[i] = gray_i;
+		symbol_map[gray_i] = i;
 	}
 }
 
-template <typename R>
-unsigned int Flash_cell<R>
-::get_level_index(const int symbol)
+unsigned Flash_cell
+::get_level_index(const unsigned symbol)
 {
-	return this->level_index_map[symbol];
+	return level_index_map[symbol];
 }
 
-template <typename R>
-unsigned int  Flash_cell<R>
-::get_symbol(const unsigned int level_index)
+unsigned  Flash_cell
+::get_symbol(const unsigned level_index)
 {
-	return this->symbol_map[level_index];
+	return symbol_map[level_index];
 }
 
-template <typename R>
-std::vector<unsigned int>&  Flash_cell<R>
-::get_threshold_indexes(const unsigned int page_type)
+std::vector<unsigned> Flash_cell
+::get_threshold_indexes(const unsigned page_type)
 {
-	return this->threshold_indexes[page_type];
+	return threshold_indexes[page_type];
 }
 
-template <typename R>
-unsigned int Flash_cell<R>
+unsigned Flash_cell
 ::get_n_pages(){
-	return this->n_pages;
+	return n_pages;
 }
 
-template <typename R>
-unsigned int Flash_cell<R>
+unsigned Flash_cell
 ::get_n_levels()
 {
-	return this->level_index_map.size();
+	return level_index_map.size();
 }
 
-template <typename R>
-unsigned int Flash_cell<R>
+unsigned Flash_cell
 ::get_n_threshold_indexes()
 {
-	return this->n_threshold_indexes;
+	return n_threshold_indexes;
 }
 
 }
