@@ -18,11 +18,11 @@ class Modem_flash_page : public Modem<B,R,Q>
 {
 private:
 
-	tools::Flash_cell cell;
-	tools::Flash_reader reader
+	tools::Flash_cell& cell;
+	tools::Flash_reader& reader
 
 	const int bits_per_symbol;
-	const int N_symbols;
+	const int nbr_symbols;
 
 	void init_levels(const std::string& level_path);
 	void init_thresholds(const std::string& threshold_path);

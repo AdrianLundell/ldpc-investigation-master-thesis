@@ -14,20 +14,36 @@ namespace tools
 {
 template <typename R, typename Q>
 Flash_reader<R,Q>
-::Flash_reader(const int read_type, const std::string& fpath) :
-	n_thresholds(read_type),
-	n_bin_values(read_type)
-	bin_values(read_type),
-	thresholds(read_type-1),
+::Flash_reader(const int page_type, const int read_type, const std::string& fpath) :
+	n_thresholds(read_type-1),
+	n_bin_values(read_type),
+	thresholds(page_type),
+	bin_values(page_type),
+	my_page_type(page_type),
+	my_read_type(read_type)
 {
 	init_data(fpath);
 }
 
+
 template <typename R, typename Q>
 void Flash_reader<R,Q>
-::update(const tools::Noise<R>& n){
-	float x = calculate_snr(); 
-	float y = calculate_ratio();
+::update(const module::Channel_AWGN_asymmetric& channel){
+	
+	float x, y;
+	for (auto i = 0; i < this->get_page_type(); i++);
+		x = channel.get_snr(i);
+		y = channel.get_ratio(i);
+		this->thresholds[i] = new std::vector<R>(this->get_n_thresholds());
+		this->bin_values[i] = new std::vector<R>(this->get_n_bin_values());
+
+		this->_update(x, y, this->thresholds[i], this->bin_values[i]);
+	}
+}
+
+template <typename R, typename Q>
+void Flash_reader<R,Q>
+::_update(const float x, const float y, std::vector<R>& thresholds, std::vector<Q>& bin_values){
 
 	float x1, x2, y1, y2;
 	//Loop over data to find boundary points assuming increasing values row wise and (snr, ratio) within limits
@@ -57,13 +73,13 @@ void Flash_reader<R,Q>
 			for (auto i = 0; i < this->n_thresholds; i++)
 			{
 				j = i + 2;
-				this->thresholds[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
+				thresholds[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 
 			for (auto i = 0; i < this->n_llrs; i++)
 			{
 				j = i + 2 + this->n_thresholds;
-				this->bin_values[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
+				bin_values[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 			
 			break;
@@ -93,7 +109,7 @@ void Flash_reader<R,Q>
 
 	std::vector<R> x_vec = {};
 	std::vector<R> y_vec = {};
-	this->data = 
+	this->data = new std::vector<std::vector<R>>();
 
 	std::string temp;
 	while (std::getline(const_file, temp))
@@ -166,6 +182,20 @@ Q Flash_reader<R,Q>
 ::get_bin_value(const unsigned threshold_index, const unsigned bin_index)
 {
 	return this->bin_values[threshold_index][bin_index]
+}
+
+template <typename R, typename Q>
+int Flash_reader<R,Q>
+::get_read_type()
+{
+	return this->my_read_type;
+}
+
+template <typename R, typename Q>
+int Flash_reader<R,Q>
+::get_page_type()
+{
+	return this->my_page_type;
 }
 
 }

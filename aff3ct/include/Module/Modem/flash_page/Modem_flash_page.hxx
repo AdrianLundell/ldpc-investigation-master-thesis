@@ -8,6 +8,7 @@
 #include <sstream>
 #include <type_traits>
 #include <complex>
+#include <stdlib.h>  
 
 #include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
@@ -19,89 +20,62 @@ namespace module
 template <typename B, typename R, typename Q>
 Modem_flash_page<B,R,Q>
 ::Modem_flash_page(const int N,
-				   const std::string& level_path,
-				   const std::string& threshold_path,
+				   const tools::Flash_cell<R>& cell,
+				   const tools::Flash_reader<R,Q>& reader,
 				   const tools::Noise<R>& noise,
 				   const int n_frames)
 : Modem<B,R,Q>(N,
-              (int)(std::ceil((float)N / (float)_cstl->get_n_bits_per_symbol())), // N_mod
+               N, // N_mod
               noise,
               n_frames),
-  cstl           (std::move(_cstl)),
-  thresholder    (std::move(_thresholder)),
-  bits_per_symbol(cstl->get_n_bits_per_symbol()),
-  nbr_symbols    (cstl->get_n_symbols())
+  bits_per_symbol(cell.get_n_pages()),
+  nbr_symbols    (cell.get_n_levels()),
+  cell(cell),
+  reader(reader)
 {
-	const std::string name = "Modem_flash<" + cstl->get_name() + ">";
+	const std::string name = "Modem_flash_page"; //TODO: Use naming info from cell/ reader
 	this->set_name(name);
 
-	if (cstl == nullptr)
-		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No constellation given ('cstl' = nullptr).");
+	if (cell == nullptr)
+		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No cell given ('cell' = nullptr).");
 
 
-	if (thresholder == nullptr)
-		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No thresholder given ('thresholder' = nullptr).");
+	if (reader == nullptr)
+		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No reader given ('reader' = nullptr).");
 }
 
 template <typename B, typename R, typename Q, tools::proto_max<Q> MAX>
 void Modem_flash<B,R,Q,MAX>
-::set_noise(const tools::Noise<R>& noise)
+::set_noise(const module::Channel_AWGN_asymmetric<R>& channel)
 {
-	Modem<B,R,Q>::set_noise(noise);
-
+	//Kept from old code, unclear why these methdos are needed.
+	Modem<B,R,Q>::set_noise(channel.current_noise());
 	this->n->is_of_type_throw(tools::Noise_type::SIGMA);
-}
 
-template <typename B, typename R, typename Q, tools::proto_max<Q> MAX>
-int Modem_flash<B,R,Q,MAX>
-::size_mod(const int N, const tools::Constellation<R>& c)
-{
-	return Modem<B,R,Q>::get_buffer_size_after_modulation(N, c.get_n_bits_per_symbol(), 0, 1, false);
-}
-
-template <typename B, typename R, typename Q, tools::proto_max<Q> MAX>
-int Modem_flash<B,R,Q,MAX>
-::size_fil(const int N, const tools::Constellation<R>& c)
-{
-	return Modem<B,R,Q>::get_buffer_size_after_filtering(N, c.get_n_bits_per_symbol(), 0, 1, false);
-}
-
-template <typename B,typename R, typename Q, tools::proto_max<Q> MAX>
-void Modem_flash<B,R,Q,MAX>
-::_filter(const R *Y_N1, R *Y_N2, const int frame_id)
-{
-	std::copy(Y_N1, Y_N1 + this->N_fil, Y_N2);
+	//Update the thresholds and bin values of the reader
+	this->reader.update(channel);
 }
 
 template <typename B,typename R, typename Q, tools::proto_max<Q> MAX>
 void Modem_flash<B,R,Q,MAX>
 ::_modulate(const B *X_N1, R *X_N2, const int frame_id)
 {
-	auto size_in  = this->N;
-	auto size_out = this->N_mod;
-	auto bps      = this->bits_per_symbol;
 
-	auto main_loop_size = size_in / bps;
-	for (auto i = 0; i < main_loop_size; i++)
+	for (auto i = 0; i < this->N; i++)
 	{
-		// determine the symbol with a lookup table
+		// determine the symbol with a lookup table by converting binary to decimal representation
+		// generate random data not relevant for the page to be read
 		unsigned idx = 0;
 		for (auto j = 0; j < bps; j++)
-			idx += unsigned(unsigned(1 << j) * X_N1[i * bps +j]);
-		auto symbol = cstl->get_real(idx);
+			if (j == std::log2(reader.get_page_type())-1)
+			{	
+				idx += unsigned(unsigned(1 << j) * X_N1[i]);
+			} else {
+				idx += unsigned(unsigned(1 << j) * std::rand()%2);
+			} 
+		auto symbol = this->cell.get_level_index(idx);
 
 		X_N2[i] = symbol;
-	}
-
-	// last elements if "size_in" is not a multiple of the number of bits per symbol
-	if (main_loop_size * bps < size_in)
-	{
-		unsigned idx = 0;
-		for (auto j = 0; j < size_in - (main_loop_size * bps); j++)
-			idx += unsigned(unsigned(1 << j) * X_N1[main_loop_size * bps +j]);
-		auto symbol = cstl->get_real(idx);
-
-		X_N2[size_out -1] = symbol;
 	}
 }
 
@@ -117,25 +91,11 @@ void Modem_flash<B,R,Q,MAX>
 
 	if (!this->n->is_set())
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, "No noise has been set");
-
-	auto size = this->N;
-	auto thresholds_per_symbol = thresholder->get_n_thresholds_per_symbol();
 	
-	//Update thresholds for specific noise
-	thresholder->update_thresholds();
-
-	//Loop over noised symbols, check and interpret thresholds
-	std::vector<int> readout(thresholds_per_symbol);
-	for (auto i_symbol = 0; i_symbol < nbr_symbols; i_symbol++){
-		for (auto i_threshold = 0; i_threshold < thresholds_per_symbol; i_threshold++){
-			
-			readout[i_threshold] = Y_N1[i_symbol] < thresholder->get_threshold(i_threshold) ? 0 : 1;
-			Y_N2[i_symbol] = thresholder->interpret_readout(readout);
-		}
+	for (auto i = 0; i < this->N; i++){		
+		Y_N2[i] = reader.read(Y_N1[i], cell.get_threshold_indexes(std::log2(reader.get_page_type())-1));
 	}
-	
 }
-
 
 }
 }
