@@ -6,9 +6,10 @@
 #define SIGMA_ASYMMETRIC_HPP_
 
 #include <utility>
-#include <map>
+#include <vector>
 
 #include "Tools/Noise/Noise.hpp"
+#include <aff3ct_extension.hpp>
 
 namespace aff3ct
 {
@@ -20,26 +21,25 @@ namespace aff3ct
 		{
 		public:
 			Sigma_asymmetric();
-			explicit Sigma_asymmetric(R tot_noise, R min_sigma);
-			Sigma_asymmetric(R tot_noise, R min_sigma, R tot_ebn0, R tot_esn0);
-			template <typename T>
-			explicit Sigma_asymmetric(const Sigma_asymmetric<T> &other);
+			explicit Sigma_asymmetric(const Sigma_asymmetric<R> &other);
 			virtual ~Sigma_asymmetric() = default;
-
-			R get_sigma(R voltage_level) const;
-			std::map<R, R> get_sigmas() const;
+			void set_sigmas(R sigma_tot, unsigned n_sigmas, R sigma_min, R ebn0, R esn0);
+			R get_sigma(unsigned voltage_level_index) const;
+			std::vector<R> get_sigmas() const;
+			bool has_sigmas() const noexcept;
 			void generate_sigmas();
+			R get_threshold_noise(unsigned threshold_index) const;
+			R get_ratio(unsigned threshold_index) const;
 
 			virtual Noise_type get_type() const;
 
-			bool has_sigmas() const noexcept;
-
-			virtual void copy(const Sigma_asymmetric &other); // set this noise as the 'other' one
-
-			virtual Sigma_asymmetric<R> *clone() const;
+			void check() const;
+			// virtual Sigma_asymmetric<R> *clone() const;
 
 		protected:
-			std::map<R, R> sigma_map; // Maps a sigma to a given voltage level
+			void compute_sigma_ratios();
+			std::vector<R> sigmas; // Maps a sigma to a given voltage level
+			std::vector<R> sigma_ratios;
 			bool sigmas_exist = false;
 			R min_sigma;
 			tools::Random_sigma_generator<R> sigma_generator;
