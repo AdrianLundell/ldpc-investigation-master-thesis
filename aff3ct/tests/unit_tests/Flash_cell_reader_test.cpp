@@ -9,7 +9,7 @@ namespace tools
 
 TEST(FlashReaderTest, slc)
 {
-    Flash_reader slc = Flash_reader(Flash_reader::lower, Flash_reader::hard);
+    Flash_reader slc = Flash_reader(Flash_reader::lower, Flash_reader::hard, "test_data/reader");
 }
 
 
