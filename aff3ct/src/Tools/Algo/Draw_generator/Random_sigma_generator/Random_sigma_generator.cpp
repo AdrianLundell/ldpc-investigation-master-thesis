@@ -35,6 +35,7 @@ void Random_sigma_generator<R>::generate(std::vector<R> &sigmas, const R sigma_t
 		sigmas[i] = sigma_min + sigma_vars[i] / sigma_vars_norm * (sigma_tot - sqrt(n_sigmas) * sigma_min);
 	}
 }
+
 // ==================================================================================== explicit template instantiation
 #include "Tools/types.h"
 #ifdef AFF3CT_MULTI_PREC

@@ -1,3 +1,5 @@
 build/
 data/
 .vscode/
+_deps/
+aff3ct/_deps/googletest-src

@@ -68,11 +68,11 @@ R Channel_AWGN_asymmetric<R>::get_sigma_ratio(const unsigned threshold_index) co
 template <typename R>
 void Channel_AWGN_asymmetric<R>::check_noise()
 {
-	Channel<R>::check_noise();
-
-	this->n->is_of_type_throw(tools::Noise_type::SIGMA);
+  Channel<R>::check_noise();
+  this->n->is_of_type_throw(tools::Noise_type::SIGMA);
 }
-// ==================================================================================== explicit template instantiation
+
+//==================================================================================== explicit template instantiation
 #include "Tools/types.h"
 #ifdef AFF3CT_MULTI_PREC
 template class aff3ct::module::Channel_AWGN_asymmetric<R_32>;
@@ -80,4 +80,4 @@ template class aff3ct::module::Channel_AWGN_asymmetric<R_64>;
 #else
 template class aff3ct::module::Channel_AWGN_asymmetric<R>;
 #endif
-// ==================================================================================== explicit template instantiation
+//==================================================================================== explicit template instantiation

@@ -142,3 +142,4 @@ template class aff3ct::tools::Sigma_asymmetric<double>;
 // template aff3ct::tools::Sigma_asymmetric<double>::Sigma_asymmetric(const Sigma_asymmetric<float> &);
 // template aff3ct::tools::Sigma_asymmetric<float>::Sigma_asymmetric(const Sigma_asymmetric<double> &);
 //  ==================================================================================== explicit template instantiation
+
