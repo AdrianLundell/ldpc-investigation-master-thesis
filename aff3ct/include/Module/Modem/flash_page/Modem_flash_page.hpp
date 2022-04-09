@@ -8,7 +8,6 @@
 #include <memory>
 #include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
-
 namespace aff3ct
 {
 namespace module
@@ -29,9 +28,10 @@ private:
 
 public:
 	Modem_flash_page(const int N,
-				const std::string& level_path,
-				const tools::Noise<R>& noise = tools::Sigma<R>(),
-	            const int n_frames = 1);
+				   const tools::Flash_cell<R>& cell,
+				   const tools::Flash_reader<R,Q>& reader,
+				   const tools::Noise<R>& noise,
+				   const int n_frames = 1);
 
 	virtual ~Modem_flash() = default;
 
@@ -45,7 +45,7 @@ protected:
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-#include "Module/Modem/flash/Modem_flash.hxx"
+#include "Module/Modem/flash/Modem_flash_page.hxx"
 #endif
 
 #endif // MODEM_FLASH_HPP_
