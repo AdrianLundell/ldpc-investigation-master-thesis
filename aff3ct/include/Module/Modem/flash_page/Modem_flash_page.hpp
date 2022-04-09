@@ -45,7 +45,7 @@ protected:
 }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-#include "Module/Modem/flash/Modem_flash_page.hxx"
+#include "Module/Modem/flash_page/Modem_flash_page.hxx"
 #endif
 
 #endif // MODEM_FLASH_HPP_

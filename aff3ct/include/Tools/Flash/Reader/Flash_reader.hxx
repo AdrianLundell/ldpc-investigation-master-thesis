@@ -28,10 +28,10 @@ Flash_reader<R,Q>
 
 template <typename R, typename Q>
 void Flash_reader<R,Q>
-::update(const module::Channel_AWGN_asymmetric& channel){
+::update(c channel){
 	
 	float x, y;
-	for (auto i = 0; i < this->get_page_type(); i++);
+	for (auto i = 0; i < this->get_page_type(); i++)
 	{
 		x = channel.get_snr(i);
 		y = channel.get_ratio(i);

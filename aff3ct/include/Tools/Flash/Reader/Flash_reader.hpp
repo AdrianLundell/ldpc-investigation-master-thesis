@@ -19,7 +19,8 @@ class Flash_reader
 public:
 	explicit Flash_reader(const int page_type, const int read_type, const std::string& fpath);
 
-	void update(const module::Channel_AWGN_asymmetric& channel);
+	typedef aff3ct::module::Channel_AWGN_asymmetric<R> c;
+	void update(c channel);
 	int get_read_type(); 
 	int get_page_type(); 
 
