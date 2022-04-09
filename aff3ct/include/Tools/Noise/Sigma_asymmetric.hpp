@@ -21,7 +21,7 @@ namespace aff3ct
 		{
 		public:
 			Sigma_asymmetric();
-			Sigma_asymmetric(Sigma_asymmetric<R> &other);
+			explicit Sigma_asymmetric(const Sigma_asymmetric<R> &other);
 			virtual ~Sigma_asymmetric() = default;
 			void set_sigmas(R sigma_tot, unsigned n_sigmas, R sigma_min, R ebn0, R esn0);
 			R get_sigma(unsigned voltage_level_index) const;
@@ -30,11 +30,11 @@ namespace aff3ct
 			void generate_sigmas();
 			R get_threshold_noise(unsigned threshold_index) const;
 			R get_ratio(unsigned threshold_index) const;
-			
+
 			virtual Noise_type get_type() const;
-			
+
 			void check() const;
-			virtual Sigma_asymmetric<R> *clone() const;
+			// virtual Sigma_asymmetric<R> *clone() const;
 
 		protected:
 			void compute_sigma_ratios();

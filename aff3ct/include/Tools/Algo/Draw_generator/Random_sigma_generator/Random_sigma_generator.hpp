@@ -24,7 +24,6 @@ namespace aff3ct
 			std::uniform_real_distribution<R> uniform_real_dist;
 
 		public:
-			Random_sigma_generator() = default;
 			explicit Random_sigma_generator(const int seed = 0);
 
 			virtual ~Random_sigma_generator() = default;
