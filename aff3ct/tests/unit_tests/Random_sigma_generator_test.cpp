@@ -29,7 +29,7 @@ TEST_F(Random_sigma_generator_test, Generate)
     for (float sigma : sigmas)
     {
         EXPECT_GE(sigma, sigma_min);
-        float sigma_upper_bound = sigma_tot + (n_sigmas - sqrt(n_sigmas));
+        float sigma_upper_bound = sigma_tot + (1 - sqrt(n_sigmas));
         EXPECT_LE(sigma, sigma_upper_bound);
     }
 }
