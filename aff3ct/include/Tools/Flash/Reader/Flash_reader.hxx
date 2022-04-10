@@ -110,7 +110,7 @@ void Flash_reader<R,Q>
 
 	std::vector<R> x_vec = {};
 	std::vector<R> y_vec = {};
-	this->data = new std::vector<std::vector<R>>();
+	this->data = std::vector<std::vector<R>>();
 
 	std::string temp;
 	while (std::getline(file, temp))

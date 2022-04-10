@@ -23,9 +23,9 @@ public:
 	unsigned get_symbol(const unsigned level_index);
 	std::vector<unsigned> get_threshold_indexes(const unsigned page_type);
 
-	unsigned get_n_pages();
-	unsigned get_n_levels();
-	unsigned get_n_threshold_indexes();
+	unsigned get_n_pages() const;
+	unsigned get_n_levels() const;
+	unsigned get_n_threshold_indexes() const;
 
 	enum page_type {lower, upper, extra};
 	enum cell_type {SLC = 2, MLC = 4, TLC = 8};

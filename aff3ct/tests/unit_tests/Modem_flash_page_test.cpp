@@ -9,10 +9,10 @@ TEST(ModemFlashPageTest, slc)
 {
     int N = 3;
     tools::Flash_cell cell = tools::Flash_cell(Flash_cell::SLC);
-    tools::Flash_reader reader = tools::Flash_reader(tools::Flash_reader::lower, tools::Flash_reader::hard);
-    tools::Noise<R>& noise;
+    tools::Flash_reader<float, float> reader(Flash_reader<float,float>::lower, Flash_reader<float, float>::hard, "test_data/reader");
+ //   tools::Noise<float>& noise;
 
-    module::Modem_flash_page m = module::Modem_flash_page(N, cell, reader, noise);
+    module::Modem_flash_page<float, float, float> m(N, cell, reader);
 
 }
 

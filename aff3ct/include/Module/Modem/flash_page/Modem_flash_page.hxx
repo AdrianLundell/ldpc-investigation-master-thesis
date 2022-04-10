@@ -20,7 +20,7 @@ namespace module
 template <typename B, typename R, typename Q>
 Modem_flash_page<B,R,Q>
 ::Modem_flash_page(const int N,
-				   const tools::Flash_cell<R>& cell,
+				   const tools::Flash_cell& cell,
 				   const tools::Flash_reader<R,Q>& reader,
 				   const tools::Noise<R>& noise,
 				   const int n_frames)
@@ -36,16 +36,16 @@ Modem_flash_page<B,R,Q>
 	const std::string name = "Modem_flash_page"; //TODO: Use naming info from cell/ reader
 	this->set_name(name);
 
-	if (cell == nullptr)
-		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No cell given ('cell' = nullptr).");
+	// if (cell == nullptr)
+		// throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No cell given ('cell' = nullptr).");
 
 
-	if (reader == nullptr)
-		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No reader given ('reader' = nullptr).");
+	// if (reader == nullptr)
+		// throw tools::invalid_argument(__FILE__, __LINE__, __func__, "No reader given ('reader' = nullptr).");
 }
 
-template <typename B, typename R, typename Q, tools::proto_max<Q> MAX>
-void Modem_flash<B,R,Q,MAX>
+template <typename B, typename R, typename Q>
+void Modem_flash_page<B,R,Q>
 ::set_noise(const module::Channel_AWGN_asymmetric<R>& channel)
 {
 	//Kept from old code, unclear why these methdos are needed.
@@ -56,8 +56,8 @@ void Modem_flash<B,R,Q,MAX>
 	this->reader.update(channel);
 }
 
-template <typename B,typename R, typename Q, tools::proto_max<Q> MAX>
-void Modem_flash<B,R,Q,MAX>
+template <typename B,typename R, typename Q>
+void Modem_flash_page<B,R,Q>
 ::_modulate(const B *X_N1, R *X_N2, const int frame_id)
 {
 
@@ -66,7 +66,7 @@ void Modem_flash<B,R,Q,MAX>
 		// determine the symbol with a lookup table by converting binary to decimal representation
 		// generate random data not relevant for the page to be read
 		unsigned idx = 0;
-		for (auto j = 0; j < bps; j++)
+		for (auto j = 0; j < bits_per_symbol; j++)
 			if (j == std::log2(reader.get_page_type())-1)
 			{	
 				idx += unsigned(unsigned(1 << j) * X_N1[i]);
@@ -79,8 +79,8 @@ void Modem_flash<B,R,Q,MAX>
 	}
 }
 
-template <typename B,typename R, typename Q, tools::proto_max<Q> MAX>
-void Modem_flash<B,R,Q,MAX>
+template <typename B,typename R, typename Q>
+void Modem_flash_page<B,R,Q>
 ::_demodulate(const Q *Y_N1, Q *Y_N2, const int frame_id)
 {
 	if (!std::is_same<R,Q>::value)

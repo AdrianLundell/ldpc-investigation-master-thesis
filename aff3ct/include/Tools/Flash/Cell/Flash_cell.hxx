@@ -71,18 +71,19 @@ std::vector<unsigned> Flash_cell
 }
 
 unsigned Flash_cell
-::get_n_pages(){
+::get_n_pages() const
+{
 	return n_pages;
 }
 
 unsigned Flash_cell
-::get_n_levels()
+::get_n_levels() const
 {
 	return level_index_map.size();
 }
 
 unsigned Flash_cell
-::get_n_threshold_indexes()
+::get_n_threshold_indexes() const
 {
 	return n_threshold_indexes;
 }

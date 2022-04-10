@@ -18,24 +18,24 @@ class Modem_flash_page : public Modem<B,R,Q>
 private:
 
 	tools::Flash_cell& cell;
-	tools::Flash_reader& reader
+	tools::Flash_reader<R,Q>& reader;
 
-	const int bits_per_symbol;
-	const int nbr_symbols;
+	const unsigned bits_per_symbol;
+	const unsigned nbr_symbols;
 
 	void init_levels(const std::string& level_path);
 	void init_thresholds(const std::string& threshold_path);
 
 public:
 	Modem_flash_page(const int N,
-				   const tools::Flash_cell<R>& cell,
+				   const tools::Flash_cell& cell,
 				   const tools::Flash_reader<R,Q>& reader,
 				   const tools::Noise<R>& noise,
 				   const int n_frames = 1);
 
-	virtual ~Modem_flash() = default;
+	virtual ~Modem_flash_page() = default;
 
-	virtual void set_noise(const tools::Noise<R>& noise);
+	virtual void set_noise(const module::Channel_AWGN_asymmetric<R>& channel);
 
 protected:
 	void   _modulate    (const B *X_N1, R *X_N2, const int frame_id);
