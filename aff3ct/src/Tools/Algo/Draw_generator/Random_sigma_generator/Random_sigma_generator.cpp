@@ -1,5 +1,6 @@
 #include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
+
 #include <random>
 #include <cmath>
 
@@ -25,11 +26,12 @@ void Random_sigma_generator<R>::generate(std::vector<R> &sigmas, const R sigma_t
 	unsigned n_sigmas = sigmas.size();
 	std::vector<R> sigma_vars(n_sigmas, (R)0.0);
 	R sigma_vars_norm = 0.0;
-	for (R sigma_var : sigma_vars)
+	for (R &sigma_var : sigma_vars)
 	{
 		sigma_var = this->uniform_real_dist(this->rd_engine);
 		sigma_vars_norm += sigma_var * sigma_var;
 	}
+	sigma_vars_norm = sqrt(sigma_vars_norm);
 	for (unsigned i = 0; i < n_sigmas; i++)
 	{
 		sigmas[i] = sigma_min + sigma_vars[i] / sigma_vars_norm * (sigma_tot - sqrt(n_sigmas) * sigma_min);
