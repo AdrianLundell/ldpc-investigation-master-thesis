@@ -13,7 +13,7 @@ namespace aff3ct
 	namespace tools
 	{
 		template <typename R, typename Q>
-		Flash_reader<R, Q>::Flash_reader(const int page_type, const int read_type, const std::string fpath) : n_thresholds(read_type - 1),
+		Flash_reader<R, Q>::Flash_reader(const int page_type, const int read_type, std::string fpath) : n_thresholds(read_type - 1),
 																											  n_bin_values(read_type),
 																											  thresholds(page_type),
 																											  bin_values(page_type),
@@ -206,3 +206,16 @@ namespace aff3ct
 		}
 	}
 }
+
+//==================================================================================== explicit template instantiation
+#include "Tools/types.h"
+#ifdef AFF3CT_MULTI_PREC
+template class aff3ct::tools::Flash_reader<float, float>;
+//template class aff3ct::tools::Flash_reader<R_32, R_32>;
+//template class aff3ct::tools::Flash_reader<R_64, R_64>;
+//template class aff3ct::tools::Flash_reader<R_64, Q_32>;
+//TODO: More template instanciations
+#else
+template class aff3ct::tools::Flash_readerc<R, Q>;
+#endif
+//==================================================================================== explicit template instantiation

@@ -5,6 +5,7 @@
 #ifndef FLASH_READER_HPP_
 #define FLASH_READER_HPP_
 
+#include <string>
 #include <vector>
 #include <aff3ct.hpp>
 
@@ -16,7 +17,7 @@ namespace aff3ct
 		class Flash_reader
 		{
 		public:
-			explicit Flash_reader(const int page_type, const int read_type, const std::string fpath);
+			explicit Flash_reader(const int page_type, const int read_type, std::string fpath);
 
 			typedef aff3ct::module::Channel_AWGN_asymmetric<R> c;
 			void update(c &channel);
