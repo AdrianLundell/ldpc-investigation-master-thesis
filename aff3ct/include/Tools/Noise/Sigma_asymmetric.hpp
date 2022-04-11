@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "Tools/Noise/Noise.hpp"
+#include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
 
 namespace aff3ct

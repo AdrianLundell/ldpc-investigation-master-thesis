@@ -28,15 +28,15 @@ Flash_reader<R,Q>
 
 template <typename R, typename Q>
 void Flash_reader<R,Q>
-::update(c channel){
+::update(c &channel){
 	
 	float x, y;
 	for (auto i = 0; i < this->get_page_type(); i++)
 	{
 		x = channel.get_snr(i);
-		y = channel.get_ratio(i);
-		this->thresholds[i] = new std::vector<R>(this->get_n_thresholds());
-		this->bin_values[i] = new std::vector<R>(this->get_n_bin_values());
+		y = channel.get_sigma_ratio(i);
+		this->thresholds[i] = std::vector<R>(this->get_n_thresholds());
+		this->bin_values[i] = std::vector<R>(this->get_n_bin_values());
 
 		this->_update(x, y, this->thresholds[i], this->bin_values[i]);
 	}
@@ -77,7 +77,7 @@ void Flash_reader<R,Q>
 				thresholds[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
 			}
 
-			for (auto i = 0; i < this->n_llrs; i++)
+			for (auto i = 0; i < this->n_bin_values; i++)
 			{
 				j = i + 2 + this->n_thresholds;
 				bin_values[i] = w11*q11[j] + w21*q21[j] + w12*q12[j] + w22*q22[j];	
@@ -199,6 +199,19 @@ int Flash_reader<R,Q>
 	return this->my_page_type;
 }
 
+template <typename R, typename Q>
+unsigned Flash_reader<R,Q>
+::get_n_thresholds()
+{
+	return this->n_thresholds;
+}
+
+template <typename R, typename Q>
+unsigned Flash_reader<R,Q>
+::get_n_bin_values()
+{
+	return this->n_bin_values;
+}
 }
 }
 

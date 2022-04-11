@@ -2,11 +2,10 @@
  * \file
  * \brief Class tools::Flash_reader
  */
-#ifndef FLASH_READER_HPP__
-#define FLASH_READER_HPP__
+#ifndef FLASH_READER_HPP_
+#define FLASH_READER_HPP_
 
 #include <vector>
-
 #include <aff3ct.hpp>
 
 namespace aff3ct
@@ -20,7 +19,7 @@ public:
 	explicit Flash_reader(const int page_type, const int read_type, const std::string& fpath);
 
 	typedef aff3ct::module::Channel_AWGN_asymmetric<R> c;
-	void update(c channel);
+	void update(c &channel);
 	int get_read_type(); 
 	int get_page_type(); 
 
@@ -36,6 +35,7 @@ private:
 	int count_unique(const std::vector<R>& x);
 
 	unsigned get_n_thresholds();
+	unsigned get_n_bin_values();
 	R get_threshold(const unsigned threshold_index, const unsigned soft_index);
 	Q get_bin_value(const unsigned threshold_index, const unsigned bin_index);
 
@@ -43,8 +43,8 @@ private:
 	std::vector<std::vector<R>> thresholds;
 	std::vector<std::vector<R>> data;
 
-	int n_thresholds;
-	int n_bin_values;
+	unsigned n_thresholds;
+	unsigned n_bin_values;
 	int n_x;
 	int n_y;
 	int my_page_type; //Change enumeration index
@@ -58,4 +58,4 @@ private:
 #include "Tools/Flash/Reader/Flash_reader.hxx"
 #endif
 
-#endif // FLASH_READER_HPP__
+#endif // FLASH_READER_HPP_

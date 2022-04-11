@@ -1,12 +1,11 @@
-/*
+/*!
  * \file
  * \brief Class tools::Flash_cell
  */
-#ifndef FLASH_CELL_HPP__
-#define FLASH_CELL_HPP__
+#ifndef FLASH_CELL_HPP_
+#define FLASH_CELL_HPP_
 
 #include <vector>
-#include <aff3ct.hpp>
 
 namespace aff3ct
 {
@@ -50,4 +49,4 @@ private:
 #include "Tools/Flash/Cell/Flash_cell.hxx"
 #endif
 
-#endif // FLASH_CELL_HPP__
+#endif // FLASH_CELL_HPP_

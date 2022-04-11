@@ -2,12 +2,13 @@
  * \file
  * \brief Class module::Modem_flash.
  */
-#ifndef MODEM_FLASH_PAGE_HPP_
-#define MODEM_FLASH_PAGE_HPP_
+#ifndef MODULE_FLASH_PAGE_HPP_
+#define MODULE_FLASH_PAGE_HPP_
 
 #include <memory>
 #include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
+
 namespace aff3ct
 {
 namespace module
@@ -28,14 +29,14 @@ private:
 
 public:
 	Modem_flash_page(const int N,
-				   const tools::Flash_cell& cell,
-				   const tools::Flash_reader<R,Q>& reader,
-				   const tools::Noise<R>& noise,
+				   tools::Flash_cell &cell,
+				   tools::Flash_reader<R,Q> &reader,
+				   const tools::Noise<R>& noise = tools::Sigma_asymmetric<R>(),
 				   const int n_frames = 1);
 
 	virtual ~Modem_flash_page() = default;
 
-	virtual void set_noise(const module::Channel_AWGN_asymmetric<R>& channel);
+	virtual void set_noise(module::Channel_AWGN_asymmetric<R> &channel);
 
 protected:
 	void   _modulate    (const B *X_N1, R *X_N2, const int frame_id);

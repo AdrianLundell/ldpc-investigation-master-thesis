@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
 
 namespace aff3ct 

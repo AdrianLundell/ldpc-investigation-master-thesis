@@ -20,8 +20,8 @@ namespace module
 template <typename B, typename R, typename Q>
 Modem_flash_page<B,R,Q>
 ::Modem_flash_page(const int N,
-				   const tools::Flash_cell& cell,
-				   const tools::Flash_reader<R,Q>& reader,
+				   tools::Flash_cell &cell,
+				   tools::Flash_reader<R,Q> &reader,
 				   const tools::Noise<R>& noise,
 				   const int n_frames)
 : Modem<B,R,Q>(N,
@@ -46,14 +46,14 @@ Modem_flash_page<B,R,Q>
 
 template <typename B, typename R, typename Q>
 void Modem_flash_page<B,R,Q>
-::set_noise(const module::Channel_AWGN_asymmetric<R>& channel)
+::set_noise(module::Channel_AWGN_asymmetric<R> &channel)
 {
 	//Kept from old code, unclear why these methdos are needed.
-	Modem<B,R,Q>::set_noise(channel.current_noise());
-	this->n->is_of_type_throw(tools::Noise_type::SIGMA);
+	//Modem<B,R,Q>::set_noise(channel.current_noise());
+	//this->n->is_of_type_throw(tools::Noise_type::SIGMA);
 
 	//Update the thresholds and bin values of the reader
-	this->reader.update(channel);
+	reader.update(channel);
 }
 
 template <typename B,typename R, typename Q>
