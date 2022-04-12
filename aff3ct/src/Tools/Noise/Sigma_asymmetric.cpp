@@ -35,6 +35,29 @@ void Sigma_asymmetric<R>::set_sigmas(R sigma_tot, unsigned n_sigmas, R m_s, R eb
 }
 
 template <typename R>
+void Sigma_asymmetric<R>::set_sigmas(std::vector<R>& sigmas)
+{
+	R min = (R) sigmas[0];
+	R tot = (R) 0;
+	R ebn0, esn0;
+
+	for (auto sigma : sigmas)
+	{
+		tot += sigma;
+		if (sigma < min) min = sigma;
+	}
+
+	this->min_sigma = min;
+	this->sigmas = sigmas;
+	this->sigma_ratios = std::vector<R>(sigmas.size() - 1, (R)0.0);
+	this->set_noise(tot, ebn0, esn0);
+	this->sigmas_exist = true;
+	this->check();
+
+	this->compute_sigma_ratios();
+}
+
+template <typename R>
 R Sigma_asymmetric<R>::get_sigma(unsigned voltage_index) const
 {
 	return sigmas[voltage_index];

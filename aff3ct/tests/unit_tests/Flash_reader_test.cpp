@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <aff3ct_extension.hpp>
 
+#include <cmath>
 #include <string> 
 #include <vector>
 
@@ -9,57 +10,81 @@ namespace aff3ct
 namespace tools
 {
 
-TEST(FlashReaderTest, static_hard_slc)
+TEST(FlashReaderTest, StaticHard)
 {
-    float sigma_tot = 1;
-    float sigma_min = 0.5;
-    unsigned n_sigmas = 2;
-    Sigma_asymmetric<float> s;
-    s.set_sigmas(sigma_tot, n_sigmas, sigma_min, 4, 4);
-    s.generate_sigmas();
+    Flash_reader<float, float> reader(Flash_reader<float, float>::lower, Flash_reader<float, float>::hard, "test_data/reader_static_hard.txt");
 
-    std::vector<float> voltage_levels = {-1,1};
-    aff3ct::module::Channel_AWGN_asymmetric<float> c(1, voltage_levels, s, 0, 1);
-    c.set_noise(s);
+    //Set symmetric noise
+    Sigma_asymmetric<float> s1;
+    std::vector<R> sigmas1 = {1, 1};
+    s1.set_sigmas(sigmas1);
+    std::vector<R> levels1 = {-1, 1};
+    aff3ct::module::Channel_AWGN_asymmetric<float> c1(1, levels1, s1, 0, 1);
+    c1.set_noise(s1);
+    reader.update(c1);
 
-    Flash_reader<float, float> slc(Flash_reader<float, float>::lower, Flash_reader<float, float>::hard, "test_data/reader_static_hard.txt");
-    slc.update(c);
+    ASSERT_FLOAT_EQ(reader.read(-10000, {0}), 0);
+    ASSERT_FLOAT_EQ(reader.read(10000, {0}), 1);
+    ASSERT_FLOAT_EQ(reader.read(-1, {0}), 0);
+    ASSERT_FLOAT_EQ(reader.read(1, {0}), 1);
+    ASSERT_FLOAT_EQ(reader.read(-0.00001, {0}), 0);
+    ASSERT_FLOAT_EQ(reader.read(+0.00001, {0}), 1);
 
-    //For symmetric sigmas
-    //Extreme level differences
-    ASSERT_FLOAT_EQ(slc.read(-10000, {0}), 0);
-    ASSERT_FLOAT_EQ(slc.read(10000, {0}), 1);
-    //Normal level differences
-    ASSERT_FLOAT_EQ(slc.read(-1, {0}), 0);
-    ASSERT_FLOAT_EQ(slc.read(1, {0}), 1);
-    //Small voltage differences
-    ASSERT_FLOAT_EQ(slc.read(-0.00001, {0}), 0);
-    ASSERT_FLOAT_EQ(slc.read(+0.00001, {0}), 1);
+    //Set asymmetric noise
+    Sigma_asymmetric<float> s2;
+    std::vector<R> sigmas2 = {1, 1};
+    s2.set_sigmas(sigmas2);
+    std::vector<R> levels2 = {-1, 1};
+    aff3ct::module::Channel_AWGN_asymmetric<float> c2(1, levels2, s2, 0, 1);
+    c2.set_noise(s2);
+    reader.update(c2);
 
-    //Test same result regardless of sigmas
+    ASSERT_FLOAT_EQ(reader.read(-10000, {0}), 0);
+    ASSERT_FLOAT_EQ(reader.read(10000, {0}), 1);
+    ASSERT_FLOAT_EQ(reader.read(-1, {0}), 0);
+    ASSERT_FLOAT_EQ(reader.read(1, {0}), 1);
+    ASSERT_FLOAT_EQ(reader.read(-0.00001, {0}), 0);
+    ASSERT_FLOAT_EQ(reader.read(+0.00001, {0}), 1);
+}
+
+TEST(FlashReaderTest, DynamicHard)
+{
+    Flash_reader<float, float> reader(Flash_reader<float, float>::lower, Flash_reader<float, float>::hard, "test_data/reader_dynamic_hard.txt");
+
+    //Set symmetric noise
+    Sigma_asymmetric<float> s1;
+    std::vector<R> sigmas1 = {1, 1};
+    s1.set_sigmas(sigmas1);
+    std::vector<R> levels1 = {-1, 1};
+    aff3ct::module::Channel_AWGN_asymmetric<float> c1(1, levels1, s1, 0, 1);
+    c1.set_noise(s1);
+    reader.update(c1);
+
+    //Expected interpolated threshold
+    auto threshold = 50;
+
+    ASSERT_FLOAT_EQ(reader.read(threshold + 0.01, {0}), 0);
+    ASSERT_FLOAT_EQ(reader.read(threshold - 0.01, {0}), 1);
 }
 
 TEST(FlashReaderTest, static_soft_tlc)
 {
-    float sigma_tot = 1;
-    float sigma_min = 0.5;
-    unsigned n_sigmas = 2;
     Sigma_asymmetric<float> s;
-    s.set_sigmas(sigma_tot, n_sigmas, sigma_min, 4, 4);
-    s.generate_sigmas();
+    std::vector<float> sigmas = {1,1};
+    s.set_sigmas(sigmas);
 
     std::vector<float> voltage_levels = {-1,1};
     aff3ct::module::Channel_AWGN_asymmetric<float> c(1, voltage_levels, s, 0, 1);
     c.set_noise(s);
 
-    Flash_reader<float, float> slc(Flash_reader<float, float>::lower, Flash_reader<float, float>::soft_single, "test_data/reader_static_soft.txt");
-    slc.update(c);
+    Flash_reader<float, float> reader(Flash_reader<float, float>::lower, Flash_reader<float, float>::soft_single, "test_data/reader_static_soft.txt");
+    reader.update(c);
 
     //For symmetric sigmas
-    ASSERT_FLOAT_EQ(slc.read(-1, {0}), 10);
-    ASSERT_FLOAT_EQ(slc.read(-0.1, {0}), 20);
-    ASSERT_FLOAT_EQ(slc.read(0.1, {0}), 30);
-    ASSERT_FLOAT_EQ(slc.read(1, {0}), 40);
+    ASSERT_FLOAT_EQ(reader.read(-1, {0}), 10);
+    ASSERT_FLOAT_EQ(reader.read(-0.1, {0}), 20);
+    ASSERT_FLOAT_EQ(reader.read(0.1, {0}), 30);
+    ASSERT_FLOAT_EQ(reader.read(1, {0}), 40);
 }
 
 

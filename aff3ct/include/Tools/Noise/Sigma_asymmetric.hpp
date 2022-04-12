@@ -24,6 +24,7 @@ namespace aff3ct
 			explicit Sigma_asymmetric(const Sigma_asymmetric<R> &other);
 			virtual ~Sigma_asymmetric() = default;
 			void set_sigmas(R sigma_tot, unsigned n_sigmas, R sigma_min, R ebn0, R esn0);
+			void set_sigmas(std::vector<R>& sigmas);
 			R get_sigma(unsigned voltage_level_index) const;
 			std::vector<R> get_sigmas() const;
 			bool has_sigmas() const noexcept;

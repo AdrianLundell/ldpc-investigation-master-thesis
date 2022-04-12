@@ -67,7 +67,7 @@ void Modem_flash_page<B,R,Q>
 		// generate random data not relevant for the page to be read
 		unsigned idx = 0;
 		for (auto j = 0; j < bits_per_symbol; j++)
-			if (j == std::log2(reader.get_page_type())-1)
+			if (j == std::log2(reader.get_page_type()))
 			{	
 				idx += unsigned(unsigned(1 << j) * X_N1[i]);
 			} else {
@@ -93,7 +93,7 @@ void Modem_flash_page<B,R,Q>
 		throw tools::runtime_error(__FILE__, __LINE__, __func__, "No noise has been set");
 	
 	for (auto i = 0; i < this->N; i++){		
-		Y_N2[i] = reader.read(Y_N1[i], cell.get_threshold_indexes(std::log2(reader.get_page_type())-1));
+		Y_N2[i] = reader.read(Y_N1[i], cell.get_threshold_indexes(std::log2(reader.get_page_type())));
 	}
 }
 

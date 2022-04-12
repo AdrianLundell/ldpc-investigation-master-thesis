@@ -25,9 +25,9 @@
 #include <Tools/Flash/Reader/Flash_reader.hpp>
 #endif
 
-// #ifndef MODULE_FLASH_PAGE_HPP_
-// #include <Module/Modem/flash_page/Modem_flash_page.hpp>
-// #endif
+#ifndef MODULE_FLASH_PAGE_HPP_
+#include <Module/Modem/flash_page/Modem_flash_page.hpp>
+#endif
 
 
 #endif
