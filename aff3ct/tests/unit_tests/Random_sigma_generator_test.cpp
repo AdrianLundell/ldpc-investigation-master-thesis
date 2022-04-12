@@ -33,8 +33,8 @@ TEST_F(RandomSigmaGeneratorTest, generate)
         for (float sigma : sigmas)
         {
             EXPECT_GE(sigma, sigma_min) << "Each individual sigma must greater or equal to sigma_min";
-            float sigma_upper_bound = sigma_tot + (1 - sqrt(n_sigmas));
-            EXPECT_LE(sigma, sigma_upper_bound) << "Each individual sigma must be smaller than (sigma_tot+(1-sqrt(n_sigmas))";
+            float sigma_upper_bound = sigma_tot + sigma_min * (1 - sqrt(n_sigmas));
+            EXPECT_LE(sigma, sigma_upper_bound) << "Each individual sigma must be smaller than (sigma_tot+sigma_min*(1-sqrt(n_sigmas))";
         }
     }
 }

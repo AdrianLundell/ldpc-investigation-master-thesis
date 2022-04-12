@@ -46,6 +46,30 @@ void Channel_AWGN_asymmetric<R>::set_noise(tools::Sigma_asymmetric<R> &_s)
 }
 
 template <typename R>
+R Channel_AWGN_asymmetric<R>::get_sigma(unsigned voltage_level_index) const
+{
+	return sigmas.get_sigma(voltage_level_index);
+}
+
+template <typename R>
+void Channel_AWGN_asymmetric<R>::generate_sigmas()
+{
+	this->sigmas.generate_sigmas();
+}
+
+template <typename R>
+void Channel_AWGN_asymmetric<R>::set_sigma_generator_seed(const int seed)
+{
+	this->sigmas.set_seed(seed);
+}
+
+template <typename R>
+void Channel_AWGN_asymmetric<R>::set_noise_generator_seed(const int seed)
+{
+	this->noise_generator.set_seed(seed);
+}
+
+template <typename R>
 void Channel_AWGN_asymmetric<R>::add_noise(const unsigned *voltage_level_indexes, R *noisy_voltage_levels, const int frame_id)
 {
 	const auto f_start = (frame_id < 0) ? 0 : frame_id % this->n_frames;
@@ -58,7 +82,6 @@ void Channel_AWGN_asymmetric<R>::add_noise(const unsigned *voltage_level_indexes
 			unsigned current_idx = f * this->N + n;
 			unsigned voltage_level_index = voltage_level_indexes[current_idx];
 			// Generate noise distributed around the current voltage level
-
 			noise_generator.generate(noisy_voltage_levels, (unsigned)1,
 									 this->sigmas.get_sigma(voltage_level_index),
 									 this->voltage_levels[voltage_level_index]);
