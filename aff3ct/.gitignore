@@ -1,2 +1,4 @@
 build*/
 cmake*/
+data*/
+!data/essential_data*/
