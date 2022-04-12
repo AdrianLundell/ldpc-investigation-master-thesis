@@ -29,7 +29,7 @@ protected:
     unsigned n_sigmas;
 };
 
-TEST_F(SigmaAsymmetricTest, initialization)
+TEST_F(SigmaAsymmetricTest, initialize)
 {
     EXPECT_FALSE(sigmas.has_sigmas()) << "sigmas.has_sigmas() should be false at intitialization.";
     EXPECT_ANY_THROW(sigmas.check()) << "sigmas.check() should throw exception when sigmas.set_sigmas() has not been called.";

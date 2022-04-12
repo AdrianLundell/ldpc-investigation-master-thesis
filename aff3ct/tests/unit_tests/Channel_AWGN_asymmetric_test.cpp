@@ -41,7 +41,7 @@ protected:
     vector<float> noisy_voltages;
 };
 
-TEST_F(ChannelAwgnAsymmetricTest, initialization)
+TEST_F(ChannelAwgnAsymmetricTest, initialize)
 {
     module::Channel_AWGN_asymmetric<float> channel(N, voltage_levels, sigmas);
     EXPECT_NO_THROW(channel.check_noise()) << "Channel noise should be of type SIGMA.";
