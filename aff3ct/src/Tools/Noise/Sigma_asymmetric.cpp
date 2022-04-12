@@ -1,7 +1,6 @@
-#include <sstream>
-#include <math.h>
 #include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
+#include <math.h>
 
 using namespace aff3ct;
 using namespace aff3ct::tools;
@@ -20,6 +19,7 @@ Sigma_asymmetric<R>::Sigma_asymmetric(const Sigma_asymmetric<R> &other)
 	this->min_sigma = other.min_sigma;
 	this->sigmas = other.sigmas;
 	this->sigma_ratios = other.sigma_ratios;
+	this->sigmas_exist = other.sigmas_exist;
 	this->set_noise(other.get_noise(), other.get_ebn0(), other.get_esn0());
 }
 
@@ -96,7 +96,9 @@ void Sigma_asymmetric<R>::compute_sigma_ratios()
 {
 	for (unsigned i = 0; i < sigma_ratios.size(); i++)
 	{
-		this->sigma_ratios[i] = pow(sigmas[i], (R)2.0) / pow(sigmas[i + 1], (R)2.0);
+		R sigma_i = sigmas[i];
+		R sigma_ii = sigmas[i + 1];
+		this->sigma_ratios[i] = sigma_i * sigma_i / (sigma_i * sigma_i + sigma_ii * sigma_ii);
 	}
 }
 
@@ -115,9 +117,7 @@ R Sigma_asymmetric<R>::get_threshold_noise(unsigned threshold_index) const
 template <typename R>
 R Sigma_asymmetric<R>::get_ratio(unsigned threshold_index) const
 {
-	R sigma_i_sqrd = pow(sigmas[threshold_index], (R)2.0);
-	R sigma_ii_sqrd = pow(sigmas[threshold_index + 1], (R)2.0);
-	return sigma_i_sqrd / sigma_ii_sqrd + sigma_ii_sqrd;
+	return this->sigma_ratios[threshold_index];
 }
 
 template <typename R>
