@@ -21,25 +21,34 @@ namespace aff3ct
 			// Could put noise_generator in a pointer if necessary
 			// std::unique_ptr<tools::Gaussian_noise_generator_std<R>> noise_generator;
 			tools::Gaussian_noise_generator_std<R> noise_generator;
-			std::unique_ptr<tools::Sigma_asymmetric<R>> sigmas;
+			tools::Sigma_asymmetric<R> sigmas;
 			std::vector<R> voltage_levels;
 
 		public:
 			Channel_AWGN_asymmetric(const int N,
 									std::vector<R> voltage_levels,
+									const tools::Sigma_asymmetric<R> &sigmas,
 									const int seed = 0,
 									const int n_frames = 1);
 
+			/*
+			Channel_AWGN_asymmetric(const int N,
+									std::vector<R> voltage_levels,
+									const int seed = 0,
+									const int n_frames = 1);
+
+			*/
+
 			virtual ~Channel_AWGN_asymmetric() = default;
 
-			virtual void set_noise(tools::Sigma_asymmetric<R> &noise);
+			virtual void set_noise(tools::Sigma_asymmetric<R> &sigmas);
 
 			virtual void add_noise(const unsigned *voltage_level_indexes, R *noisy_voltage_levels, const int frame_id = -1);
 			R get_snr(const unsigned threshold_index) const;
 			R get_sigma_ratio(const unsigned threshold_index) const;
-
-		protected:
 			virtual void check_noise();
+
+			// protected:
 		};
 	}
 }

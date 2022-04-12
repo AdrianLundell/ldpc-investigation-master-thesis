@@ -73,8 +73,14 @@ void Sigma_asymmetric<R>::compute_sigma_ratios()
 {
 	for (unsigned i = 0; i < sigma_ratios.size(); i++)
 	{
-		sigma_ratios[i] = pow(sigmas[i], (R)2.0) / pow(sigmas[i + 1], (R)2.0);
+		this->sigma_ratios[i] = pow(sigmas[i], (R)2.0) / pow(sigmas[i + 1], (R)2.0);
 	}
+}
+
+template <typename R>
+void Sigma_asymmetric<R>::set_seed(const int seed)
+{
+	this->sigma_generator.set_seed(seed);
 }
 
 template <typename R>
@@ -92,8 +98,7 @@ R Sigma_asymmetric<R>::get_ratio(unsigned threshold_index) const
 }
 
 template <typename R>
-void Sigma_asymmetric<R>::
-	check()
+void Sigma_asymmetric<R>::check() const
 {
 	R n = this->get_noise();
 	if (n <= (R)0)
@@ -142,4 +147,3 @@ template class aff3ct::tools::Sigma_asymmetric<double>;
 // template aff3ct::tools::Sigma_asymmetric<double>::Sigma_asymmetric(const Sigma_asymmetric<float> &);
 // template aff3ct::tools::Sigma_asymmetric<float>::Sigma_asymmetric(const Sigma_asymmetric<double> &);
 //  ==================================================================================== explicit template instantiation
-

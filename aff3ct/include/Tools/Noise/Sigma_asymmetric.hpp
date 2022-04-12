@@ -28,12 +28,13 @@ namespace aff3ct
 			std::vector<R> get_sigmas() const;
 			bool has_sigmas() const noexcept;
 			void generate_sigmas();
+			void set_seed(const int seed);
 			R get_threshold_noise(unsigned threshold_index) const;
 			R get_ratio(unsigned threshold_index) const;
 
 			virtual Noise_type get_type() const;
 
-			void check() const;
+			virtual void check() const;
 			// virtual Sigma_asymmetric<R> *clone() const;
 
 		protected:
@@ -43,8 +44,6 @@ namespace aff3ct
 			bool sigmas_exist = false;
 			R min_sigma;
 			tools::Random_sigma_generator<R> sigma_generator;
-
-			virtual void check();
 		};
 
 	}
