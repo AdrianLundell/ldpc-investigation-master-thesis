@@ -69,7 +69,9 @@ TEST_F(SigmaAsymmetricTest, sigmaRatios)
     std::vector<float> sigmas_vector = sigmas.get_sigmas();
     for (unsigned i = 0; i < n_sigmas - 1; i++)
     {
-        float expected_ratio = pow(sigmas_vector[i], (float)2.0) / pow(sigmas_vector[i + 1], (float)2.0);
+        float sigma_i = sigmas_vector[i];
+        float sigma_ii = sigmas_vector[i + 1];
+        float expected_ratio = sigma_i * sigma_i / (sigma_i * sigma_i + sigma_ii * sigma_ii);
         EXPECT_EQ(sigmas.get_ratio(i), expected_ratio)
             << "The expected ratio of sigmas.get_ratio(i) should be the fraction between sigma of voltage level i and (i+1).";
     }

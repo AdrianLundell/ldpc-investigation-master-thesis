@@ -1,0 +1,5 @@
+# This config script allows for easily seeing which variable can be changed by the user
+analyze_randomness:
+  sigmas_file: "../aff3ct/data/sigmas.txt"
+  noise_file: "../aff3ct/data/noise.txt"
+  params_file: "../aff3ct/data/parameters.txt"
