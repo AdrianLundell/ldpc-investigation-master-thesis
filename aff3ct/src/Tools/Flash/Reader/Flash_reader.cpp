@@ -13,8 +13,8 @@ namespace aff3ct
 	namespace tools
 	{
 		template <typename R, typename Q>
-		Flash_reader<R, Q>::Flash_reader(const int page_type, const int read_type, const std::string fpath) : n_thresholds(read_type - 1),
-																											  n_bin_values(read_type),
+		Flash_reader<R, Q>::Flash_reader(const int page_type, const int read_type, std::string fpath) : n_thresholds(read_type),
+																											  n_bin_values(read_type+1),
 																											  thresholds(page_type),
 																											  bin_values(page_type),
 																											  my_page_type(page_type),
@@ -68,16 +68,16 @@ namespace aff3ct
 					w22 = (x - x1) * (y - y1) / c;
 
 					int j;
-					for (auto i = 0; i < this->n_thresholds; i++)
+					for (auto k = 0; k < this->n_thresholds; k++)
 					{
-						j = i + 2;
-						thresholds[i] = w11 * q11[j] + w21 * q21[j] + w12 * q12[j] + w22 * q22[j];
+						j = k + 2;
+						thresholds[k] = w11 * q11[j] + w21 * q21[j] + w12 * q12[j] + w22 * q22[j];
 					}
 
-					for (auto i = 0; i < this->n_bin_values; i++)
+					for (auto k = 0; k < this->n_bin_values; k++)
 					{
-						j = i + 2 + this->n_thresholds;
-						bin_values[i] = w11 * q11[j] + w21 * q21[j] + w12 * q12[j] + w22 * q22[j];
+						j = k + 2 + this->n_thresholds;
+						bin_values[k] = w11 * q11[j] + w21 * q21[j] + w12 * q12[j] + w22 * q22[j];
 					}
 
 					break;
@@ -161,7 +161,7 @@ namespace aff3ct
 			{
 				for (auto j = 0; j < this->get_n_thresholds(); j++)
 				{
-					if (this->get_threshold(i, j) < level)
+					if (this->get_threshold(i, j) > level)
 						return get_bin_value(i, j);
 				}
 			}
@@ -206,3 +206,16 @@ namespace aff3ct
 		}
 	}
 }
+
+//==================================================================================== explicit template instantiation
+#include "Tools/types.h"
+#ifdef AFF3CT_MULTI_PREC
+template class aff3ct::tools::Flash_reader<float, float>;
+//template class aff3ct::tools::Flash_reader<R_32, R_32>;
+//template class aff3ct::tools::Flash_reader<R_64, R_64>;
+//template class aff3ct::tools::Flash_reader<R_64, Q_32>;
+//TODO: More template instanciations
+#else
+template class aff3ct::tools::Flash_readerc<R, Q>;
+#endif
+//==================================================================================== explicit template instantiation
