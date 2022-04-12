@@ -11,7 +11,10 @@ import numpy as np
 import matplotlib.pyplot as plt 
 
 #%% Help functions
-sigma1 = sigma2 = mu1 = mu2 = 1
+sigma1 = 0.9
+sigma2 = 0.1
+mu1 = -1 
+mu2 = 1
 
 def mid_point():
     """Calculate the point of intersection for two gaussian distributions"""
