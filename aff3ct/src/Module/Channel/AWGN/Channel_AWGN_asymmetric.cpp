@@ -58,7 +58,6 @@ void Channel_AWGN_asymmetric<R>::add_noise(const unsigned *voltage_level_indexes
 			unsigned current_idx = f * this->N + n;
 			unsigned voltage_level_index = voltage_level_indexes[current_idx];
 			// Generate noise distributed around the current voltage level
-
 			noise_generator.generate(noisy_voltage_levels, (unsigned)1,
 									 this->sigmas.get_sigma(voltage_level_index),
 									 this->voltage_levels[voltage_level_index]);
