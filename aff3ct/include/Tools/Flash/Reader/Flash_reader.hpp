@@ -17,22 +17,22 @@ namespace aff3ct
 		class Flash_reader
 		{
 		public:
-			explicit Flash_reader(const int page_type, const int read_type, std::string fpath);
+			explicit Flash_reader(const unsigned page_type, const unsigned read_type, std::string fpath);
 
 			typedef aff3ct::module::Channel_AWGN_asymmetric<R> c;
 			void update(c &channel);
-			int get_read_type();
-			int get_page_type();
+			unsigned get_read_type();
+			unsigned get_page_type();
 
 			Q read(const R level, const std::vector<unsigned> &threshold_indexes);
 
-			enum read_type
+			enum read_type: unsigned
 			{
 				hard = 1,
 				soft_single = 3,
 				soft_double = 5
 			};
-			enum page_type
+			enum page_type: unsigned
 			{
 				lower = 1,
 				upper = 2,
@@ -56,10 +56,10 @@ namespace aff3ct
 
 			unsigned n_thresholds;
 			unsigned n_bin_values;
+			unsigned my_page_type; // Change enumeration index
+			unsigned my_read_type;
 			int n_x;
 			int n_y;
-			int my_page_type; // Change enumeration index
-			int my_read_type;
 		};
 
 	}

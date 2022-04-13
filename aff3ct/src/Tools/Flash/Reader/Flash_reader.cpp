@@ -13,13 +13,14 @@ namespace aff3ct
 	namespace tools
 	{
 		template <typename R, typename Q>
-		Flash_reader<R, Q>::Flash_reader(const int page_type, const int read_type, std::string fpath) : n_thresholds(read_type),
-																											  n_bin_values(read_type+1),
+		Flash_reader<R, Q>::Flash_reader(const unsigned page_type, const unsigned read_type, std::string fpath) :
 																											  thresholds(page_type),
 																											  bin_values(page_type),
 																											  my_page_type(page_type),
 																											  my_read_type(read_type)
 		{
+			n_thresholds = read_type;
+			n_bin_values = read_type+1;
 			init_data(fpath);
 		}
 
@@ -182,13 +183,13 @@ namespace aff3ct
 		}
 
 		template <typename R, typename Q>
-		int Flash_reader<R, Q>::get_read_type()
+		unsigned Flash_reader<R, Q>::get_read_type()
 		{
 			return this->my_read_type;
 		}
 
 		template <typename R, typename Q>
-		int Flash_reader<R, Q>::get_page_type()
+		unsigned Flash_reader<R, Q>::get_page_type()
 		{
 			return this->my_page_type;
 		}

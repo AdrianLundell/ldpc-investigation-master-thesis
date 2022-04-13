@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <complex>
 #include <stdlib.h>  
+#include <vector> 
 
 #include <aff3ct.hpp>
 #include <aff3ct_extension.hpp>
@@ -20,12 +21,11 @@ namespace module
 template <typename B, typename R, typename Q>
 Modem_flash_page<B,R,Q>
 ::Modem_flash_page(const int N,
-				   tools::Flash_cell &cell,
-				   tools::Flash_reader<R,Q> &reader,
-				   const tools::Noise<R>& noise,
+				   tools::Flash_cell cell,
+				   tools::Flash_reader<Q,Q> reader,
+				   const tools::Noise<Q>& noise,
 				   const int n_frames)
 : Modem<B,R,Q>(N,
-               N, // N_mod
               noise,
               n_frames),
   bits_per_symbol(cell.get_n_pages()),
@@ -46,7 +46,7 @@ Modem_flash_page<B,R,Q>
 
 template <typename B, typename R, typename Q>
 void Modem_flash_page<B,R,Q>
-::set_noise(module::Channel_AWGN_asymmetric<R> &channel)
+::set_noise(module::Channel_AWGN_asymmetric<Q> &channel)
 {
 	//Kept from old code, unclear why these methdos are needed.
 	//Modem<B,R,Q>::set_noise(channel.current_noise());
@@ -58,7 +58,7 @@ void Modem_flash_page<B,R,Q>
 
 template <typename B,typename R, typename Q>
 void Modem_flash_page<B,R,Q>
-::_modulate(const B *X_N1, R *X_N2, const int frame_id)
+::modulate(std::vector<B>& X_N1, std::vector<unsigned>& X_N2, const int frame_id)
 {
 
 	for (auto i = 0; i < this->N; i++)
@@ -88,9 +88,6 @@ void Modem_flash_page<B,R,Q>
 
 	if (!std::is_floating_point<Q>::value)
 		throw tools::invalid_argument(__FILE__, __LINE__, __func__, "Type 'Q' has to be float or double.");
-
-	if (!this->n->is_set())
-		throw tools::runtime_error(__FILE__, __LINE__, __func__, "No noise has been set");
 	
 	for (auto i = 0; i < this->N; i++){		
 		Y_N2[i] = reader.read(Y_N1[i], cell.get_threshold_indexes(std::log2(reader.get_page_type())));
