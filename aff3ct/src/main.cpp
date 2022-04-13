@@ -96,7 +96,6 @@ int main(int argc, char **argv)
 		u.noise->set_sigmas(tot_sigma, p.voltage_levels.size(), p.min_sigma ,ebn0, esn0);
 		// update the sigma of the modem and the channel
 		m.channel->set_noise(*u.noise);
-        m.modem->set_noise(*m.channel);
 
 		// display the performance (BER and FER) in real time (in a separate thread)
 		u.terminal->start_temp_report();
@@ -107,7 +106,10 @@ int main(int argc, char **argv)
 			m.source->generate(b.ref_bits);
             m.encoder->encode(b.ref_bits, b.enc_bits);
             m.modem->modulate(b.enc_bits, b.voltage_level_indexes);          
-            u.noise->generate_sigmas();
+     
+	        m.channel->generate_sigmas();
+	        m.modem->set_noise(*m.channel);
+			
 			m.channel->add_noise(b.voltage_level_indexes.data(), b.noisy_voltage_levels.data());
 			m.modem->demodulate(b.noisy_voltage_levels, b.noisy_bits);
 			m.decoder->decode_siho(b.noisy_bits, b.dec_bits);

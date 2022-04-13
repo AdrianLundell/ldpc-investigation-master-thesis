@@ -83,6 +83,13 @@ namespace aff3ct
 
 					break;
 				}
+
+				if (i == this->data.size()-1) {
+					std::stringstream message;
+					message << "(x,y) out of interpolation limits";
+					throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+		
+				}
 			}
 		}
 
