@@ -31,13 +31,10 @@ namespace aff3ct
 									const int seed = 0,
 									const int n_frames = 1);
 
-			/*
 			Channel_AWGN_asymmetric(const int N,
 									std::vector<R> voltage_levels,
 									const int seed = 0,
 									const int n_frames = 1);
-
-			*/
 
 			virtual ~Channel_AWGN_asymmetric() = default;
 

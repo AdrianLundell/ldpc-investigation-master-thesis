@@ -28,7 +28,6 @@ Channel_AWGN_asymmetric<R>::Channel_AWGN_asymmetric(const int N,
 	noise_generator = tools::Gaussian_noise_generator_std<R>(seed);
 }
 
-/*
 template <typename R>
 Channel_AWGN_asymmetric<R>::Channel_AWGN_asymmetric(const int N,
 													std::vector<R> v_l,
@@ -37,7 +36,6 @@ Channel_AWGN_asymmetric<R>::Channel_AWGN_asymmetric(const int N,
 	: Channel_AWGN_asymmetric(N, v_l, tools::Sigma_asymmetric<R>(), seed, n_frames)
 {
 }
-*/
 
 template <typename R>
 void Channel_AWGN_asymmetric<R>::set_noise(tools::Sigma_asymmetric<R> &_s)
