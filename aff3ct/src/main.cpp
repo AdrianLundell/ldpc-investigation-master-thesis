@@ -11,8 +11,8 @@ using namespace aff3ct;
 
 struct params 
 {
-	int K = 6;		         // number of information bits
-	int N = 11;	 		     // codeword size
+	int K = 16384;		         // number of information bits
+	int N = 18592;	 		     // codeword size
 	int fe = 100;			 // number of frame errors
 	int seed = 0;			 // PRNG seed for the AWGN channel
 	float ebn0_min = .5f;	 // minimum SNR value
@@ -27,7 +27,9 @@ struct params
     int read_type = tools::Flash_reader<float, float>::hard;
     int cell_type = tools::Flash_cell::SLC;
 
-	std::vector<uint32_t> info_bits = {0,1,2,3,4,5};
+	// std::vector<uint32_t> info_bits = {0,1,2,3,4,5,6,7,8,9,10,11};
+
+	std::vector<uint32_t> info_bits = std::vector<uint32_t>(K);
 };
 void init_params(params &p);
 
@@ -138,6 +140,10 @@ int main(int argc, char **argv)
 void init_params(params &p)
 {
 	p.R = (float)p.K / (float)p.N;
+
+	for (auto i = 0; i < p.K; i++)
+		p.info_bits[i] = i;
+
 	std::cout << "# * Simulation parameters: " << std::endl;
 	std::cout << "#    ** Frame errors   = " << p.fe << std::endl;
 	std::cout << "#    ** Noise seed     = " << p.seed << std::endl;
