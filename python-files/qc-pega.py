@@ -3,42 +3,42 @@ Source: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708 [algori
 """
 
 #%% Imports
-from tabnanny import check
 import numpy as np 
 import matplotlib.pyplot as plt 
 from QC_tanner_graph import QC_tanner_graph
 import copy 
+
 # %% BFS-Calculation of the rk-Edge local girth
-def shortest_path(G, start_index, stop_index):
+def shortest_path(G, start_index, cn_index = None):
     """Shortest path length from start to stop"""
     Q = [start_index]
-    explored = set(Q)
-    length = 0
-
+    explored = {start_index : []}
+    
     while Q:
-        length += 1
         adjecent_nodes = []
 
         for node in Q:
             for adjecent_node in G.get_adjecent(node):
-                if adjecent_node == stop_index and length > 2:
-                    return length 
                 if not adjecent_node in explored:
-                    explored.add(adjecent_node)
+                    explored[adjecent_node] = explored[node] + [adjecent_node]
                     adjecent_nodes.append(adjecent_node)
+                else:
+                    overlap = [n1==n2 for n1, n2 in zip(explored[adjecent_node], explored[node])]
+                    if not any(overlap) and len(explored[node]) > 1 :
+                        if cn_index == explored[adjecent_node][0] or cn_index == explored[node][0] or cn_index is None:
+                            return len(explored[node]) + len(explored[adjecent_node]) + 1
+    
         Q = adjecent_nodes
 
     return np.inf
 
 def local_girth_vn(G, vn_index):
     """Minimum cycle length passing through vn"""
-    return shortest_path(G, vn_index, vn_index)
+    return shortest_path(G, vn_index)
 
 def local_girth_cn(G, cn_index, vn_index):
     """Minimum cycle length passing through the edge (cn, vn) assuming edge between them is known to exist"""
-    G.remove_edges([(cn_index, vn_index)])
-    result = shortest_path(G, cn_index, vn_index) + 1
-    G.add_edges([(cn_index, vn_index)])
+    result = shortest_path(G, vn_index, cn_index)
     
     return result 
 
@@ -87,27 +87,26 @@ def rk_edge_local_girth(G, current_vn_index, rk):
 
     return vn_girths[-1], cn_girths[-1, :]
 
-m = 2
-n = 3
-N = 5
-G = QC_tanner_graph(m, n, N)
+# m = 2
+# n = 3
+# N = 5
+# G = QC_tanner_graph(m, n, N)
 
-M = 1
-cns = np.random.randint(0, m*N, M)
-vns = np.random.randint(m*N, (m+n)*N, M)
+# M = 1
+# cns = np.random.randint(0, m*N, M)
+# vns = np.random.randint(m*N, (m+n)*N, M)
 
-for cn, vn in zip(cns, vns):
-    G.add_cyclical_edge_set(cn, vn)
+# for cn, vn in zip(cns, vns):
+#     G.add_cyclical_edge_set(cn, vn)
 
-plt.spy(G.get_H())
-print(G)
-plt.show()
-print(rk_edge_local_girth(G, m*N, 2))
+# plt.spy(G.get_H())
+# print(G)
+# plt.show()
+# print(rk_edge_local_girth(G, m*N, 2))
 
-plt.spy(G.get_H())
-plt.show()
+# plt.spy(G.get_H())
+# plt.show()
 
-#%% Test cases
 m = 4
 n = 4
 N = 1
