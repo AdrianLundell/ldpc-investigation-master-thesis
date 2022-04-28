@@ -7,8 +7,8 @@ from tabnanny import check
 import numpy as np 
 import matplotlib.pyplot as plt 
 from QC_tanner_graph import QC_tanner_graph
-
-# %% DFS-Calculation of the rk-Edge local girth
+import copy 
+# %% BFS-Calculation of the rk-Edge local girth
 def shortest_path(G, start_index, stop_index):
     """Shortest path length from start to stop"""
     Q = [start_index]
@@ -21,7 +21,7 @@ def shortest_path(G, start_index, stop_index):
 
         for node in Q:
             for adjecent_node in G.get_adjecent(node):
-                if adjecent_node == stop_index and length > 1:
+                if adjecent_node == stop_index and length > 2:
                     return length 
                 if not adjecent_node in explored:
                     explored.add(adjecent_node)
@@ -55,17 +55,19 @@ def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes,
             enumerated_cn_indexes[t] = current_cn_index
             enumerated_cn_max[t+1] = i
 
-            G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
-            girths[t+1] = min(girths[t], local_girth_cn(G, current_cn_index, current_vn_index))
+            G_temp = copy.deepcopy(G)
+            G_temp.add_cyclical_edge_set(current_cn_index, current_vn_index) 
+            girths[t+1] = min(girths[t], local_girth_cn(G_temp, current_cn_index, current_vn_index))
 
-            if vn_girths[t] <= cn_girths[t+1, current_cn_index]:
+            if vn_girths[t] <= girths[t+1]:
                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
                     vn_girths[t+1] = girths[t+1]
-                    cn_girths[t+1, t] = girths[t+1]
+                    cn_girths[t+1, 0:t+1] = girths[t+1]
                 else: 
-                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, vn_girths, cn_girths)
-            
-            G.remove_cyclical_edge_set(current_cn_index, current_vn_index) 
+                    rk_edge_local_girth_layer(G_temp, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, vn_girths, cn_girths)
+            else:
+                pass        
+    
 
 def rk_edge_local_girth(G, current_vn_index, rk):
     t = 0
@@ -85,9 +87,9 @@ def rk_edge_local_girth(G, current_vn_index, rk):
 
     return vn_girths[-1], cn_girths[-1, :]
 
-m = 3
+m = 2
 n = 3
-N = 2
+N = 5
 G = QC_tanner_graph(m, n, N)
 
 M = 1
@@ -99,9 +101,34 @@ for cn, vn in zip(cns, vns):
 
 plt.spy(G.get_H())
 print(G)
+plt.show()
+print(rk_edge_local_girth(G, m*N, 2))
 
-print(rk_edge_local_girth(G, m*N, 5))
+plt.spy(G.get_H())
+plt.show()
 
+#%% Test cases
+m = 4
+n = 4
+N = 1
+G = QC_tanner_graph(m, n, N)
+a = [4, 4, 4, 5, 5, 6, 6, 7, 7]
+b = [0, 1, 2, 0, 1, 2, 3, 2, 3]
+G.add_edges(zip(b,a))
+
+print(local_girth_vn(G, 4))
+print(local_girth_cn(G, 2, 4))
+
+m = 4
+n = 4
+N = 1
+G = QC_tanner_graph(m, n, N)
+a = [4, 4, 4, 5, 5, 6, 6, 7, 7]
+b = [0, 1, 2, 0, 1, 2, 3, 0, 3]
+G.add_edges(zip(b,a))
+
+print(local_girth_vn(G, 4))
+print(local_girth_cn(G, 2, 4))
 
 #%% r-EDge M-QC-PEGA
 def strategy1(metrics):
@@ -122,21 +149,21 @@ def strategy1(metrics):
     return int(random_choice_index)
 
 #%%
-import copy
-m = 3
+m = 2
 n = 3
-N = 2
-d = 4
-r = 3
+N = 5
+d = 2
+r = 1
 G = QC_tanner_graph(m, n, N)
+G.add_cyclical_edge_set(0,m*N)
 
 def strategy1(vn_girth, cn_girths, G, vn_index):
     # 1)
     survivors = np.argwhere(cn_girths == vn_girth)
     # 2)
     cn_local_girths = np.zeros(survivors.size)
-    for i in survivors.size:
-        cn_index = survivors[i]
+    for i in range(survivors.size):
+        cn_index = int(survivors[i])
         G.add_cyclical_edge_set(cn_index, vn_index)
         cn_local_girths[i] = local_girth_cn(G, cn_index, vn_index)
         G.remove_cyclical_edge_set(cn_index, vn_index)
@@ -150,16 +177,18 @@ def strategy1(vn_girth, cn_girths, G, vn_index):
     return int(result)
 
 
-for j in range(0,n,N):
-    current_vn_index = j
+for j in range(0,n*N,N):
+    current_vn_index = int(j + m*N)
     for k in range(1, d+1):
         rk = min(r, d - k +1)
 
         G_temp = copy.deepcopy(G)
         vn_girth, cn_girths = rk_edge_local_girth(G_temp, current_vn_index, rk)
     
-    ci = strategy1()
-    G.add_cyclical_edge_set(ci, current_vn_index)
+        ci = strategy1(vn_girth, cn_girths, G, current_vn_index)
+        G.add_cyclical_edge_set(ci, current_vn_index)
+
+plt.spy(G.get_H())
 # %%
 
 # %%
