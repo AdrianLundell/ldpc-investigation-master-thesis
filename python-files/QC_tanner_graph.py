@@ -58,9 +58,21 @@ class QC_tanner_graph:
     
     def add_cyclical_edge_set(self, cn_index, vn_index):
         """Adds a cyclical edge set pi(ci, vi, N) to the graph"""
+        assert 0 <= cn_index < self.n_cn, "Check node index out of bounds."
+        assert self.n_cn <= vn_index < self.n_nodes, "Variable node index out of bounds."
         t = np.arange(self.N)
         check_nodes = np.floor(cn_index/self.N) * self.N + np.mod(cn_index + t, self.N)
         variable_nodes = np.floor((vn_index - self.n_cn)/self.N) * self.N + np.mod(vn_index - self.n_cn + t, self.N) + self.n_cn
       
         self.add_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
+
+    def remove_cyclical_edge_set(self, cn_index, vn_index):
+        """Removes a cyclical edge set pi(ci, vi, N) from the graph"""
+        assert 0 <= cn_index < self.n_cn, "Check node index out of bounds."
+        assert self.n_cn <= vn_index < self.n_nodes, "Variable node index out of bounds."
+        t = np.arange(self.N)
+        check_nodes = np.floor(cn_index/self.N) * self.N + np.mod(cn_index + t, self.N)
+        variable_nodes = np.floor((vn_index - self.n_cn)/self.N) * self.N + np.mod(vn_index - self.n_cn + t, self.N) + self.n_cn
+      
+        self.remove_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
 
