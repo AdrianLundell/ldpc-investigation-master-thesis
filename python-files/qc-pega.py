@@ -1,100 +1,107 @@
-"""This script implements the QC-PEGA Algorithm
-Source: https://arxiv.org/pdf/1605.05123.pdf [algorithm 2 with ACE metric]
+"""This script implements the MM-QC-PEGA Algorithm
+Source: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708 [algorithm 1]
 """
 
-#%% Prerequsits
-from sre_constants import CHCODES
+#%% Imports
 import numpy as np 
 import matplotlib.pyplot as plt 
+from QC_tanner_graph import QC_tanner_graph
 
-#%%
-class Tanner_graph:
+# %% DFS-Calculation of the rk-Edge local girth
 
-    def __init__(self, n_vn, n_cn) -> None:
+def shortest_path(G, start_index, stop_index):
+    """Shortest path length from start to stop"""
+    Q = [start_index]
+    explored = set(Q)
+    length = 0
+
+    while Q:
+        length += 1
+        adjecent_nodes = []
+
+        for node in Q:
+            for adjecent_node in G.get_adjecent(node):
+                if adjecent_node == stop_index and length > 1:
+                    return length 
+                if not adjecent_node in explored:
+                    explored.add(adjecent_node)
+                    adjecent_nodes.append(adjecent_node)
+        Q = adjecent_nodes
+
+    raise Exception("Path not found")
+
+def local_girth_vn(G, vn_index):
+    """Minimum cycle length passing through vn"""
+    return shortest_path(G, vn_index, vn_index)
+
+def local_girth_cn(G, cn_index, vn_index):
+    """Minimum cycle length passing through the edge (cn, vn) assuming edge between them is known to exist"""
+    G.remove_edges([(cn_index, vn_index)])
+    result = shortest_path(G, cn_index, vn_index) + 1
+    G.add_edges([(cn_index, vn_index)])
+    
+    return result 
+
+def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, vn_girths, cn_girths):
+    """
+    DFS calculation of the rk-edge local girth based on Algorithm 2 in 
+    https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708
+    """
+
+    for i in range(int(enumerated_cn_max[t])):
+        current_cn_index = i  #Reduncy to allow differentiating between i and node_i
         
-        self.n_nodes = n_cn + n_vn
-        self.n_cn = n_cn 
-        self.n_vn = n_vn 
-        self.nodes = [set() for i in range(self.n_nodes)]
+        if not G.has_edge((current_cn_index, current_vn_index)):
+            enumerated_cn_indexes[t] = current_cn_index
+            enumerated_cn_max[t+1] = i
 
-    def __repr__(self):
-        return f"Graph with {self.n_cn} CNs, {self.n_vn} VNs and {sum([len(node) for node in self.nodes])//2} edges"
+            G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
+            girths[t+1] = min(girths[t], local_girth_cn(G, current_cn_index, current_vn_index))
 
-    def add_edges(self, variable_nodes, check_nodes) -> None:
+            if vn_girths[t] <= cn_girths[t+1, current_cn_index]:
+                if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
+                    vn_girths[t+1] = girths[t+1]
+                    cn_girths[t+1, t] = girths[t+1]
+                else: 
+                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, vn_girths, cn_girths)
+                    return 
 
-        assert len(variable_nodes) == len(check_nodes), "Variable nodes and check nodes must be of same length"
+def rk_edge_local_girth(G, current_vn_index, rk):
+    t = 0
+    enumerated_cn_indexes = np.zeros(rk) #s in article
+    enumerated_cn_max = np.zeros(rk) #u in article
+    girths = np.zeros(rk)
+    vn_girths = np.zeros(rk) #g in article
+    cn_girths = np.zeros((rk, G.n_cn))
 
-        for i, j in zip(check_nodes, variable_nodes):
-            assert 0 <= i < self.n_cn, "Check node index out of bounds."
-            assert 0 <= j < self.n_vn, "Variable node index out of bounds."
-            self.nodes[i].add(j+self.n_cn) 
-            self.nodes[j+self.n_cn].add(i)
+    enumerated_cn_max[0] = G.n_cn
+    girths[0] = np.inf 
+    vn_girths[0] = -np.inf
+    cn_girths[0,:] = -np.inf
 
-    def get_check_degrees(self) -> list:
-        return [len(self.nodes[i]) for i in range(self.n_cn)]
+    rk_edge_local_girth_layer(G, current_vn_index, rk, t, 
+                        enumerated_cn_indexes, enumerated_cn_max, girths, vn_girths, cn_girths)
 
-    def compute_metric(self, j):
-        """Compute distance and ACE to one variable node for all checknodes"""
-        
-        assert j < self.n_vn, "Variable node index out of bounds"
-        
-        not_explored = {node : 0 for node in range(self.n_nodes)}
-        distances = [np.inf for  i in range(self.n_nodes)]
-        #aces = [np.inf for i in range(self.n_vn) ]
-        
-        Q = [j + self.n_cn]
-        adjecent_nodes = set()        
-        while Q:  
-            node_index = Q.pop(0)
-            adjecent_nodes = adjecent_nodes | (self.nodes[node_index] & set(not_explored))
-            distances[node_index] = not_explored.pop(node_index)
+    return vn_girths[-1]
 
-            if not Q:
-                for key in not_explored:
-                    not_explored[key] += 1                    
+m = 4
+n = 8
+N = 4
+G = QC_tanner_graph(m, n, N)
 
-                Q = list(adjecent_nodes)
-                adjecent_nodes = set()
+M = 30
+cns = np.random.randint(0, m*N, M)
+vns = np.random.randint(m*N, (m+n)*N, M)
+for cn, vn in zip(cns, vns):
+    G.add_cyclical_edge_set(cn, vn)
 
-        D = np.array(distances[0:self.n_cn])
-        ace = np.zeros(self.n_cn)
-        degree = np.array(self.get_check_degrees())
+#plt.spy(G.get_H())
+#print(G)
 
-        return np.stack((D, ace, degree))
+print(rk_edge_local_girth(G, m*N + 2, 3))
 
-    def get_H(self):
-        H = np.zeros((self.n_cn, self.n_vn))
-        
-        for i, nodes in enumerate(self.nodes[0:self.n_cn-1]):
-            for j in nodes:
-                H[i,j-self.n_cn] = 1
-
-        return H
-# #Testing
-# G = Tanner_graph(n_vn=2, n_cn=3)
-# vns = [0,0,0,1,1]
-# cns = [0,1,2,0,1]
-# G.add_edges(vns, cns)
-# print(G.compute_metric(1))
-# print([1, 1, 3, 2, 0])
-
-# G = Tanner_graph(n_vn=3, n_cn=3)
-# vns = [0,1,1,2,2]
-# cns = [0,0,1,1,2]
-# G.add_edges(vns, cns)
-# print(G.compute_metric(0))
-# print([1, 3, 5, 0, 2, 4])
-
-
-# G = Tanner_graph(n_vn=3, n_cn=3)
-# vns = [0]
-# cns = [0]
-# G.add_edges(vns, cns)
-# print(G.compute_metric(0))
-# print([1, np.inf, np.inf, 0, np.inf, np.inf])
-
-#%% 
-def select_cn(metrics):
+#%% r-EDge M-QC-PEGA
+def strategy1(metrics):
     """Select the optimal cn according to selection strategy 1"""
     max_d_indexes = np.argwhere(metrics[:,0] == np.max(metrics[:,0]))
     if max_d_indexes.size == 1:
@@ -111,41 +118,3 @@ def select_cn(metrics):
     random_choice_index = min_distance_indexes[np.random.randint(min_distance_indexes.size)]
     return int(random_choice_index)
 
-def compute_edges(i, j, N, n):
-    """
-    Computes the set of edges to add to the matrix G based on selected check node i for varible node j.
-    Returns edges as pairs of node indexes in a E x 2 numpy array for E edges.
-    """ 
-    t = np.arange(N)
-    check_nodes = np.floor(i/N) * N + np.mod(i + t, N) #Indexing for check nodes starts at index N*n of the tanner graph
-    variable_nodes = np.floor(j/N) * N + np.mod(j + t, N)
-
-    return variable_nodes.astype(int), check_nodes.astype(int)
-
-
-
-
-
-#%% Run algorithm
-m = 10
-n = 90
-N = 10
-D = 3
-
-n_nodes = (m+n)*N
-G = Tanner_graph(n*N, m*N)
-
-for j in np.arange(0, n*N, N):
-    metrics = np.full((m*N, 3), np.inf)
-
-    for k in range(D):
-        i = select_cn(metrics)
-        vns, cns = compute_edges(i, j, N, n) 
-        G.add_edges(vns, cns)
-        metrics = G.compute_metric(j)
-
-print(G)
-plt.spy(G.get_H())
-# %%
-
-# %%
