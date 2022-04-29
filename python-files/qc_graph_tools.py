@@ -5,6 +5,10 @@ class QC_tanner_graph:
     """
     Sparse implementation of a tanner graph with protograph dimensions m x n 
     and a scaling factor N
+    
+    Check nodes are stored in self.nodes[0:n_cn] and variable nodes are stored
+    in self.nodes[n_cn:n_nodes], but external methods should not care about this
+    and variable nodes should be indexed from 0,...,n_vn-1
     """
 
     def __init__(self, m, n, N):
@@ -23,7 +27,8 @@ class QC_tanner_graph:
         """Add edges defined as pairs of check nodes and variable nodes to the graph"""
         for i, j in edges:
             assert 0 <= i < self.n_cn, "Check node index out of bounds."
-            assert self.n_cn <= j < self.n_nodes, "Variable node index out of bounds."
+            assert 0 <= j < self.n_vn, "Variable node index out of bounds."
+            j = j + self.n_cn
             self.nodes[i].add(j) 
             self.nodes[j].add(i)
 
@@ -31,17 +36,30 @@ class QC_tanner_graph:
         """Remove edges defined as pairs of check nodes and variable nodes from the graph"""
         for i, j in edges:
             assert 0 <= i < self.n_cn, "Check node index out of bounds."
-            assert self.n_cn <= j < self.n_nodes, "Variable node index out of bounds."
+            assert 0 <= j < self.n_vn, "Variable node index out of bounds."
+            j = j + self.n_cn
             self.nodes[i].remove(j) 
             self.nodes[j].remove(i)       
 
     def get_adjecent(self, node):
-        """Return all adjecent nodes"""
+        """Returns all adjecent nodes of node index node"""
         return self.nodes[node]
+
+    def get_adjecent_cn(self, cn):
+        """Returns adjecent nodes of check node index cn"""
+        assert 0 <= cn < self.n_cn, "Check node index out of bounds."
+        return self.get_adjecent(cn)
+
+    def get_adjecent_vn(self, vn):
+        """Returns adjecent nodes of variable node index vn"""
+        assert 0 <= vn < self.n_vn, "Variable node index out of bounds."
+        return self.get_adjecent(vn + self.cn)
 
     def has_edge(self, edge):
         """Returns true if the graph contains the edge (ci, vi)"""
-        return edge[1] in self.nodes[edge[0]]
+        assert 0 <= edge[0] < self.n_cn, f"Edge non existent, check node index {edge[0]} out of bounds."
+        assert 0 <= edge[1] < self.n_nodes, f"Edge non existens ariable node index {edge[1]} out of bounds."
+        return edge[1] + self.n_cn in self.nodes[edge[0]]
 
     def get_check_degrees(self) -> list:
         """Returns the degree of all checknodes of the graph"""
@@ -60,20 +78,20 @@ class QC_tanner_graph:
     def add_cyclical_edge_set(self, cn_index, vn_index):
         """Adds a cyclical edge set pi(ci, vi, N) to the graph"""
         assert 0 <= cn_index < self.n_cn, "Check node index out of bounds."
-        assert self.n_cn <= vn_index < self.n_nodes, "Variable node index out of bounds."
+        assert 0 <= vn_index < self.n_vn, "Variable node index out of bounds."
         t = np.arange(self.N)
         check_nodes = np.floor(cn_index/self.N) * self.N + np.mod(cn_index + t, self.N)
-        variable_nodes = np.floor((vn_index - self.n_cn)/self.N) * self.N + np.mod(vn_index - self.n_cn + t, self.N) + self.n_cn
+        variable_nodes = np.floor((vn_index)/self.N) * self.N + np.mod(vn_index + t, self.N)
       
         self.add_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
 
     def remove_cyclical_edge_set(self, cn_index, vn_index):
         """Removes a cyclical edge set pi(ci, vi, N) from the graph"""
         assert 0 <= cn_index < self.n_cn, "Check node index out of bounds."
-        assert self.n_cn <= vn_index < self.n_nodes, "Variable node index out of bounds."
+        assert 0 <= vn_index < self.n_vn, "Variable node index out of bounds."
         t = np.arange(self.N)
         check_nodes = np.floor(cn_index/self.N) * self.N + np.mod(cn_index + t, self.N)
-        variable_nodes = np.floor((vn_index - self.n_cn)/self.N) * self.N + np.mod(vn_index - self.n_cn + t, self.N) + self.n_cn
+        variable_nodes = np.floor(vn_index/self.N) * self.N + np.mod(vn_index + t, self.N)
       
         self.remove_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
 
@@ -105,11 +123,62 @@ class QC_tanner_graph:
 
         plt.show()
 
+def shortest_path(G, vn_index, cn_index = None):
+    """Shortest path length from start to stop"""
+    if not cn_index is None:
+        assert 0 <= cn_index < G.n_cn, "Check node index out of bounds."
+    assert 0 <= vn_index < G.n_vn, "Variable node index out of bounds."
+
+    start_index = vn_index + G.n_cn
+    Q = [start_index]
+    explored = {start_index : []}
+    
+    while Q:
+        adjecent_nodes = []
+
+        for node in Q:
+            for adjecent_node in G.get_adjecent(node):
+                if not adjecent_node in explored:
+                    explored[adjecent_node] = explored[node] + [adjecent_node]
+                    adjecent_nodes.append(adjecent_node)
+                else:
+                    overlap = [n1==n2 for n1, n2 in zip(explored[adjecent_node], explored[node])]
+                    if not any(overlap) and len(explored[node]) > 1 :
+                        if cn_index == explored[adjecent_node][0] or cn_index == explored[node][0] or cn_index is None:
+                            return len(explored[node]) + len(explored[adjecent_node]) + 1
+    
+        Q = adjecent_nodes
+
+    return np.inf
+
+def local_girth_vn(G, vn_index):
+    """Minimum cycle length passing through vn"""
+    return shortest_path(G, vn_index)
+
+def local_girth_cn(G, cn_index, vn_index):
+    """Minimum cycle length passing through the edge (cn, vn) assuming edge between them is known to exist"""
+    result = shortest_path(G, vn_index, cn_index)
+    
+    return result 
 
 def run_tests():
-    
-    G = QC_tanner_graph(3,5,1)
-    G.add_edges(zip([0,0],[3,4]))
+    m = 4
+    n = 4
+    N = 1
+    G = QC_tanner_graph(m, n, N)
+    a = [0, 0, 0, 1, 1, 2, 2, 3, 3]
+    b = [0, 1, 2, 0, 1, 2, 3, 2, 3]
+    G.add_edges(zip(b,a))
+
+    print("Minimal cycle from vn1 = ", local_girth_vn(G, 0))
+    print("Minimal cycle through cn3, vn1 = ",local_girth_cn(G, 2, 0))
+    G.plot()
+
+    G = QC_tanner_graph(m, n, 3)
+    G.add_cyclical_edge_set(0, 0)
+    G.add_cyclical_edge_set(3, 5)
+    G.add_cyclical_edge_set(6, 9)
+
     G.plot()
 
 if __name__ == "__main__":

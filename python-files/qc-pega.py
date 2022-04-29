@@ -5,43 +5,10 @@ Source: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708 [algori
 #%% Imports
 import numpy as np 
 import matplotlib.pyplot as plt 
-from QC_tanner_graph import QC_tanner_graph
+import qc_graph_tools as qc
 import copy 
 
 # %% BFS-Calculation of the rk-Edge local girth
-def shortest_path(G, start_index, cn_index = None):
-    """Shortest path length from start to stop"""
-    Q = [start_index]
-    explored = {start_index : []}
-    
-    while Q:
-        adjecent_nodes = []
-
-        for node in Q:
-            for adjecent_node in G.get_adjecent(node):
-                if not adjecent_node in explored:
-                    explored[adjecent_node] = explored[node] + [adjecent_node]
-                    adjecent_nodes.append(adjecent_node)
-                else:
-                    overlap = [n1==n2 for n1, n2 in zip(explored[adjecent_node], explored[node])]
-                    if not any(overlap) and len(explored[node]) > 1 :
-                        if cn_index == explored[adjecent_node][0] or cn_index == explored[node][0] or cn_index is None:
-                            return len(explored[node]) + len(explored[adjecent_node]) + 1
-    
-        Q = adjecent_nodes
-
-    return np.inf
-
-def local_girth_vn(G, vn_index):
-    """Minimum cycle length passing through vn"""
-    return shortest_path(G, vn_index)
-
-def local_girth_cn(G, cn_index, vn_index):
-    """Minimum cycle length passing through the edge (cn, vn) assuming edge between them is known to exist"""
-    result = shortest_path(G, vn_index, cn_index)
-    
-    return result 
-
 def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, vn_girths, cn_girths):
     """
     DFS calculation of the rk-edge local girth based on Algorithm 2 in 
@@ -57,7 +24,7 @@ def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes,
 
             G_temp = copy.deepcopy(G)
             G_temp.add_cyclical_edge_set(current_cn_index, current_vn_index) 
-            girths[t+1] = min(girths[t], local_girth_cn(G_temp, current_cn_index, current_vn_index))
+            girths[t+1] = min(girths[t], qc.local_girth_cn(G_temp, current_cn_index, current_vn_index))
 
             if vn_girths[t] <= girths[t+1]:
                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
@@ -87,47 +54,20 @@ def rk_edge_local_girth(G, current_vn_index, rk):
 
     return vn_girths[-1], cn_girths[-1, :]
 
-# m = 2
-# n = 3
-# N = 5
-# G = QC_tanner_graph(m, n, N)
-
-# M = 1
-# cns = np.random.randint(0, m*N, M)
-# vns = np.random.randint(m*N, (m+n)*N, M)
-
-# for cn, vn in zip(cns, vns):
-#     G.add_cyclical_edge_set(cn, vn)
-
-# plt.spy(G.get_H())
-# print(G)
-# plt.show()
-# print(rk_edge_local_girth(G, m*N, 2))
-
-# plt.spy(G.get_H())
-# plt.show()
-
-m = 4
-n = 4
+#%%
+m = 3
+n = 3
 N = 1
-G = QC_tanner_graph(m, n, N)
-a = [4, 4, 4, 5, 5, 6, 6, 7, 7]
-b = [0, 1, 2, 0, 1, 2, 3, 2, 3]
-G.add_edges(zip(b,a))
+G = qc.QC_tanner_graph(m, n, N)
 
-print(local_girth_vn(G, 4))
-print(local_girth_cn(G, 2, 4))
+cns = [0]
+vns = [m*N]
 
-m = 4
-n = 4
-N = 1
-G = QC_tanner_graph(m, n, N)
-a = [4, 4, 4, 5, 5, 6, 6, 7, 7]
-b = [0, 1, 2, 0, 1, 2, 3, 0, 3]
-G.add_edges(zip(b,a))
+for cn, vn in zip(cns, vns):
+    G.add_cyclical_edge_set(cn, vn)
 
-print(local_girth_vn(G, 4))
-print(local_girth_cn(G, 2, 4))
+print(rk_edge_local_girth(G, m*N, 2))
+
 
 #%% r-EDge M-QC-PEGA
 def strategy1(metrics):
