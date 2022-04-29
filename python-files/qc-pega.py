@@ -72,14 +72,30 @@ def strategy1(vn_girth, cn_girths, G, vn_index):
 
     return int(result)
 
+#%% GCD-approximation of local cn_girth
+def local_cn_girth_GCE(G, cn, vn):
+    
+    delta = np.zeros(G.N)
+    for t in range(G.N):
+        delta[t] = G.min_distance(G.shift(cn, t), vn)   
+    
+    result = delta[0]
+
+    for t in range(G.N):
+        cond1 = delta(t) + delta(G.N-t)
+        cond2 = G.min_distance(G.shift(vn, t), vn) + G.min_distance(G.shift(cn, t-cn), G.shift(cn, -cn))
+        cond3 = delta[t]*G.N / np.gcd(G.N, t)
+
+        result = min([cond1, cond2, cond3, result])
+
+    return result
 #%%
-m = 2
-n = 3
+m = 10
+n = 10
 N = 5
 d = 2
-r = 1
+r = 2
 G = qc.QC_tanner_graph(m, n, N)
-G.add_cyclical_edge_set(0,m*N)
 
 for j in range(0,n*N,N):
     current_vn_index = j
@@ -93,3 +109,4 @@ for j in range(0,n*N,N):
         G.add_cyclical_edge_set(ci, current_vn_index)
 
 plt.spy(G.get_H())
+# %%

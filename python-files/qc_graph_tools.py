@@ -23,23 +23,30 @@ class QC_tanner_graph:
     def __repr__(self):
         return f"{self.n_cn} CNs, {self.n_vn} VNs, {sum([len(node) for node in self.nodes])//2} edges"
 
+    def assert_edge(self, edge):
+        assert 0 <= edge[0] < self.n_cn, f"Edge non existent, check node index {edge[0]} out of bounds."
+        assert 0 <= edge[1] < self.n_nodes, f"Edge non existent, variable node index {edge[1]} out of bounds."
+
+    def assert_vn_node(self, vn):
+        assert 0 <= vn < self.n_vn, "Variable node index out of bounds."
+
+    def assert_cn_node(self, cn):
+        assert 0 <= cn < self.n_cn, "Check node index out of bounds."
+    
+
     def add_edges(self, edges):
         """Add edges defined as pairs of check nodes and variable nodes to the graph"""
-        for i, j in edges:
-            assert 0 <= i < self.n_cn, "Check node index out of bounds."
-            assert 0 <= j < self.n_vn, "Variable node index out of bounds."
-            j = j + self.n_cn
-            self.nodes[i].add(j) 
-            self.nodes[j].add(i)
+        for edge in edges:
+            self.assert_edge(edge)
+            self.nodes[edge[0]].add(edge[1] + self.n_cn) 
+            self.nodes[edge[1] + self.n_cn].add(edge[0])
 
     def remove_edges(self, edges):
         """Remove edges defined as pairs of check nodes and variable nodes from the graph"""
-        for i, j in edges:
-            assert 0 <= i < self.n_cn, "Check node index out of bounds."
-            assert 0 <= j < self.n_vn, "Variable node index out of bounds."
-            j = j + self.n_cn
-            self.nodes[i].remove(j) 
-            self.nodes[j].remove(i)       
+        for edge in edges:
+            assert self.has_edge(edge), "Cannot remove non existent edge"
+            self.nodes[edge[0]].remove(edge[1] + self.n_cn) 
+            self.nodes[edge[1] + self.n_cn].remove(edge[0])     
 
     def get_adjecent(self, node):
         """Returns all adjecent nodes of node index node"""
@@ -47,22 +54,21 @@ class QC_tanner_graph:
 
     def get_adjecent_cn(self, cn):
         """Returns adjecent nodes of check node index cn"""
-        assert 0 <= cn < self.n_cn, "Check node index out of bounds."
+        self.assert_cn_node(cn)
         return self.get_adjecent(cn)
 
     def get_adjecent_vn(self, vn):
         """Returns adjecent nodes of variable node index vn"""
-        assert 0 <= vn < self.n_vn, "Variable node index out of bounds."
+        self.assert_vn_node(vn)
         return self.get_adjecent(vn + self.cn)
 
     def has_edge(self, edge):
         """Returns true if the graph contains the edge (ci, vi)"""
-        assert 0 <= edge[0] < self.n_cn, f"Edge non existent, check node index {edge[0]} out of bounds."
-        assert 0 <= edge[1] < self.n_nodes, f"Edge non existens ariable node index {edge[1]} out of bounds."
+        self.assert_edge(edge)
         return edge[1] + self.n_cn in self.nodes[edge[0]]
 
     def get_check_degrees(self) -> list:
-        """Returns the degree of all checknodes of the graph"""
+        """Returns the degree of all check nodes of the graph"""
         return [len(self.nodes[i]) for i in range(self.n_cn)]
 
     def get_H(self):
@@ -74,21 +80,23 @@ class QC_tanner_graph:
                 H[i,j-self.n_cn] = 1
 
         return H
-    
+
+    def shift(self, node, t):
+        """Shifts the node index by t cyclically"""
+        return np.floor(node/self.N) * self.N + np.mod(node + t, self.N)
+
     def add_cyclical_edge_set(self, cn_index, vn_index):
         """Adds a cyclical edge set pi(ci, vi, N) to the graph"""
-        assert 0 <= cn_index < self.n_cn, "Check node index out of bounds."
-        assert 0 <= vn_index < self.n_vn, "Variable node index out of bounds."
+        self.assert_edge((cn_index, vn_index))
         t = np.arange(self.N)
-        check_nodes = np.floor(cn_index/self.N) * self.N + np.mod(cn_index + t, self.N)
-        variable_nodes = np.floor((vn_index)/self.N) * self.N + np.mod(vn_index + t, self.N)
+        check_nodes = self.shift(cn_index, t)
+        variable_nodes = self.shift(vn_index, t)
       
         self.add_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
 
     def remove_cyclical_edge_set(self, cn_index, vn_index):
         """Removes a cyclical edge set pi(ci, vi, N) from the graph"""
-        assert 0 <= cn_index < self.n_cn, "Check node index out of bounds."
-        assert 0 <= vn_index < self.n_vn, "Variable node index out of bounds."
+        self.assert_edge((cn_index, vn_index))
         t = np.arange(self.N)
         check_nodes = np.floor(cn_index/self.N) * self.N + np.mod(cn_index + t, self.N)
         variable_nodes = np.floor(vn_index/self.N) * self.N + np.mod(vn_index + t, self.N)
@@ -96,7 +104,7 @@ class QC_tanner_graph:
         self.remove_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
 
     def plot(self):
-        
+        """Graphical representation of the tanner graph"""
         width = 500
         height = 250
         border = 100
@@ -123,11 +131,12 @@ class QC_tanner_graph:
 
         plt.show()
 
+
 def shortest_path(G, vn_index, cn_index = None):
     """Shortest path length from start to stop"""
     if not cn_index is None:
-        assert 0 <= cn_index < G.n_cn, "Check node index out of bounds."
-    assert 0 <= vn_index < G.n_vn, "Variable node index out of bounds."
+        G.assert_cn_node(cn_index)
+    G.assert_vn_node(vn_index)
 
     start_index = vn_index + G.n_cn
     Q = [start_index]
