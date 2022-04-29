@@ -50,7 +50,7 @@ class QC_tanner_graph:
 
     def get_adjecent(self, node):
         """Returns all adjecent nodes of node index node"""
-        return self.nodes[node]
+        return self.nodes[int(node)]
 
     def get_adjecent_cn(self, cn):
         """Returns adjecent nodes of check node index cn"""
@@ -131,9 +131,33 @@ class QC_tanner_graph:
 
         plt.show()
 
+def min_distance(G, cn_index, vn_index):
+    """
+    Shortest path from cn to vn
+    """
+    vn_index = vn_index + G.n_cn
+    Q = [cn_index]
+    explored = set(Q)
+    length = 0
+    while Q:
+        length += 1
+        adjecent_nodes = []
+        for node in Q:
+            for adjecent_node in G.get_adjecent(node):
+                if adjecent_node == vn_index:
+                    return length 
+                if not adjecent_node in explored:
+                    explored.add(adjecent_node)
+                    adjecent_nodes.append(adjecent_node)
+        Q = adjecent_nodes
 
-def shortest_path(G, vn_index, cn_index = None):
-    """Shortest path length from start to stop"""
+    return np.inf
+
+def shortest_cycle(G, vn_index, cn_index = None):
+    """
+    Shortest cycle from vn to vn. 
+    If cn is given, the shortest cycle from vn to vn passing through the edge (cn. vn)
+    """
     if not cn_index is None:
         G.assert_cn_node(cn_index)
     G.assert_vn_node(vn_index)
@@ -162,13 +186,32 @@ def shortest_path(G, vn_index, cn_index = None):
 
 def local_girth_vn(G, vn_index):
     """Minimum cycle length passing through vn"""
-    return shortest_path(G, vn_index)
+    return shortest_cycle(G, vn_index)
 
-def local_girth_cn(G, cn_index, vn_index):
+def local_girth_cn(G, cn_index, vn_index, gcd = False):
     """Minimum cycle length passing through the edge (cn, vn) assuming edge between them is known to exist"""
-    result = shortest_path(G, vn_index, cn_index)
-    
+    if gcd:
+        result = local_cn_girth_gcd(G, cn_index, vn_index)
+    else:
+        result = shortest_cycle(G, vn_index, cn_index)
     return result 
+
+def local_cn_girth_gcd(G, cn, vn):
+    """Approximation of local edge girth for short cycles"""
+    delta = np.zeros(G.N)
+    for t in range(G.N):
+        delta[t] = min_distance(G, G.shift(cn, t), vn)   
+    
+    result = delta[0]
+
+    for t in range(G.N):
+        cond1 = delta[t] + delta[G.N-(t+1)]
+        cond2 = min_distance(G, G.shift(vn, t), vn) + min_distance(G, G.shift(cn, t-cn), G.shift(cn, -cn))
+        cond3 = delta[t]*G.N / np.gcd(G.N, t)
+
+        result = min([cond1, cond2, cond3, result])
+
+    return result
 
 def run_tests():
     m = 4

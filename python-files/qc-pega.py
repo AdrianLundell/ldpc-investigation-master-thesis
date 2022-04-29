@@ -9,7 +9,7 @@ import qc_graph_tools as qc
 import copy 
 
 # %% BFS-Calculation of the rk-Edge local girth
-def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, vn_girth, cn_girths):
+def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, vn_girth, cn_girths, gcd = False):
     """
     DFS calculation of the rk-edge local girth based on Algorithm 2 in 
     https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708
@@ -24,7 +24,7 @@ def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexe
 
             Gt2 = copy.deepcopy(Gt1)
             Gt2.add_cyclical_edge_set(current_cn_index, current_vn_index) 
-            girths[t+1] = min(girths[t], qc.local_girth_cn(Gt2, current_cn_index, current_vn_index))
+            girths[t+1] = min(girths[t], qc.local_girth_cn(Gt2, current_cn_index, current_vn_index, gcd))
 
             if vn_girth[0] <= girths[t+1]:
                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
@@ -35,7 +35,7 @@ def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexe
             else:
                 pass        
     
-def rk_edge_local_girth(G0, current_vn_index, rk):
+def rk_edge_local_girth(G0, current_vn_index, rk, gcd = False):
     t = 0
     enumerated_cn_indexes = np.zeros(rk+1, dtype=int) #s in article
     enumerated_cn_max = np.zeros(rk+1, dtype=int) #u in article
@@ -47,7 +47,7 @@ def rk_edge_local_girth(G0, current_vn_index, rk):
     girths[0] = np.inf 
 
     rk_edge_local_girth_layer(G0, current_vn_index, rk, t, 
-                        enumerated_cn_indexes, enumerated_cn_max, girths, vn_girth, cn_girths)
+                        enumerated_cn_indexes, enumerated_cn_max, girths, vn_girth, cn_girths, gcd)
 
     return vn_girth, cn_girths
 
@@ -73,22 +73,8 @@ def strategy1(vn_girth, cn_girths, G, vn_index):
     return int(result)
 
 #%% GCD-approximation of local cn_girth
-def local_cn_girth_GCE(G, cn, vn):
-    
-    delta = np.zeros(G.N)
-    for t in range(G.N):
-        delta[t] = G.min_distance(G.shift(cn, t), vn)   
-    
-    result = delta[0]
 
-    for t in range(G.N):
-        cond1 = delta(t) + delta(G.N-t)
-        cond2 = G.min_distance(G.shift(vn, t), vn) + G.min_distance(G.shift(cn, t-cn), G.shift(cn, -cn))
-        cond3 = delta[t]*G.N / np.gcd(G.N, t)
 
-        result = min([cond1, cond2, cond3, result])
-
-    return result
 #%%
 m = 10
 n = 10
@@ -103,10 +89,11 @@ for j in range(0,n*N,N):
         rk = min(r, d - k +1)
 
         G_temp = copy.deepcopy(G)
-        vn_girth, cn_girths = rk_edge_local_girth(G_temp, current_vn_index, rk)
+        vn_girth, cn_girths = rk_edge_local_girth(G_temp, current_vn_index, rk, gcd = True)
     
         ci = strategy1(vn_girth, cn_girths, G, current_vn_index)
         G.add_cyclical_edge_set(ci, current_vn_index)
 
 plt.spy(G.get_H())
+plt.show()
 # %%
