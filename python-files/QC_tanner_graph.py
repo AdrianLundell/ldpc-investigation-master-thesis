@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt 
 import numpy as np
 
 class QC_tanner_graph:
@@ -76,3 +77,40 @@ class QC_tanner_graph:
       
         self.remove_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
 
+    def plot(self):
+        
+        width = 500
+        height = 250
+        border = 100
+        vn_coords = np.stack((np.linspace(0, width, self.n_vn), np.full(self.n_vn, height)))
+        cn_coords = np.stack((np.linspace(0, width, self.n_cn), np.full(self.n_cn, 0)))
+        
+        #Init figure
+        plt.figure()
+        plt.xlim(-border, width+border)
+        plt.ylim(-border, height + border)
+        
+        #Plot nodes
+        plt.scatter(vn_coords[0,:],vn_coords[1,:], s = 40, c = "black", marker = "o")
+        plt.scatter(cn_coords[0,:],cn_coords[1,:], s = 40, c = "black", marker = "s")
+        
+        #Plot edges
+        for cn, vns in enumerate(self.nodes[:self.n_cn]):
+            for vn in vns:
+                vn_x = vn_coords[0,vn-self.n_cn]
+                vn_y = vn_coords[1,vn-self.n_cn]
+                cn_x = cn_coords[0, cn]    
+                cn_y = cn_coords[1, cn]    
+                plt.plot([vn_x, cn_x], [vn_y, cn_y], c = "black")
+
+        plt.show()
+
+
+def run_tests():
+    
+    G = QC_tanner_graph(3,5,1)
+    G.add_edges(zip([0,0],[3,4]))
+    G.plot()
+
+if __name__ == "__main__":
+    run_tests()
