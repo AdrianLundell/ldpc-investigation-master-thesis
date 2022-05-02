@@ -105,6 +105,15 @@ class QC_tanner_graph:
       
         self.remove_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
 
+    def local_girth(self, edge, gcd = False):
+        """Calculates the local girth of edge (cn, vn), accurately or with gcd-approximation"""
+        self.assert_edge(edge)
+        if gcd:
+            return shortest_cycles_gcd(self, edge[1], edge[0]) 
+        else:
+            return shortest_cycles(self, edge[1], edge[0])
+
+
     def plot(self):
         """Graphical representation of the tanner graph"""
         width = 500
@@ -133,9 +142,11 @@ class QC_tanner_graph:
 
         plt.show()
 
-def shortest_distances(G, node):
+def shortest_distances(G, node,  stop_node = None):
     """
     Shortest path to all connected nodes starting from node. Implemented with a BFS algorithm.
+
+    If a stop node is provided, the algorithm stops and the current distance is returned.
     """
     Q = [node]
     explored = set(Q)
@@ -154,15 +165,19 @@ def shortest_distances(G, node):
                     
                     distances[adjecent_node] = distance
 
+                    if adjecent_node = stop_node:
+                        return distance
+
         Q = adjecent_nodes
 
     return distances
 
-def shortest_cycles(G, node):
+def shortest_cycles(G, node, stop_node = None):
     """
     Shortest cycles starting in node and passing through each adjecent node.
 
     Performs a BFS search, saving the path taken up to that path. This path is necessarily minimal.
+    If a stop node is provided, the algorithm stops when the cycle containing this node is found and this cycle distance is returned.
     """
     Q = [node]
     explored = {node : []}
@@ -181,29 +196,38 @@ def shortest_cycles(G, node):
                     overlap = [n1==n2 for n1, n2 in zip(explored[adjecent_node], explored[node])]
                     
                     if not any(overlap) and len(explored[node]) > 1 :
-                        cn1 = explored[node][0]
-                        cn2 = explored[adjecent_node][0]
+                        n1 = explored[node][0]
+                        n2 = explored[adjecent_node][0]
 
                         distance = len(explored[node]) + len(explored[adjecent_node]) + 1
-                        distances[cn1] = distance
-                        distances[cn2] = distance
+                        distances[n1] = distance
+                        distances[n2] = distance
+
+                        if stop_node in explored[node]:
+                            return distance
 
         Q = adjecent_nodes
 
     return distances
 
-
-def local_cn_girth_gcd(G, cn, vn):
+def shortest_cycles_gcd(G, vn, cn, vn_distances, cn_distances):
     """Approximation of local edge girth for short cycles"""
-    delta = np.zeros(G.N)
-    for t in range(G.N):
-        delta[t] = min_distance(G, G.shift(cn, t), vn)   
+    distances = shortest_distances(G, vn)
+    distances = shortest_distances(G, vn)
+
+    if not distances:
+        return np.inf
     
+    shifted_cn = G.shift(cn, np.arange(G.N))
+    shifted_vn = G.shift(vn, np.arange(G.N)) + G.n_vn
+    
+    delta = [distances.get(key, np.inf) + 1 for key in shifted_cn]
     result = delta[0]
 
-    for t in range(G.N):
-        cond1 = delta[t] + delta[G.N-(t+1)]
-        cond2 = min_distance(G, G.shift(vn, t), vn) + min_distance(G, G.shift(cn, t-cn), G.shift(cn, -cn))
+    for t in range(1, G.N):
+        condition1 = delta[t] + delta[G.N-(t+1)]
+        condition2 = distances.get(shifted_vn[t], np.inf) +  
+        min_distance(G, G.shift(cn, t-cn), G.shift(cn, -cn))
         cond3 = delta[t]*G.N / np.gcd(G.N, t)
 
         result = min([cond1, cond2, cond3, result])
