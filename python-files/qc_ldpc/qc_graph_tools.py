@@ -13,10 +13,12 @@ class QC_tanner_graph:
 
     def __init__(self, m, n, N):
         """Creates a graph with m*N check nodes, n*N variable nodes and no edges"""
-        self.n_nodes = (m+n)*N
-        self.n_cn = m*N
-        self.n_vn = n*N 
-        self.N = N  
+        assert m > 0 and n > 0 and N > 0, "m, n and N must be positive integers."
+        
+        self.n_nodes = int((m+n)*N)
+        self.n_cn = int(m*N)
+        self.n_vn = int(n*N) 
+        self.N = int(N)  
 
         self.nodes = [set() for i in range(self.n_nodes)]
 
@@ -60,7 +62,7 @@ class QC_tanner_graph:
     def get_adjecent_vn(self, vn):
         """Returns adjecent nodes of variable node index vn"""
         self.assert_vn_node(vn)
-        return self.get_adjecent(vn + self.cn)
+        return self.get_adjecent(vn + self.n_cn)
 
     def has_edge(self, edge):
         """Returns true if the graph contains the edge (ci, vi)"""
@@ -131,41 +133,41 @@ class QC_tanner_graph:
 
         plt.show()
 
-def min_distance(G, cn_index, vn_index):
+def shortest_distances(G, node):
     """
-    Shortest path from cn to vn
+    Shortest path to all connected nodes starting from node. Implemented with a BFS algorithm.
     """
-    vn_index = vn_index + G.n_cn
-    Q = [cn_index]
+    Q = [node]
     explored = set(Q)
-    length = 0
+    distance = 0
+    distances = {}
+
     while Q:
-        length += 1
+        distance += 1
         adjecent_nodes = []
+
         for node in Q:
             for adjecent_node in G.get_adjecent(node):
-                if adjecent_node == vn_index:
-                    return length 
                 if not adjecent_node in explored:
                     explored.add(adjecent_node)
                     adjecent_nodes.append(adjecent_node)
+                    
+                    distances[adjecent_node] = distance
+
         Q = adjecent_nodes
 
-    return np.inf
+    return distances
 
-def shortest_cycle(G, vn_index, cn_index = None):
+def shortest_cycles(G, node):
     """
-    Shortest cycle from vn to vn. 
-    If cn is given, the shortest cycle from vn to vn passing through the edge (cn. vn)
-    """
-    if not cn_index is None:
-        G.assert_cn_node(cn_index)
-    G.assert_vn_node(vn_index)
+    Shortest cycles starting in node and passing through each adjecent node.
 
-    start_index = vn_index + G.n_cn
-    Q = [start_index]
-    explored = {start_index : []}
-    
+    Performs a BFS search, saving the path taken up to that path. This path is necessarily minimal.
+    """
+    Q = [node]
+    explored = {node : []}
+    distances = {}
+
     while Q:
         adjecent_nodes = []
 
@@ -174,27 +176,22 @@ def shortest_cycle(G, vn_index, cn_index = None):
                 if not adjecent_node in explored:
                     explored[adjecent_node] = explored[node] + [adjecent_node]
                     adjecent_nodes.append(adjecent_node)
+                
                 else:
                     overlap = [n1==n2 for n1, n2 in zip(explored[adjecent_node], explored[node])]
+                    
                     if not any(overlap) and len(explored[node]) > 1 :
-                        if cn_index == explored[adjecent_node][0] or cn_index == explored[node][0] or cn_index is None:
-                            return len(explored[node]) + len(explored[adjecent_node]) + 1
-    
+                        cn1 = explored[node][0]
+                        cn2 = explored[adjecent_node][0]
+
+                        distance = len(explored[node]) + len(explored[adjecent_node]) + 1
+                        distances[cn1] = distance
+                        distances[cn2] = distance
+
         Q = adjecent_nodes
 
-    return np.inf
+    return distances
 
-def local_girth_vn(G, vn_index):
-    """Minimum cycle length passing through vn"""
-    return shortest_cycle(G, vn_index)
-
-def local_girth_cn(G, cn_index, vn_index, gcd = False):
-    """Minimum cycle length passing through the edge (cn, vn) assuming edge between them is known to exist"""
-    if gcd:
-        result = local_cn_girth_gcd(G, cn_index, vn_index)
-    else:
-        result = shortest_cycle(G, vn_index, cn_index)
-    return result 
 
 def local_cn_girth_gcd(G, cn, vn):
     """Approximation of local edge girth for short cycles"""
@@ -212,26 +209,3 @@ def local_cn_girth_gcd(G, cn, vn):
         result = min([cond1, cond2, cond3, result])
 
     return result
-
-def run_tests():
-    m = 4
-    n = 4
-    N = 1
-    G = QC_tanner_graph(m, n, N)
-    a = [0, 0, 0, 1, 1, 2, 2, 3, 3]
-    b = [0, 1, 2, 0, 1, 2, 3, 2, 3]
-    G.add_edges(zip(b,a))
-
-    print("Minimal cycle from vn1 = ", local_girth_vn(G, 0))
-    print("Minimal cycle through cn3, vn1 = ",local_girth_cn(G, 2, 0))
-    G.plot()
-
-    G = QC_tanner_graph(m, n, 3)
-    G.add_cyclical_edge_set(0, 0)
-    G.add_cyclical_edge_set(3, 5)
-    G.add_cyclical_edge_set(6, 9)
-
-    G.plot()
-
-if __name__ == "__main__":
-    run_tests()
