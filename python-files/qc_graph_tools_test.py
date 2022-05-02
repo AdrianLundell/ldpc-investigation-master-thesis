@@ -114,9 +114,10 @@ class PathSearchTest(unittest.TestCase):
                                                        5 : 1})
         self.assertDictEqual(qc.shortest_cycles(G, 0), {4 : 4, 5 : 4})
 
-
     def test_fully_connected(self):
-
+        """
+        All cns and vns connnected
+        """
         G = qc.QC_tanner_graph(4,4,1)
         G.add_edges([(0,0),(0,1),(0,2), (0,3)])
         G.add_edges([(1,0),(1,1),(1,2), (1,3)])
@@ -126,3 +127,25 @@ class PathSearchTest(unittest.TestCase):
         self.assertDictEqual(qc.shortest_distances(G, 0), {1 : 2, 2 : 2, 3 : 2,
                                                            4 : 1, 5 : 1, 6  : 1, 7 : 1})
         self.assertDictEqual(qc.shortest_cycles(G, 0), {4 : 4, 5 : 4, 6 : 4, 7 : 4})
+
+    def test_long_cycle(self):
+        """
+        o o o o 
+        |/|/|/|
+        ■ ■ ■ ■ (+ edge (3,0))
+        """
+        G = qc.QC_tanner_graph(4,4,1)
+        G.add_edges([(0,0),(0,1),
+                     (1,1),(1,2),
+                     (2,2),(2,3),
+                     (3,3),(3,0)])
+                     
+        self.assertDictEqual(qc.shortest_distances(G, 0), {1: 2, 
+                                                           2: 4, 
+                                                           3: 2, 
+                                                           4:1, 
+                                                           5:1, 
+                                                           6:3, 
+                                                           7: 3})
+
+        self.assertDictEqual(qc.shortest_cycles(G, 0), {4 : 8, 5 : 8})
