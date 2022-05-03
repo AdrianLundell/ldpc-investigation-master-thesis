@@ -8,7 +8,7 @@ class QC_tanner_graph:
     
     Check nodes are stored in self.nodes[0:n_cn] and variable nodes are stored
     in self.nodes[n_cn:n_nodes], but external methods should not care about this
-    and variable nodes should be indexed from 0,...,n_vn-1
+    and variable nodes should be indexed from 0,..., n_vn-1 externally.
     """
 
     def __init__(self, m, n, N):
@@ -165,7 +165,7 @@ def shortest_distances(G, node,  stop_node = None):
                     
                     distances[adjecent_node] = distance
 
-                    if adjecent_node = stop_node:
+                    if adjecent_node == stop_node:
                         return distance
 
         Q = adjecent_nodes
@@ -207,29 +207,31 @@ def shortest_cycles(G, node, stop_node = None):
                             return distance
 
         Q = adjecent_nodes
-
-    return distances
-
-def shortest_cycles_gcd(G, vn, cn, vn_distances, cn_distances):
-    """Approximation of local edge girth for short cycles"""
-    distances = shortest_distances(G, vn)
-    distances = shortest_distances(G, vn)
-
-    if not distances:
+    if stop_node is None:
+        return distances
+    else:
         return np.inf
+
+# def shortest_cycles_gcd(G, vn, cn, vn_distances, cn_distances):
+#     """Approximation of local edge girth for short cycles"""
+#     distances = shortest_distances(G, vn)
+#     distances = shortest_distances(G, vn)
+
+#     if not distances:
+#         return np.inf
     
-    shifted_cn = G.shift(cn, np.arange(G.N))
-    shifted_vn = G.shift(vn, np.arange(G.N)) + G.n_vn
+#     shifted_cn = G.shift(cn, np.arange(G.N))
+#     shifted_vn = G.shift(vn, np.arange(G.N)) + G.n_vn
     
-    delta = [distances.get(key, np.inf) + 1 for key in shifted_cn]
-    result = delta[0]
+#     delta = [distances.get(key, np.inf) + 1 for key in shifted_cn]
+#     result = delta[0]
 
-    for t in range(1, G.N):
-        condition1 = delta[t] + delta[G.N-(t+1)]
-        condition2 = distances.get(shifted_vn[t], np.inf) +  
-        min_distance(G, G.shift(cn, t-cn), G.shift(cn, -cn))
-        cond3 = delta[t]*G.N / np.gcd(G.N, t)
+#     for t in range(1, G.N):
+#         condition1 = delta[t] + delta[G.N-(t+1)]
+#         condition2 = distances.get(shifted_vn[t], np.inf) +  
+#         min_distance(G, G.shift(cn, t-cn), G.shift(cn, -cn))
+#         cond3 = delta[t]*G.N / np.gcd(G.N, t)
 
-        result = min([cond1, cond2, cond3, result])
+#         result = min([cond1, cond2, cond3, result])
 
-    return result
+#     return result

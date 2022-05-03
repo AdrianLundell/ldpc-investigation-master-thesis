@@ -24,7 +24,7 @@ def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexe
 
             Gt2 = copy.deepcopy(Gt1)
             Gt2.add_cyclical_edge_set(current_cn_index, current_vn_index) 
-            girths[t+1] = min(girths[t], qc.shortest_cycles(Gt2, (current_cn_index, current_vn_index)))
+            girths[t+1] = min(girths[t], qc.shortest_cycles(Gt2, current_cn_index, current_vn_index))
 
             if max_girth[0] <= girths[t+1]:
                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
@@ -95,7 +95,7 @@ for j in range(0,n*N,N):
     for k in range(1, d+1):
         rk = min(r, d - k +1)
 
-        ##Calculated Fv, Fc,c for GCD
+        #Calculate Fv, Fc,c for GCD
         G_temp = copy.deepcopy(G)
         max_girth, cn_girths = rk_edge_local_girth(G_temp, current_vn_index, rk, gcd = False)
     
@@ -105,4 +105,8 @@ for j in range(0,n*N,N):
 plt.spy(G.get_H())
 plt.show()
 # %%
+for i in range(G.n_vn):
+    print(qc.shortest_cycles(G, i + G.n_cn))
+    print(len(G.nodes[i + G.n_cn]))
 
+# %%
