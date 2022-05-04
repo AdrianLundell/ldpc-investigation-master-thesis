@@ -164,8 +164,24 @@ class QC_tanner_graph:
         f.write(data)
         f.close() 
 
+    def reorder(self, index_list):
+        """Returns a new graph with an equivalent tanner graph and reordered variable nodes according to the index list"""
+        G = QC_tanner_graph(self.m, self.n, self.N)
+
+        for vn_index in range(self.n_vn):
+            new_vn_index = index_list[vn_index]
+            new_edges = []
+            for cn_index in self.get_adjecent_vn(vn_index):
+                new_edges.append((cn_index, new_vn_index))
+                G.add_to_proto(cn_index, vn_index)
+                
+            G.add_edges(new_edges)
+
+        return G
+
     @staticmethod
     def read(filename):
+        #Only supports SWM matrices 
 
         meta_data = np.loadtxt(filename, max_rows=1)
         n = int(meta_data[0])

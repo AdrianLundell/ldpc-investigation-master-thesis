@@ -132,15 +132,25 @@ for i, column_indexes in enumerate(combinations((range(n_cols)), n_rows)):
     #print(det)
 
     if not det == 0:
-        print(column_indexes)
         break
 
+reminding_columns = [i for i in range(n_cols) if i not in column_indexes]
+new_order = reminding_columns + list(column_indexes)
+
+print(new_order)
+A_new = np.take(A, new_order, axis=-1)
+
+#%%
+new_G = G.reorder(new_order)
+assert np.all(A_new == new_G.get_H())
+new_G.save("reorder_test.qc")
 
 #%%
 G.save("test.qc")
 G = qc.QC_tanner_graph.read("/home/adrianlundell/ldpc-investigation-master-thesis/python-files/qc_ldpc/test.qc")
 plt.spy(G.get_H())
 plt.show()
+
 # %%
 for i in range(G.n_vn):
     print(qc.shortest_cycles(G, i + G.n_cn))
