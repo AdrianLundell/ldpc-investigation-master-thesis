@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import qc_graph_tools as qc
 import copy 
+from itertools import combinations
 
 # %% BFS-Calculation of the rk-Edge local girth
 def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False):
@@ -82,28 +83,21 @@ def strategy1(max_girth, cn_girths, G, vn_index):
 
 
 #%%
-m = 9
-n = 73
-N = 256
-r = 1
-G = qc.QC_tanner_graph(m, n, N)
 # D = np.zeros(G.n_vn)
 # D[:264] = 2
 # D[264:264+192] = 3
 # D[264+192:] = 6
 
-# m = 3
-# n = 3
-# N = 2
-# r = 2
-D = np.full(G.n_vn,2)
+m = 8
+n = 16
+N = 10
+r = 1  
+G = qc.QC_tanner_graph(m, n, N)
+D = np.full(G.n_vn,3)
 #For same result each time
 np.random.seed(0)
-import time as time
 
-t0 = time.time()
-
-for j in range(0,N,N):
+for j in range(0,n*N,N):
     current_vn_index = j
     d = D[j]
 
@@ -118,11 +112,35 @@ for j in range(0,N,N):
         G.add_cyclical_edge_set(ci, current_vn_index)
         G.add_to_proto(ci, current_vn_index)
 
-print(time.time() - t0)
+#%%
+plt.spy(G.get_H())
+plt.show()
+np.linalg.inv(G.get_H()[:,:m*N])
+
+#%%
+A = G.get_H()
+
+n_rows,n_cols = A.shape
+
+ones = np.zeros(n_rows)
+free_ones = np.ones(n_rows)
+a = np.zeros(n_rows)
+columns = []
+
+for i, column_indexes in enumerate(combinations((range(n_cols)), n_rows)):
+    det = np.linalg.det(np.take(A, column_indexes, axis=-1))
+    #print(det)
+
+    if not det == 0:
+        print(column_indexes)
+        break
 
 
-# plt.spy(G.get_H())
-# plt.show()
+#%%
+G.save("test.qc")
+G = qc.QC_tanner_graph.read("/home/adrianlundell/ldpc-investigation-master-thesis/python-files/qc_ldpc/test.qc")
+plt.spy(G.get_H())
+plt.show()
 # %%
 for i in range(G.n_vn):
     print(qc.shortest_cycles(G, i + G.n_cn))
