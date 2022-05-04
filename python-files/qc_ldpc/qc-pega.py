@@ -9,7 +9,7 @@ import qc_graph_tools as qc
 import copy 
 
 # %% BFS-Calculation of the rk-Edge local girth
-def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False):
+def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False):
     """
     DFS calculation of the rk-edge local girth based on Algorithm 2 in 
     https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708
@@ -18,13 +18,13 @@ def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexe
     for i in range(int(enumerated_cn_max[t])):
         current_cn_index = i  #Reduncy to allow differentiating between i and node_i
         
+        # print(i)
         if not G.has_edge((current_cn_index, current_vn_index)):
             enumerated_cn_indexes[t] = current_cn_index
             enumerated_cn_max[t+1] = i
 
-            Gt2 = copy.deepcopy(Gt1)
-            Gt2.add_cyclical_edge_set(current_cn_index, current_vn_index) 
-            girths[t+1] = min(girths[t], qc.shortest_cycles(Gt2, current_cn_index, current_vn_index))
+            G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
+            girths[t+1] = min(girths[t], qc.shortest_cycles(G, current_cn_index, current_vn_index))
 
             if max_girth[0] <= girths[t+1]:
                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
@@ -32,11 +32,13 @@ def rk_edge_local_girth_layer(Gt1, current_vn_index, rk, t, enumerated_cn_indexe
                     max_girth[0] = girths[t+1]
                 else: 
                     #Calculate  Fv, Fc,c fopr GCD
-                    rk_edge_local_girth_layer(Gt2, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths)
+                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths)
             else:
                 pass        
-    
-def rk_edge_local_girth(G0, current_vn_index, rk, gcd = False):
+
+            G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
+
+def rk_edge_local_girth(G, current_vn_index, rk, gcd = False):
     """
     Calculate the maximum girth possible when adding an edge from current_vn_index to each check node, with a look-ahead depth of rk. 
     """
@@ -45,12 +47,12 @@ def rk_edge_local_girth(G0, current_vn_index, rk, gcd = False):
     enumerated_cn_max = np.zeros(rk+1, dtype=int) #u in article
     girths = np.zeros(rk+1) 
     max_girth = np.array([-np.inf])
-    cn_girths = np.full(G0.n_cn, -np.inf)
+    cn_girths = np.full(G.n_cn, -np.inf)
 
-    enumerated_cn_max[0] = G0.n_cn
+    enumerated_cn_max[0] = G.n_cn
     girths[0] = np.inf 
 
-    rk_edge_local_girth_layer(G0, current_vn_index, rk, t, 
+    rk_edge_local_girth_layer(G, current_vn_index, rk, t, 
                         enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd)
 
     return max_girth, cn_girths
@@ -80,33 +82,52 @@ def strategy1(max_girth, cn_girths, G, vn_index):
 
 
 #%%
-m = 10
-n = 10
-N = 5
-r = 2
+m = 9
+n = 73
+N = 256
+r = 1
 G = qc.QC_tanner_graph(m, n, N)
-D = np.full(G.n_vn, 2)
-np.random.seed(0)
+# D = np.zeros(G.n_vn)
+# D[:264] = 2
+# D[264:264+192] = 3
+# D[264+192:] = 6
 
-for j in range(0,n*N,N):
+# m = 3
+# n = 3
+# N = 2
+# r = 2
+D = np.full(G.n_vn,2)
+#For same result each time
+np.random.seed(0)
+import time as time
+
+t0 = time.time()
+
+for j in range(0,N,N):
     current_vn_index = j
     d = D[j]
 
-    for k in range(1, d+1):
+    for k in range(1, int(d+1)):
+        # print("k: ", k)
         rk = min(r, d - k +1)
 
         #Calculate Fv, Fc,c for GCD
-        G_temp = copy.deepcopy(G)
-        max_girth, cn_girths = rk_edge_local_girth(G_temp, current_vn_index, rk, gcd = False)
+        max_girth, cn_girths = rk_edge_local_girth(G, current_vn_index, rk, gcd = False)
     
         ci = strategy1(max_girth, cn_girths, G, current_vn_index)
         G.add_cyclical_edge_set(ci, current_vn_index)
+        G.add_to_proto(ci, current_vn_index)
 
-plt.spy(G.get_H())
-plt.show()
+print(time.time() - t0)
+
+
+# plt.spy(G.get_H())
+# plt.show()
 # %%
 for i in range(G.n_vn):
     print(qc.shortest_cycles(G, i + G.n_cn))
     print(len(G.nodes[i + G.n_cn]))
 
+#%%
+print(G.proto)
 # %%

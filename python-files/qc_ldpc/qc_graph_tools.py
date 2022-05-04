@@ -19,8 +19,11 @@ class QC_tanner_graph:
         self.n_cn = int(m*N)
         self.n_vn = int(n*N) 
         self.N = int(N)  
+        self.m = m
+        self.n = n
 
         self.nodes = [set() for i in range(self.n_nodes)]
+        self.proto = np.full((m, n), -1)
 
     def __repr__(self):
         return f"{self.n_cn} CNs, {self.n_vn} VNs, {sum([len(node) for node in self.nodes])//2} edges"
@@ -95,6 +98,12 @@ class QC_tanner_graph:
         variable_nodes = self.shift(vn_index, t)
       
         self.add_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
+    
+    def add_to_proto(self, cn_index, vn_index):
+        shift = np.mod(np.mod(vn_index, self.N) - np.mod(cn_index, self.N), self.N)
+        i = int(np.floor(cn_index/self.N))
+        j = int(np.floor(vn_index/self.N))
+        self.proto[i,j] = shift
 
     def remove_cyclical_edge_set(self, cn_index, vn_index):
         """Removes a cyclical edge set pi(ci, vi, N) from the graph"""
@@ -141,6 +150,18 @@ class QC_tanner_graph:
                 plt.plot([vn_x, cn_x], [vn_y, cn_y], c = "black")
 
         plt.show()
+
+    def save(self, filename):
+        
+        data = f"{self.n} {self.m} {self.N}\n\n"
+        for row in self.proto:
+            for char in row:
+                data = data + str(char) + " "
+            data += "\n"
+
+        f = open(filename, "x")
+        f.write(data)
+        f.close() 
 
 def shortest_distances(G, node,  stop_node = None):
     """
