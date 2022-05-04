@@ -1,3 +1,4 @@
+from textwrap import indent
 import matplotlib.pyplot as plt 
 import numpy as np
 
@@ -162,6 +163,29 @@ class QC_tanner_graph:
         f = open(filename, "x")
         f.write(data)
         f.close() 
+
+    @staticmethod
+    def read(filename):
+
+        meta_data = np.loadtxt(filename, max_rows=1)
+        n = int(meta_data[0])
+        m = int(meta_data[1])
+        N = int(meta_data[2])
+
+        proto = np.loadtxt(filename, skiprows=2)
+
+        G = QC_tanner_graph(m, n, N)
+        G.proto = proto
+
+        for i in range(m):
+            for j in range(n):
+                if not proto[i,j] == -1:
+                    cn = i*N + proto[i,j]
+                    vn = j*N
+
+                    G.add_cyclical_edge_set(cn, vn)
+
+        return G
 
 def shortest_distances(G, node,  stop_node = None):
     """
