@@ -190,6 +190,12 @@ class QC_tanner_graph(Tanner_graph):
         """Returns the shift of the 1-weighted circulant matrix containing node"""
         return np.mod(node, self.N)
 
+    def has_cyclical_edge_set(self, edge):
+        """Checks if the graph has a cyclical edge set for the given edge"""
+        i = int(self.proto_index(edge[0]))
+        j = int(self.proto_index(edge[1]))
+        return not self.proto[i,j] == -1
+
     def add_cyclical_edge_set(self, cn_index, vn_index):
         """Adds a cyclical edge set pi(ci, vi, N) to the graph, returning true on success and false otherwise"""
         self.assert_edge((cn_index, vn_index))
@@ -197,28 +203,27 @@ class QC_tanner_graph(Tanner_graph):
         i = int(self.proto_index(vn_index))
         j = int(self.proto_index(cn_index))
         if self.proto[i,j] == -1:
-            self.proto[i,j] = self.proto_value(vn_index) - self.proto_value(cn_index)
+            self.proto[i,j] = np.mod(self.proto_value(vn_index) - self.proto_value(cn_index), self.N)
 
             t = np.arange(self.N)
             check_nodes = self.proto_index(cn_index)*self.N + self.proto_value(cn_index + t)
             variable_nodes = self.proto_index(vn_index)*self.N + self.proto_value(vn_index + t)
             self.add_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
             return True 
-
         return False
 
     def remove_cyclical_edge_set(self, cn_index, vn_index):
         """Removes a cyclical edge set pi(ci, vi, N) from the graph, returning true on success and false otherwise"""
         self.assert_edge((cn_index, vn_index))
 
-        i = int(self.proto_index(vn_index))
-        j = int(self.proto_index(cn_index))
+        i = int(self.proto_index(cn_index))
+        j = int(self.proto_index(vn_index))
         if not self.proto[i,j] == -1:
-            self.proto[i,j] = np.mod(self.proto_value(vn_index) - self.proto_value(cn_index), self.N)
+            self.proto[i,j] = -1
 
             t = np.arange(self.N)
-            variable_nodes = i*self.N + self.proto_value(vn_index + t)
-            check_nodes = j*self.N + self.proto_value(cn_index + t)
+            check_nodes = i*self.N + self.proto_value(cn_index + t)
+            variable_nodes = j*self.N + self.proto_value(vn_index + t)
             self.remove_edges(np.stack((check_nodes.astype(int), variable_nodes.astype(int)), axis=-1))
             return True 
 

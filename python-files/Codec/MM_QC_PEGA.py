@@ -9,15 +9,19 @@ import Tanner_graph
 import Graph_algorithms
 
 def strategy1(max_girth, cn_girths, G, vn_index):
+    # 0)
+    for cn in range(G.n_cn):
+        if G.has_cyclical_edge_set((cn, vn_index)):
+            cn_girths[cn] == -max_girth
     # 1)
     survivors = np.argwhere(cn_girths == max_girth)
     # 2)
     cn_local_girths = np.zeros(survivors.size)
     for i in range(survivors.size):
         cn_index = int(survivors[i])
-        G.add_cyclical_edge_set(cn_index, vn_index)
-        cn_local_girths[i] = Graph_algorithms.shortest_cycles(G, cn_index, vn_index)
-        G.remove_cyclical_edge_set(cn_index, vn_index)
+        if G.add_cyclical_edge_set(cn_index, vn_index):
+            cn_local_girths[i] = Graph_algorithms.shortest_cycles(G, cn_index, vn_index)
+            G.remove_cyclical_edge_set(cn_index, vn_index)
     survivors = survivors[cn_local_girths == np.max(cn_local_girths)]
     # 3)
     check_degrees = np.take(G.get_check_degrees(), survivors)
@@ -47,7 +51,6 @@ for j in range(0,n*N,N):
     
         ci = strategy1(max_girth, cn_girths, G, current_vn_index)
         G.add_cyclical_edge_set(ci, current_vn_index)
-        G.add_to_proto(ci, current_vn_index)
 
 #%% Invertible check
 G_reordered = Graph_algorithms.make_invertable(G)

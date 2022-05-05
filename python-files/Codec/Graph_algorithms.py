@@ -5,28 +5,6 @@ import numpy as np
 import galois
 from itertools import combinations
 
-def make_invertable(G):
-    """
-    Reorder the QC_tanner_graph G such that the last m columns of parity equations in the progograph form a matrix invertible in GF(N+1) 
-    <==> last n_cn equations in H invertible in GF(2)
-    Solution found through exhausive search.
-    """
-    proto = G.proto
-    n_rows,n_cols = proto.shape
-    GF = galois.GF(G.N + 1)
-
-    for column_indexes in combinations((range(n_cols)), n_rows):
-        gf_mat = GF(np.take(proto, column_indexes, axis=-1))
-        
-        if not np.linalg.det(gf_mat) == 0:
-            break
-
-    reminding_columns = [i for i in range(n_cols) if i not in column_indexes]
-    new_order = reminding_columns + list(column_indexes)
-    G_invertible = G.reorder(new_order)
-
-    return G_invertible
-
 
 def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False):
     """
@@ -38,7 +16,7 @@ def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes,
         current_cn_index = i  #Reduncy to allow differentiating between i and node_i
         
         # print(i)
-        if not G.has_edge((current_cn_index, current_vn_index)):
+        if not G.has_cyclical_edge_set((current_cn_index, current_vn_index)):
             enumerated_cn_indexes[t] = current_cn_index
             enumerated_cn_max[t+1] = i
 
@@ -50,7 +28,7 @@ def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes,
                     cn_girths.flat[enumerated_cn_indexes[0:t+1]] = girths[t+1]
                     max_girth[0] = girths[t+1]
                 else: 
-                    #Calculate  Fv, Fc,c fopr GCD
+                    #Calculate  Fv, Fc,c for GCD
                     rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths)
             else:
                 pass        
@@ -169,3 +147,25 @@ def shortest_cycles(G, node, stop_node = None):
 #         result = min([cond1, cond2, cond3, result])
 
 #     return result
+
+def make_invertable(G):
+    """
+    Reorder the QC_tanner_graph G such that the last m columns of parity equations in the progograph form a matrix invertible in GF(N+1) 
+    <==> last n_cn equations in H invertible in GF(2)
+    Solution found through exhausive search.
+    """
+    proto = G.proto
+    n_rows,n_cols = proto.shape
+    GF = galois.GF(G.N + 1)
+
+    for column_indexes in combinations((range(n_cols)), n_rows):
+        gf_mat = GF(np.take(proto, column_indexes, axis=-1))
+        
+        if not np.linalg.det(gf_mat) == 0:
+            break
+
+    reminding_columns = [i for i in range(n_cols) if i not in column_indexes]
+    new_order = reminding_columns + list(column_indexes)
+    G_invertible = G.reorder(new_order)
+
+    return G_invertible
