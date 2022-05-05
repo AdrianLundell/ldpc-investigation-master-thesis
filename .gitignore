@@ -4,3 +4,4 @@ data/
 _deps/
 aff3ct/_deps/googletest-src
 python-files/__pycache__*/
+.ipynb_checkpoints
