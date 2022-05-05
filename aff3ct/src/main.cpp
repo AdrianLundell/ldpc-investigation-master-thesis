@@ -11,8 +11,8 @@ using namespace aff3ct;
 
 struct params 
 {
-	int K = 80;		         // number of information bits
-	int N = 160;	 		     // codeword size
+	int K = 40;		         // number of information bits
+	int N = 80;	 		     // codeword size
 	int fe = 100;			 // number of frame errors
 	int seed = 0;			 // PRNG seed for the AWGN channel
 	float ebn0_min = .5f;	 // minimum SNR value
@@ -141,8 +141,8 @@ void init_params(params &p)
 {
 	p.R = (float)p.K / (float)p.N;
 
-	for (auto i = 1; i <= p.K; i++)
-		p.info_bits[i] = p.N - i;
+	for (auto i = 0; i < p.K; i++)
+		p.info_bits[i] = i;
 
 	std::cout << "# * Simulation parameters: " << std::endl;
 	std::cout << "#    ** Frame errors   = " << p.fe << std::endl;
@@ -161,7 +161,7 @@ void init_modules(const params &p, modules &m)
 {
 	m.source = std::unique_ptr<module::Source_random<>>(new module::Source_random<>(p.K));
 	
-	const tools::Sparse_matrix H = tools::LDPC_matrix_handler::read("test2.qc");
+	const tools::Sparse_matrix H = tools::LDPC_matrix_handler::read("G_reordered.qc");
 	m.encoder = std::unique_ptr<module::Encoder_LDPC_from_QC<>>(new module::Encoder_LDPC_from_QC<>(p.K, p.N, H));
  
     tools::Flash_cell cell(p.cell_type);
