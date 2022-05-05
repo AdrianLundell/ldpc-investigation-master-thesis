@@ -1,3 +1,7 @@
+"""
+Generates a map from regular binary enumeration to corresponding gray enumerated value
+"""
+
 #%%
 import numpy as np
 ints = range(8)

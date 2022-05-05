@@ -1,3 +1,6 @@
+"""
+Analysis of generated noise distributions from Channel_AWGN_asymmetric
+"""
 from cmath import sqrt
 import numpy as np
 import matplotlib.pyplot as plt

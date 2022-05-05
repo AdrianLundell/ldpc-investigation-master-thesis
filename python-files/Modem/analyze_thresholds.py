@@ -1,3 +1,7 @@
+"""
+Analysis of thresholds and llrs as computed by maximising mutual information in optimal_thresholds.py
+"""
+
 #%%
 import pandas as pd
 import matplotlib.pyplot as plt
