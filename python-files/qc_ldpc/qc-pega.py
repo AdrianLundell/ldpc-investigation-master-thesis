@@ -79,22 +79,13 @@ def strategy1(max_girth, cn_girths, G, vn_index):
 
     return int(result)
 
-#%% GCD-approximation of local cn_girth
-
-
-#%%
-# D = np.zeros(G.n_vn)
-# D[:264] = 2
-# D[264:264+192] = 3
-# D[264+192:] = 6
-
+#%% MM-QC-PEGA
 m = 8
 n = 16
-N = 10
+N = 5
 r = 1  
 G = qc.QC_tanner_graph(m, n, N)
 D = np.full(G.n_vn,3)
-#For same result each time
 np.random.seed(0)
 
 for j in range(0,n*N,N):
@@ -102,60 +93,31 @@ for j in range(0,n*N,N):
     d = D[j]
 
     for k in range(1, int(d+1)):
-        # print("k: ", k)
         rk = min(r, d - k +1)
 
-        #Calculate Fv, Fc,c for GCD
         max_girth, cn_girths = rk_edge_local_girth(G, current_vn_index, rk, gcd = False)
     
         ci = strategy1(max_girth, cn_girths, G, current_vn_index)
         G.add_cyclical_edge_set(ci, current_vn_index)
         G.add_to_proto(ci, current_vn_index)
 
-#%%
-plt.spy(G.get_H())
-plt.show()
-np.linalg.inv(G.get_H()[:,:m*N])
-
-#%%
-A = G.get_H()
-
-n_rows,n_cols = A.shape
-
-ones = np.zeros(n_rows)
-free_ones = np.ones(n_rows)
-a = np.zeros(n_rows)
-columns = []
+#%% Reorder columns to make H2 invertible
+H = G.get_H()
+n_rows,n_cols = H.shape
 
 for i, column_indexes in enumerate(combinations((range(n_cols)), n_rows)):
-    det = np.linalg.det(np.take(A, column_indexes, axis=-1))
-    #print(det)
+    det = np.linalg.det(np.take(H, column_indexes, axis=-1))
 
     if not det == 0:
         break
 
 reminding_columns = [i for i in range(n_cols) if i not in column_indexes]
 new_order = reminding_columns + list(column_indexes)
+G_invertible = G.reorder(new_order)
 
-print(new_order)
-A_new = np.take(A, new_order, axis=-1)
+G.save("G_reordered.qc")
+G_invertible.save("G.qc")
 
-#%%
-new_G = G.reorder(new_order)
-assert np.all(A_new == new_G.get_H())
-new_G.save("reorder_test.qc")
-
-#%%
-G.save("test.qc")
-G = qc.QC_tanner_graph.read("/home/adrianlundell/ldpc-investigation-master-thesis/python-files/qc_ldpc/test.qc")
-plt.spy(G.get_H())
-plt.show()
-
-# %%
-for i in range(G.n_vn):
-    print(qc.shortest_cycles(G, i + G.n_cn))
-    print(len(G.nodes[i + G.n_cn]))
-
-#%%
-print(G.proto)
+np.linalg.inv(G_invertible.get_H()[:,-m*N:])
+np.linalg.inv(G.get_H()[:,-m*N:])
 # %%

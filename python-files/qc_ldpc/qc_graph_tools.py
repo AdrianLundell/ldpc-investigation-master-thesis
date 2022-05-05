@@ -12,10 +12,12 @@ class QC_tanner_graph:
     and variable nodes should be indexed from 0,..., n_vn-1 externally.
     """
 
-    def __init__(self, m, n, N):
-        """Creates a graph with m*N check nodes, n*N variable nodes and no edges"""
+    def __init__(self, m, n, N, swc = False):
+        """Creates a graph with m*N check nodes, n*N variable nodes and no edges. If swc is set to true the Single Weight Constraint is enforced, 
+        meaning each circulant matrix has weight 1 or 0"""
         assert m > 0 and n > 0 and N > 0, "m, n and N must be positive integers."
         
+        self.swc = swc
         self.n_nodes = int((m+n)*N)
         self.n_cn = int(m*N)
         self.n_vn = int(n*N) 
@@ -39,6 +41,11 @@ class QC_tanner_graph:
     def assert_cn_node(self, cn):
         assert 0 <= cn < self.n_cn, "Check node index out of bounds."
     
+    def assert_swc(self, edge):
+        if self.swc:
+            i = int(np.floor(edge[0]/self.N))
+            j = int(np.floor(edge[1]/self.N))
+            assert self.proto[i,j] == 0, "Tried setting circulant weight > 1"
 
     def add_edges(self, edges):
         """Add edges defined as pairs of check nodes and variable nodes to the graph"""
@@ -52,7 +59,7 @@ class QC_tanner_graph:
         for edge in edges:
             assert self.has_edge(edge), "Cannot remove non existent edge"
             self.nodes[edge[0]].remove(edge[1] + self.n_cn) 
-            self.nodes[edge[1] + self.n_cn].remove(edge[0])     
+            self.nodes[edge[1] + self.n_cn].remove(edge[0])
 
     def get_adjecent(self, node):
         """Returns all adjecent nodes of node index node"""
@@ -123,7 +130,6 @@ class QC_tanner_graph:
         else:
             return shortest_cycles(self, edge[1], edge[0])
 
-
     def plot(self):
         """Graphical representation of the tanner graph"""
         width = 500
@@ -153,7 +159,9 @@ class QC_tanner_graph:
         plt.show()
 
     def save(self, filename):
-        
+        """
+        Saves the protograph as a .qc file, as defined here: https://aff3ct.readthedocs.io/en/latest/user/simulation/parameters/codec/ldpc/decoder.html
+        """
         data = f"{self.n} {self.m} {self.N}\n\n"
         for row in self.proto:
             for char in row:
@@ -173,7 +181,7 @@ class QC_tanner_graph:
             new_edges = []
             for cn_index in self.get_adjecent_vn(vn_index):
                 new_edges.append((cn_index, new_vn_index))
-                G.add_to_proto(cn_index, vn_index)
+                G.add_to_proto(cn_index, new_vn_index)
                 
             G.add_edges(new_edges)
 
