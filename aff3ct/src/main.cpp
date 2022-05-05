@@ -11,13 +11,13 @@ using namespace aff3ct;
 
 struct params 
 {
-	int K = 8;				 // number of information bits
-	int N = 8;			     // codeword size
+	int K = 40;		         // number of information bits
+	int N = 80;	 		     // codeword size
 	int fe = 100;			 // number of frame errors
 	int seed = 0;			 // PRNG seed for the AWGN channel
 	float ebn0_min = .5f;	 // minimum SNR value
 	float ebn0_max = 2.00f;  // maximum SNR value
-	float ebn0_step = .5f; // SNR step
+	float ebn0_step = .5f;   // SNR step
 	float R;				 // code rate (R=K/N)
 	float min_sigma = 0.05;  // Set minimum value for individual sigmas
 	
@@ -26,16 +26,20 @@ struct params
     int page_type = tools::Flash_reader<float, float>::lower;
     int read_type = tools::Flash_reader<float, float>::hard;
     int cell_type = tools::Flash_cell::SLC;
+
+	// std::vector<uint32_t> info_bits = {0,1,2,3,4,5,6,7,8,9,10,11};
+
+	std::vector<uint32_t> info_bits = std::vector<uint32_t>(K);
 };
 void init_params(params &p);
 
 struct modules
 {
 	std::unique_ptr<module::Source_random<>> source;
-	std::unique_ptr<module::Encoder_NO<>> encoder;
+	std::unique_ptr<module::Encoder_LDPC_from_QC<>> encoder;
 	std::unique_ptr<module::Modem_flash_page<>> modem;
 	std::unique_ptr<module::Channel_AWGN_asymmetric<>> channel;
-	std::unique_ptr<module::Decoder_NO<>> decoder;
+	std::unique_ptr<module::Decoder_LDPC_BP_flooding_SPA<>> decoder;
 	std::unique_ptr<module::Monitor_BFER<>> monitor;
 };
 void init_modules(const params &p, modules &m);
@@ -53,7 +57,7 @@ void init_buffers(const params &p, buffers &b);
 
 struct utils
 {
-	std::unique_ptr<tools::Sigma_asymmetric<>> noise;					 // a sigma noise type
+	std::unique_ptr<tools::Sigma_asymmetric<>> noise;	     // a sigma noise type
 	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
 	std::unique_ptr<tools::Terminal_std> terminal;			 // manage the output text in the terminal
 };
@@ -128,7 +132,6 @@ int main(int argc, char **argv)
 			break;
 	}
 
-    u.terminal->final_report();
 	std::cout << "# End of the simulation" << std::endl;
 
 	return 0;
@@ -137,6 +140,10 @@ int main(int argc, char **argv)
 void init_params(params &p)
 {
 	p.R = (float)p.K / (float)p.N;
+
+	for (auto i = 0; i < p.K; i++)
+		p.info_bits[i] = i;
+
 	std::cout << "# * Simulation parameters: " << std::endl;
 	std::cout << "#    ** Frame errors   = " << p.fe << std::endl;
 	std::cout << "#    ** Noise seed     = " << p.seed << std::endl;
@@ -153,7 +160,9 @@ void init_params(params &p)
 void init_modules(const params &p, modules &m)
 {
 	m.source = std::unique_ptr<module::Source_random<>>(new module::Source_random<>(p.K));
-	m.encoder = std::unique_ptr<module::Encoder_NO<>>(new module::Encoder_NO<>(p.N));
+	
+	const tools::Sparse_matrix H = tools::LDPC_matrix_handler::read("G_reordered.qc");
+	m.encoder = std::unique_ptr<module::Encoder_LDPC_from_QC<>>(new module::Encoder_LDPC_from_QC<>(p.K, p.N, H));
  
     tools::Flash_cell cell(p.cell_type);
     tools::Flash_reader<float, float> reader(p.page_type, p.read_type, p.reader_fpath);
@@ -164,7 +173,12 @@ void init_modules(const params &p, modules &m)
 
 	m.channel = std::unique_ptr<module::Channel_AWGN_asymmetric<>>(new module::Channel_AWGN_asymmetric<float>(p.N, p.voltage_levels, sigmas));
 	
-    m.decoder = std::unique_ptr<module::Decoder_NO<>>(new module::Decoder_NO<>(p.N, 1));
+    m.decoder = std::unique_ptr<module::Decoder_LDPC_BP_flooding_SPA<>>(new module::Decoder_LDPC_BP_flooding_SPA<>(
+	p.K, 
+	p.N, 
+	10, 
+	H,
+	p.info_bits));
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(new module::Monitor_BFER<>(p.K, p.fe));
 };
 
