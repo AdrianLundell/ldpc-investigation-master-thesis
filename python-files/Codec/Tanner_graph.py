@@ -200,8 +200,8 @@ class QC_tanner_graph(Tanner_graph):
         """Adds a cyclical edge set pi(ci, vi, N) to the graph, returning true on success and false otherwise"""
         self.assert_edge((cn_index, vn_index))
       
-        i = int(self.proto_index(vn_index))
-        j = int(self.proto_index(cn_index))
+        i = int(self.proto_index(cn_index))
+        j = int(self.proto_index(vn_index))
         if self.proto[i,j] == -1:
             self.proto[i,j] = np.mod(self.proto_value(vn_index) - self.proto_value(cn_index), self.N)
 
@@ -232,11 +232,13 @@ class QC_tanner_graph(Tanner_graph):
     def reordered(self, index_list):
         """Returns a new graph with an equivalent tanner graph and reordered variable nodes according to the index list"""
         G = QC_tanner_graph(self.m, self.n, self.N)
+        index_list = np.array(index_list)
 
         for i, row in enumerate(self.proto):
             for j, shift in enumerate(row):
-                vn_index = index_list[j] * self.N + shift
-                cn_index = j * self.N
-                G.add_cyclical_edge_set(cn_index, vn_index)
+                if not shift == -1:
+                    vn_index = int(np.argwhere(index_list == j) * self.N + shift)
+                    cn_index = int(i * self.N)
+                    G.add_cyclical_edge_set(cn_index, vn_index)
                 
         return G

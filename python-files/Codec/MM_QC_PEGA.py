@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import Tanner_graph
 import Graph_algorithms
+import galois 
 
 def strategy1(max_girth, cn_girths, G, vn_index):
     # 0)
@@ -32,12 +33,12 @@ def strategy1(max_girth, cn_girths, G, vn_index):
     return int(result)
 
 #%% MM-QC-PEGA algorithm
-m = 8
-n = 16
-N = 5
+m = 2
+n = 10
+N = 16
 r = 1  
 G = Tanner_graph.QC_tanner_graph(m, n, N)
-D = np.full(G.n_vn,3)
+D = np.full(G.n_vn,2)
 np.random.seed(0)
 
 for j in range(0,n*N,N):
@@ -55,9 +56,29 @@ for j in range(0,n*N,N):
 #%% Invertible check
 G_reordered = Graph_algorithms.make_invertable(G)
 
-plt.spy(G.get_H())
-plt.show()
-plt.spy(G_reordered.get_H())
+parity_eqs = np.zeros((m*N,n*N))
+parity_eqs[:,-m*N:] = 0.2
+
+plt.subplot(2,1,1)
+plt.imshow(1 - np.maximum(G.get_H(), parity_eqs), cmap="gray")
+plt.subplot(2,1,2)
+plt.imshow(1 - np.maximum(G_reordered.get_H(), parity_eqs), cmap="gray")
 plt.show()
 
+GF = galois.GF(2)
+H = GF(G.get_H().astype(int))
+H_reordered = GF(G_reordered.get_H().astype(int))
+
+try:
+    print(np.linalg.det(H[:,-m*N:]))
+    np.linalg.inv(H[:,-m*N:])
+except: 
+    print("G invertion failed")
+
+try:
+    print(np.linalg.det(H_reordered[:,-m*N:]))
+    np.linalg.inv(H_reordered[:,-m*N:])
+except: 
+    print("G reoredered invertion failed")
 #G.save("test.qc")
+# %%

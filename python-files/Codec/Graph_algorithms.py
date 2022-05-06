@@ -1,6 +1,7 @@
 """
 Contains graph algorithms for use in qc-ldpc optimisation
 """
+from sre_constants import SUCCESS
 import numpy as np 
 import galois
 from itertools import combinations
@@ -154,18 +155,22 @@ def make_invertable(G):
     <==> last n_cn equations in H invertible in GF(2)
     Solution found through exhausive search.
     """
-    proto = G.proto
+    proto = G.proto + 1
     n_rows,n_cols = proto.shape
     GF = galois.GF(G.N + 1)
+    success = False
 
     for column_indexes in combinations((range(n_cols)), n_rows):
         gf_mat = GF(np.take(proto, column_indexes, axis=-1))
         
         if not np.linalg.det(gf_mat) == 0:
+            success = True
             break
 
+    assert success, "Invertion not possible"
+    
     reminding_columns = [i for i in range(n_cols) if i not in column_indexes]
     new_order = reminding_columns + list(column_indexes)
-    G_invertible = G.reorder(new_order)
+    G_invertible = G.reordered(new_order)
 
     return G_invertible
