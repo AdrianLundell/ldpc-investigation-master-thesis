@@ -33,9 +33,9 @@ def strategy1(max_girth, cn_girths, G, vn_index):
     return int(result)
 
 #%% MM-QC-PEGA algorithm
-m = 2
-n = 10
-N = 16
+m = 5
+n = 20
+N = 10
 r = 1  
 G = Tanner_graph.QC_tanner_graph(m, n, N)
 D = np.full(G.n_vn,2)

@@ -4,7 +4,7 @@ Contains graph algorithms for use in qc-ldpc optimisation
 from sre_constants import SUCCESS
 import numpy as np 
 import galois
-from itertools import combinations
+from itertools import combinations, permutations
 
 
 def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False):
@@ -155,21 +155,22 @@ def make_invertable(G):
     <==> last n_cn equations in H invertible in GF(2)
     Solution found through exhausive search.
     """
-    proto = G.proto + 1
-    n_rows,n_cols = proto.shape
-    GF = galois.GF(G.N + 1)
+    H = galois.GF2(G.get_H().astype(int))
     success = False
+    H2 = galois.GF2(np.zeros((G.n_cn, G.n_cn)).astype(int))
 
-    for column_indexes in combinations((range(n_cols)), n_rows):
-        gf_mat = GF(np.take(proto, column_indexes, axis=-1))
+    for column_indexes in permutations((range(G.n)), G.m):
+        for i, j in enumerate(column_indexes):
+            H2[:,i*G.N:i*G.N+G.N] = H[:, j*G.N:j*G.N+G.N]
         
-        if not np.linalg.det(gf_mat) == 0:
+        if not np.linalg.det(H2) == 0:
             success = True
             break
 
-    assert success, "Invertion not possible"
+    if not success:
+        print("Invertion not possible")
     
-    reminding_columns = [i for i in range(n_cols) if i not in column_indexes]
+    reminding_columns = [i for i in range(G.n) if i not in column_indexes]
     new_order = reminding_columns + list(column_indexes)
     G_invertible = G.reordered(new_order)
 
