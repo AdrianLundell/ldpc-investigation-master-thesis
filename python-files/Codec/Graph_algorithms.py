@@ -159,7 +159,8 @@ def make_invertable(G):
     success = False
     H2 = galois.GF2(np.zeros((G.n_cn, G.n_cn)).astype(int))
 
-    for column_indexes in permutations((range(G.n)), G.m):
+    for i, column_indexes in enumerate(combinations((range(G.n)), G.m)):
+        print(i)
         for i, j in enumerate(column_indexes):
             H2[:,i*G.N:i*G.N+G.N] = H[:, j*G.N:j*G.N+G.N]
         

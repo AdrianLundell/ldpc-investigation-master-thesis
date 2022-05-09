@@ -33,12 +33,12 @@ def strategy1(max_girth, cn_girths, G, vn_index):
     return int(result)
 
 #%% MM-QC-PEGA algorithm
-m = 5
+m = 7
 n = 20
 N = 10
 r = 1  
 G = Tanner_graph.QC_tanner_graph(m, n, N)
-D = np.full(G.n_vn,2)
+D = np.full(G.n_vn,3)
 np.random.seed(0)
 
 for j in range(0,n*N,N):
@@ -54,6 +54,10 @@ for j in range(0,n*N,N):
         G.add_cyclical_edge_set(ci, current_vn_index)
 
 #%% Invertible check
+H = galois.GF2(G.get_H().astype(int))
+np.linalg.matrix_rank(H)
+#%%
+
 G_reordered = Graph_algorithms.make_invertable(G)
 
 parity_eqs = np.zeros((m*N,n*N))
