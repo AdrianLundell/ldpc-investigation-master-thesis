@@ -16,8 +16,8 @@ struct params
 	int N = 200;	 		     // codeword size
 	int fe = 100;			 // number of frame errors
 	int seed = 0;			 // PRNG seed for the AWGN channel
-	float ebn0_min = .5f;	 // minimum SNR value
-	float ebn0_max = 2.00f;  // maximum SNR value
+	float ebn0_min = 0.f;	 // minimum SNR value
+	float ebn0_max = 10.f;  // maximum SNR value
 	float ebn0_step = .5f;   // SNR step
 	float R;				 // code rate (R=K/N)
 	float min_sigma = 0.05;  // Set minimum value for individual sigmas
@@ -65,6 +65,7 @@ struct utils
 	std::ofstream output;
 };
 void init_utils(const params &p, const modules &m, utils &u);
+void print_params(std::ostream &stream);
 
 int main(int argc, char **argv)
 {
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
 	utils u;	
 	init_utils(p, m, u); // create and initialize the utils
 
-
+	print_params(u.output);
 	u.terminal->legend(u.output);
 	// display the legend in the terminal
 	u.terminal->legend();
@@ -217,4 +218,76 @@ void init_utils(const params &p, const modules &m, utils &u)
 
 	u.output.open(p.output_fpath, std::ios_base::app);
 
+}
+
+void print_params(std::ostream &stream)
+{
+//OBS Hardcoded and false parameters
+stream  << "[metadata]" << std::endl;
+stream << "ci=on" << std::endl;
+stream << "command=None" << std::endl;
+stream << "title=BCH (7,4,1)" << std::endl;
+stream << "" << std::endl;
+stream << "[trace]" << std::endl;
+stream << "# ----------------------------------------------------" << std::endl;
+stream << "# ---- A FAST FORWARD ERROR CORRECTION TOOLBOX >> ----" << std::endl;
+stream << "# ----------------------------------------------------" << std::endl;
+stream << "# Parameters :" << std::endl;
+stream << "# * Simulation ------------------------------------" << std::endl;
+stream << "#    ** Type                   = BFER" << std::endl;
+stream << "#    ** Type of bits           = int32" << std::endl;
+stream << "#    ** Type of reals          = float32" << std::endl;
+stream << "#    ** Date (UTC)             = 2018-07-27 09:28:38" << std::endl;
+stream << "#    ** Git version            = v1.3.2-825-g5c9c077" << std::endl;
+stream << "#    ** Code type (C)          = BCH" << std::endl;
+stream << "#    ** Noise range            = 0 -> 10 dB" << std::endl;
+stream << "#    ** Noise type (E)         = EBN0" << std::endl;
+stream << "#    ** Seed                   = 0" << std::endl;
+stream << "#    ** Statistics             = off" << std::endl;
+stream << "#    ** Debug mode             = off" << std::endl;
+stream << "#    ** Multi-threading (t)    = 48 thread(s)" << std::endl;
+stream << "#    ** Coset approach (c)     = no" << std::endl;
+stream << "#    ** Coded monitoring       = no" << std::endl;
+stream << "#    ** Bad frames tracking    = off" << std::endl;
+stream << "#    ** Bad frames replay      = off" << std::endl;
+stream << "#    ** Bit rate               = 0.571429 (4/7)" << std::endl;
+stream << "#    ** Inter frame level      = 1" << std::endl;
+stream << "# * Source ----------------------------------------" << std::endl;
+stream << "#    ** Type                   = RAND" << std::endl;
+stream << "#    ** Implementation         = STD" << std::endl;
+stream << "#    ** Info. bits (K_info)    = 4" << std::endl;
+stream << "# * Codec -----------------------------------------" << std::endl;
+stream << "#    ** Type                   = BCH" << std::endl;
+stream << "#    ** Info. bits (K)         = 4" << std::endl;
+stream << "#    ** Codeword size (N_cw)   = 7" << std::endl;
+stream << "#    ** Frame size (N)         = 7" << std::endl;
+stream << "#    ** Code rate              = 0.571429 (4/7)" << std::endl;
+stream << "# * Encoder ---------------------------------------" << std::endl;
+stream << "#    ** Type                   = BCH" << std::endl;
+stream << "#    ** Systematic             = yes" << std::endl;
+stream << "# * Decoder ---------------------------------------" << std::endl;
+stream << "#    ** Type (D)               = ALGEBRAIC" << std::endl;
+stream << "#    ** Implementation         = STD" << std::endl;
+stream << "#    ** Systematic             = yes" << std::endl;
+stream << "#    ** Galois field order (m) = 3" << std::endl;
+stream << "#    ** Correction power (T)   = 1" << std::endl;
+stream << "# * Modem -----------------------------------------" << std::endl;
+stream << "#    ** Type                   = BPSK" << std::endl;
+stream << "#    ** Implementation         = STD" << std::endl;
+stream << "#    ** Bits per symbol        = 1" << std::endl;
+stream << "#    ** Sampling factor        = 1" << std::endl;
+stream << "#    ** Sigma square           = on" << std::endl;
+stream << "# * Channel ---------------------------------------" << std::endl;
+stream << "#    ** Type                   = AWGN" << std::endl;
+stream << "#    ** Implementation         = FAST" << std::endl;
+stream << "#    ** Complex                = off" << std::endl;
+stream << "#    ** Add users              = off" << std::endl;
+stream << "# * Monitor ---------------------------------------" << std::endl;
+stream << "#    ** Frame error count (e)  = 100" << std::endl;
+stream << "#    ** Compute mutual info    = no" << std::endl;
+stream << "# * Terminal --------------------------------------" << std::endl;
+stream << "#    ** Enabled                = yes" << std::endl;
+stream << "#    ** Frequency (ms)         = 500" << std::endl;
+stream << "#" << std::endl;
+stream << "# The simulation is running..." << std::endl;
 }
