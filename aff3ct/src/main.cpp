@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <vector>
 #include <string>
@@ -65,6 +66,10 @@ void init_utils(const modules &m, utils &u);
 
 int main(int argc, char **argv)
 {
+	//Create output file
+	std::ofstream myfile;
+	myfile.open ("example.txt", std::ios_base::app);
+	
 	// get the AFF3CT version
 	const std::string v = "v" + std::to_string(tools::version_major()) + "." +
 						  std::to_string(tools::version_minor()) + "." +
@@ -75,6 +80,12 @@ int main(int argc, char **argv)
 	std::cout << "# Feel free to improve it as you want to fit your needs." << std::endl;
 	std::cout << "#----------------------------------------------------------" << std::endl;
 	std::cout << "#" << std::endl;
+
+	myfile << "#----------------------------------------------------------" << std::endl;
+	myfile << "# This is a basic program using the AFF3CT library (" << v << ")" << std::endl;
+	myfile << "# Feel free to improve it as you want to fit your needs." << std::endl;
+	myfile << "#----------------------------------------------------------" << std::endl;
+	myfile << "#" << std::endl;
 
 	params p;
 	init_params(p); // create and initialize the parameters defined by the user
@@ -122,6 +133,8 @@ int main(int argc, char **argv)
 
 		// display the performance (BER and FER) in the terminal
 		u.terminal->final_report();
+		u.terminal->final_report(myfile);
+
 
 		// reset the monitor for the next SNR
 		m.monitor->reset();
@@ -132,7 +145,9 @@ int main(int argc, char **argv)
 			break;
 	}
 
+	myfile << "# End of the simulation" << std::endl;
 	std::cout << "# End of the simulation" << std::endl;
+	myfile.close();
 
 	return 0;
 }
