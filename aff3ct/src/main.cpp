@@ -24,6 +24,7 @@ struct params
 	
     std::vector<float> voltage_levels{-1, 1};
     std::string reader_fpath = "reader_static_hard.txt";
+	std::string output_fpath = "../../python-files/PyBER/data/example.txt";
     int page_type = tools::Flash_reader<float, float>::lower;
     int read_type = tools::Flash_reader<float, float>::hard;
     int cell_type = tools::Flash_cell::SLC;
@@ -61,14 +62,13 @@ struct utils
 	std::unique_ptr<tools::Sigma_asymmetric<>> noise;	     // a sigma noise type
 	std::vector<std::unique_ptr<tools::Reporter>> reporters; // list of reporters dispayed in the terminal
 	std::unique_ptr<tools::Terminal_std> terminal;			 // manage the output text in the terminal
+	std::ofstream output;
 };
-void init_utils(const modules &m, utils &u);
+void init_utils(const params &p, const modules &m, utils &u);
 
 int main(int argc, char **argv)
 {
 	//Create output file
-	std::ofstream myfile;
-	myfile.open ("example.txt", std::ios_base::app);
 	
 	// get the AFF3CT version
 	const std::string v = "v" + std::to_string(tools::version_major()) + "." +
@@ -81,11 +81,6 @@ int main(int argc, char **argv)
 	std::cout << "#----------------------------------------------------------" << std::endl;
 	std::cout << "#" << std::endl;
 
-	myfile << "#----------------------------------------------------------" << std::endl;
-	myfile << "# This is a basic program using the AFF3CT library (" << v << ")" << std::endl;
-	myfile << "# Feel free to improve it as you want to fit your needs." << std::endl;
-	myfile << "#----------------------------------------------------------" << std::endl;
-	myfile << "#" << std::endl;
 
 	params p;
 	init_params(p); // create and initialize the parameters defined by the user
@@ -93,9 +88,11 @@ int main(int argc, char **argv)
 	init_modules(p, m); // create and initialize the modules
 	buffers b;
 	init_buffers(p, b); // create and initialize the buffers required by the modules
-	utils u;
-	init_utils(m, u); // create and initialize the utils
+	utils u;	
+	init_utils(p, m, u); // create and initialize the utils
 
+
+	u.terminal->legend(u.output);
 	// display the legend in the terminal
 	u.terminal->legend();
 
@@ -133,8 +130,7 @@ int main(int argc, char **argv)
 
 		// display the performance (BER and FER) in the terminal
 		u.terminal->final_report();
-		u.terminal->final_report(myfile);
-
+		u.terminal->final_report(u.output);
 
 		// reset the monitor for the next SNR
 		m.monitor->reset();
@@ -145,9 +141,8 @@ int main(int argc, char **argv)
 			break;
 	}
 
-	myfile << "# End of the simulation" << std::endl;
 	std::cout << "# End of the simulation" << std::endl;
-	myfile.close();
+	u.output.close();
 
 	return 0;
 }
@@ -207,7 +202,7 @@ void init_buffers(const params &p, buffers &b)
 	b.dec_bits = std::vector<int>(p.K);
 }
 
-void init_utils(const modules &m, utils &u)
+void init_utils(const params &p, const modules &m, utils &u)
 {
 	// create a sigma noise type
 	u.noise = std::unique_ptr<tools::Sigma_asymmetric<>>(new tools::Sigma_asymmetric<>());
@@ -219,4 +214,7 @@ void init_utils(const modules &m, utils &u)
 	u.reporters.push_back(std::unique_ptr<tools::Reporter>(new tools::Reporter_throughput<>(*m.monitor)));
 	// create a terminal that will display the collected data from the reporters
 	u.terminal = std::unique_ptr<tools::Terminal_std>(new tools::Terminal_std(u.reporters));
+
+	u.output.open(p.output_fpath, std::ios_base::app);
+
 }
