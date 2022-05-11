@@ -49,6 +49,17 @@ def LLR(t):
     
     return  np.log(yx_prob[0:4]/yx_prob[4:])
 
+#%%
+mu1 = -1 
+mu2 = 1
+sigma1 = 1
+sigma2 = 1
+
+x = mid_point()
+print(1 - norm.cdf(x, loc=mu1, scale=sigma1))
+print(norm.cdf(x, loc=mu2, scale=sigma2))
+
+
 #%% Calculate sigmas from noise level in DB for a channel with Es=1
 noise_db = 4
 N0 = 2/10**(noise_db/10)

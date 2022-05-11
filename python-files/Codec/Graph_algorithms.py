@@ -1,13 +1,12 @@
 """
 Contains graph algorithms for use in qc-ldpc optimisation
 """
-from sre_constants import SUCCESS
 import numpy as np 
 import galois
-from itertools import combinations, permutations
+from itertools import combinations
+import matplotlib.pyplot as plt
 
-
-def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False):
+def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False, vn_distances = None, cn_distances = None):
     """
     DFS calculation of the rk-edge local girth based on Algorithm 2 in 
     https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708
@@ -16,21 +15,43 @@ def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes,
     for i in range(int(enumerated_cn_max[t])):
         current_cn_index = i  #Reduncy to allow differentiating between i and node_i
         
-        # print(i)
         if not G.has_cyclical_edge_set((current_cn_index, current_vn_index)):
             enumerated_cn_indexes[t] = current_cn_index
             enumerated_cn_max[t+1] = i
 
             G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
-            girths[t+1] = min(girths[t], shortest_cycles(G, current_cn_index, current_vn_index))
+        
+            if gcd:
+                new_girth = shortest_cycles_gcd(G, current_cn_index, current_vn_index, vn_distances, cn_distances)
+            else:
+                new_girth = shortest_cycles(G, current_cn_index, current_vn_index)
+
+            girths[t+1] = min(girths[t], new_girth)
 
             if max_girth[0] <= girths[t+1]:
                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
                     cn_girths.flat[enumerated_cn_indexes[0:t+1]] = girths[t+1]
                     max_girth[0] = girths[t+1]
+
+                    if new_girth == np.inf:
+                        G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
+                        break
+
                 else: 
-                    #Calculate  Fv, Fc,c for GCD
-                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths)
+                    if gcd:
+                        vn_indexes = list(range(G.n_cn, G.n_nodes))
+                        vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
+                        
+                        cn_distances = {}
+                        T = np.arange(G.N)
+                        for ci in range(0, G.n_cn, G.N):
+                            cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
+                            cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
+                    else:
+                        vn_distances = None 
+                        cn_distances = None
+                
+                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
             else:
                 pass        
 
@@ -50,23 +71,35 @@ def rk_edge_local_girth(G, current_vn_index, rk, gcd = False):
     enumerated_cn_max[0] = G.n_cn
     girths[0] = np.inf 
 
+    #Calculate local girths from all variable nodes and from the circulant for i = 0, N, m-N
+    if gcd:
+        vn_indexes = list(range(G.n_cn, G.n_nodes))
+        vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
+        
+        cn_distances = {}
+        T = np.arange(G.N)
+        for ci in range(0, G.n_cn, G.N):
+            cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
+            cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
+    else:
+        vn_distances = None 
+        cn_distances = None
+
     rk_edge_local_girth_layer(G, current_vn_index, rk, t, 
-                        enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd)
+                        enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd, vn_distances, cn_distances)
 
     return max_girth, cn_girths
 
-def shortest_distances(G, node,  stop_node = None):
+def shortest_distances(G, node,  stop_nodes = []):
     """
-    Shortest path to all connected nodes starting from node. Implemented with a BFS algorithm.
-
-    If a stop node is provided, the algorithm stops and the current distance is returned.
+    Shortest path to all listed stop nodes starting from node. Implemented with a BFS algorithm.
     """
     Q = [node]
     explored = set(Q)
     distance = 0
     distances = {}
 
-    while Q:
+    while Q and stop_nodes:
         distance += 1
         adjecent_nodes = []
 
@@ -78,8 +111,9 @@ def shortest_distances(G, node,  stop_node = None):
                     
                     distances[adjecent_node] = distance
 
-                    if adjecent_node == stop_node:
-                        return distance
+                    if adjecent_node in stop_nodes:
+                        distances[adjecent_node] = distance
+                        stop_nodes.remove(adjecent_node)
 
         Q = adjecent_nodes
 
@@ -107,7 +141,6 @@ def shortest_cycles(G, node, stop_node = None):
                 
                 else:
                     overlap = [n1==n2 for n1, n2 in zip(explored[adjecent_node], explored[node])]
-                    
                     if not any(overlap) and len(explored[node]) > 1 :
                         n1 = explored[node][0]
                         n2 = explored[adjecent_node][0]
@@ -120,38 +153,65 @@ def shortest_cycles(G, node, stop_node = None):
                             return distance
 
         Q = adjecent_nodes
+    
     if stop_node is None:
         return distances
     else:
         return np.inf
 
-# def shortest_cycles_gcd(G, vn, cn, vn_distances, cn_distances):
-#     """Approximation of local edge girth for short cycles"""
-#     distances = shortest_distances(G, vn)
-#     distances = shortest_distances(G, vn)
-
-#     if not distances:
-#         return np.inf
+def shortest_cycles_gcd(G, cn, vn, vn_distances, cn_distances):
+    """Approximation of local edge girth for short cycles"""    
+    T = np.arange(G.N)
+    cn_indexes = list(G.proto_index(cn)*G.N + G.proto_value(cn + T))
+    vn_indexes = list(G.proto_index(vn)*G.N + G.proto_value(vn + T) + G.n_cn)
+    distances = shortest_distances(G, vn, cn_indexes.copy())
     
-#     shifted_cn = G.shift(cn, np.arange(G.N))
-#     shifted_vn = G.shift(vn, np.arange(G.N)) + G.n_vn
-    
-#     delta = [distances.get(key, np.inf) + 1 for key in shifted_cn]
-#     result = delta[0]
+    delta = [distances.get(key, np.inf) + 1 for key in cn_indexes]
+    result = delta[0]
 
-#     for t in range(1, G.N):
-#         condition1 = delta[t] + delta[G.N-(t+1)]
-#         condition2 = distances.get(shifted_vn[t], np.inf) +  
-#         min_distance(G, G.shift(cn, t-cn), G.shift(cn, -cn))
-#         cond3 = delta[t]*G.N / np.gcd(G.N, t)
+    for t in range(1, G.N-1):
+        t1 = np.mod(G.N-t, G.N)
+        cond1 = delta[t] + delta[t1]
+        
+        t1 = np.mod(t-cn, G.N)
+        t2 = np.mod(-cn, G.N)
+        temp = cn_distances.get(cn_indexes[t1], np.inf)
+        if temp == np.inf:
+            cond2 = np.inf
+        else:   
+            cond2 = vn_distances.get(vn_indexes[t], np.inf) + temp.get(vn_indexes[t2], np.inf) + 2
+            
+        cond3 = delta[t]*G.N / np.gcd(G.N, t)
 
-#         result = min([cond1, cond2, cond3, result])
+        result = min([cond1, cond2, cond3, result])
 
-#     return result
+    return result
+
+def graph_stats(G):
+        """Plot H and girth distribution"""
+        H = G.get_H()
+
+        girths = []
+        for vn in range(G.n_cn, G.n_nodes):
+            cycles = shortest_cycles(G, vn)
+            if cycles:
+                girths.append(min(cycles.values()))
+            else:
+                girths.append(-10)
+                
+        parity_eqs = np.zeros((G.m*G.N,G.n*G.N))
+        parity_eqs[:,-G.m*G.N:] = 0.2
+
+        plt.subplot(2,1,1)
+        plt.imshow(1 - np.maximum(H, parity_eqs), cmap="gray")
+        plt.subplot(2,1,2)
+        plt.hist(girths)
+        plt.show()
+        
 
 def make_invertable(G):
     """
-    Reorder the QC_tanner_graph G such that the last m columns of parity equations in the progograph form a matrix invertible in GF(N+1) 
+    Reorder the QC_tanner_graph G such that the last m columns of parity equations in the protograph form a matrix invertible in GF(N+1) 
     <==> last n_cn equations in H invertible in GF(2)
     Solution found through exhausive search.
     """

@@ -35,7 +35,7 @@ class PathSearchTest(unittest.TestCase):
         G = Tanner_graph.QC_tanner_graph(1,1,1)
         G.add_edges([(0,0)])
 
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {1 : 1})
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [1]), {1 : 1})
         self.assertDictEqual(Graph_algorithms.shortest_cycles(G, 0), {})
 
 
@@ -47,7 +47,7 @@ class PathSearchTest(unittest.TestCase):
         G = Tanner_graph.QC_tanner_graph(1,1,5)
         G.add_cyclical_edge_set(0,0)
 
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {5 : 1})
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [5]), {5 : 1})
         self.assertDictEqual(Graph_algorithms.shortest_cycles(G, 0), {})
 
         """
@@ -58,7 +58,7 @@ class PathSearchTest(unittest.TestCase):
         G = Tanner_graph.QC_tanner_graph(2,2,1)
         G.add_edges([(0,0), (0,1), (1,1)])
 
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {1:2, 2:1, 3:1})
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [1,2,3]), {1:2, 2:1, 3:1})
         self.assertDictEqual(Graph_algorithms.shortest_cycles(G, 0), {})
 
     def test_small_cycles(self):
@@ -72,14 +72,14 @@ class PathSearchTest(unittest.TestCase):
         G.add_edges([(2,2), (2,3), (3,2), (3,3)])
 
         #First cycle
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {1 : 2, 
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [1,4,5]), {1 : 2, 
                                                        4 : 1, 
                                                        5 : 1})
         self.assertDictEqual(Graph_algorithms.shortest_cycles(G, 0), {4 : 4, 
                                                         5 : 4}) 
 
         #Second cycle    
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 7), {6 : 2, 
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 7, [6,2,3]), {6 : 2, 
                                                        2 : 1, 
                                                        3 : 1})
         self.assertDictEqual(Graph_algorithms.shortest_cycles(G, 7), {2 : 4, 
@@ -94,7 +94,7 @@ class PathSearchTest(unittest.TestCase):
         G = Tanner_graph.QC_tanner_graph(3,3,1)
         G.add_edges([(0,1), (1,1), (1,2), (2,1), (2,2)])
 
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {1 : 2, 
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [1,2,4,5]), {1 : 2, 
                                                        2 : 2, 
                                                        4 : 1,
                                                        5 : 3})
@@ -108,7 +108,7 @@ class PathSearchTest(unittest.TestCase):
         G = Tanner_graph.QC_tanner_graph(3,3,1)
         G.add_edges([(0,1), (1,1), (1,2), (2,1), (2,2), (0,2)])
 
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {1 : 2, 
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [1,2,4,5]), {1 : 2, 
                                                        2 : 2, 
                                                        4 : 1,
                                                        5 : 1})
@@ -124,7 +124,7 @@ class PathSearchTest(unittest.TestCase):
         G.add_edges([(2,0),(2,1),(2,2), (2,3)])
         G.add_edges([(3,0),(3,1),(3,2), (3,3)])
 
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {1 : 2, 2 : 2, 3 : 2,
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [1,2,3,5,5,6,7]), {1 : 2, 2 : 2, 3 : 2,
                                                            4 : 1, 5 : 1, 6  : 1, 7 : 1})
         self.assertDictEqual(Graph_algorithms.shortest_cycles(G, 0), {4 : 4, 5 : 4, 6 : 4, 7 : 4})
 
@@ -140,7 +140,7 @@ class PathSearchTest(unittest.TestCase):
                      (2,2),(2,3),
                      (3,3),(3,0)])
                      
-        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0), {1: 2, 
+        self.assertDictEqual(Graph_algorithms.shortest_distances(G, 0, [1,2,3,4,5,6,7]), {1: 2, 
                                                            2: 4, 
                                                            3: 2, 
                                                            4:1, 
