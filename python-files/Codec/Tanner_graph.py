@@ -76,6 +76,10 @@ class Tanner_graph:
         """Returns the degree of all check nodes of the graph"""
         return [len(self.nodes[i]) for i in range(self.n_cn)]
 
+    def get_var_degrees(self) -> list:
+        """Returns the degree of all check nodes of the graph"""
+        return [len(self.nodes[i]) for i in range(self.n_cn, self.n_nodes)]
+
     def get_H(self):
         """Generates a dense representation of the graph"""
         H = np.zeros((self.n_cn, self.n_vn))
@@ -146,6 +150,7 @@ class QC_tanner_graph(Tanner_graph):
     def save(self, filename):
         """
         Saves the protograph as a .qc file, as defined here: https://aff3ct.readthedocs.io/en/latest/user/simulation/parameters/codec/ldpc/decoder.html
+        Appends metadata at end
         """
         data = f"{self.n} {self.m} {self.N}\n\n"
         for row in self.proto:
@@ -242,3 +247,6 @@ class QC_tanner_graph(Tanner_graph):
                     G.add_cyclical_edge_set(cn_index, vn_index)
                 
         return G
+
+        #print(f"Check node degrees: {self.get_check_degrees()}")
+        #print(f"Variable node degrees: {self.get_var_degrees()}")
