@@ -94,7 +94,9 @@ R Channel_AWGN_asymmetric<R>::get_snr(const unsigned threshold_index) const
 {
 	R signal_term = 10 * log10(pow(voltage_levels[threshold_index] - voltage_levels[threshold_index + 1], (R)2.0));
 	R noise_term = sigmas.get_threshold_noise(threshold_index);
-	return signal_term + noise_term;
+	R result = signal_term + noise_term;
+
+	return sigmas.get_ebn0();
 }
 
 template <typename R>

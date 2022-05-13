@@ -12,24 +12,23 @@ using namespace aff3ct;
 
 struct params 
 {
-	int K = 18688 - 2304;		         // number of information bits
-	int N = 18688;	 		     // codeword size
+	int K = 18688 - 2304;	 // number of information bits
+	int N = 18688;	 		 // codeword size
 	int fe = 100;			 // number of frame errors
 	int seed = 0;			 // PRNG seed for the AWGN channel
 	float ebn0_min = 0.f;	 // minimum SNR value
-	float ebn0_max = 10.f;  // maximum SNR value
+	float ebn0_max = 10.f;   // maximum SNR value
 	float ebn0_step = .5f;   // SNR step
 	float R;				 // code rate (R=K/N)
-	float min_sigma = 0.5;  // Set minimum value for individual sigmas (NOT IN USE)
+	float min_sigma = 0.5;   // Set minimum value for individual sigmas (NOT IN USE)
 	
     std::vector<float> voltage_levels{-1, 1};
-    std::string reader_fpath = "reader_static_hard.txt";
-	std::string output_fpath = "../../python-files/PyBER/data/example.txt";
+    std::string reader_fpath = "data/reader_files/Symmetric_single_soft.csv";
+	std::string output_fpath = "../../python-files/PyBER/data/Symmetric_soft_test.txt";
+	std::string ldpc_fpath = "../../python-files/Codec/1_edge_regular.qc";
     int page_type = tools::Flash_reader<float, float>::lower;
-    int read_type = tools::Flash_reader<float, float>::hard;
+    int read_type = tools::Flash_reader<float, float>::soft_single;
     int cell_type = tools::Flash_cell::SLC;
-
-	// std::vector<uint32_t> info_bits = {0,1,2,3,4,5,6,7,8,9,10,11};
 
 	std::vector<uint32_t> info_bits = std::vector<uint32_t>(K);
 };
@@ -161,7 +160,7 @@ void init_modules(const params &p, modules &m)
 {
 	m.source = std::unique_ptr<module::Source_random<>>(new module::Source_random<>(p.K));
 	
-	const tools::Sparse_matrix H = tools::LDPC_matrix_handler::read("../../python-files/Codec/1_edge_regular.qc");
+	const tools::Sparse_matrix H = tools::LDPC_matrix_handler::read(p.ldpc_fpath);
 	m.encoder = std::unique_ptr<module::Encoder_LDPC_from_QC<>>(new module::Encoder_LDPC_from_QC<>(p.K, p.N, H));
  
     tools::Flash_cell cell(p.cell_type);
