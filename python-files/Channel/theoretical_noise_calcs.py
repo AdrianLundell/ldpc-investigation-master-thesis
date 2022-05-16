@@ -1,4 +1,5 @@
 #%%
+import re
 import numpy as np
 import scipy 
 import scipy.special as sp 
@@ -138,14 +139,14 @@ np.var(x)
 ratio = 0.5
 mu1 = -1
 mu2 = 1
-rber = 0.02
+rber = 0.00001
 true_sigma = -1 / (sp.erfinv(2*rber - 1) * np.sqrt(2))
 sigma = np.linspace(0.01, true_sigma+2,200)
 
 
 result = []
 
-for ratio in np.linspace(0,1, endpoint=False):
+for ratio in np.linspace(0,1, endpoint=False, num = 50):
     sigma1 = (ratio) * sigma 
     sigma2 = (1-ratio) * sigma
 
@@ -161,9 +162,62 @@ for ratio in np.linspace(0,1, endpoint=False):
     
     diff = np.abs(rber - rhs)
     min_index = np.argmin(diff)
-    plt.plot(sigma, rhs)
-    plt.show()
+    X, Y = sigma, rhs
+    #plt.plot(sigma, rhs)
+    #plt.show()
     result.append(sigma[min_index])
 
-plt.plot(np.linspace(0,1), result)
+
+plt.plot(np.linspace(0,1, endpoint=False, num = 50), result)
+# %%
+# %% Fixed RBER
+ratio = 0.5
+mu1 = -1
+mu2 = 1
+rber = 0.01
+#sigma = np.linspace(0.01, true_sigma+2,200)
+N = 100
+ratios = np.linspace(0.01,0.5, endpoint=True, num=N)
+result = []
+for ratio in ratios:
+
+    sigma = ratio*(4+np.log10(rber))
+
+    for i in range(10):
+        sigma1 = (ratio) * sigma 
+        d_sigma1 = ratio 
+        sigma2 = (1-ratio) * sigma
+        d_sigma2 = (1-ratio)
+
+        if sigma1 == sigma2:
+            sigma = -1 / (sp.erfinv(2*rber - 1) * np.sqrt(2)) * 2
+            break
+        
+        else:
+            a = sigma2**2 - sigma1**2
+            d_a = 2*sigma2*d_sigma2 - 2*sigma1*d_sigma1
+            b = -(2*sigma2**2*mu1 - 2*sigma1**2*mu2)
+            d_b = -(4*sigma2*d_sigma2*mu1 - 4*sigma1*d_sigma1*mu2)
+            c = sigma2**2*mu1**2 - sigma1**2*mu2**2 - sigma1**2*sigma2**2*np.log(sigma2**2/sigma1**2)
+            d_c = 2*sigma2*d_sigma2*mu1**2 - 2*sigma1*d_sigma1*mu2**2 - 4*sigma**3*ratio*(1-ratio)*np.log(sigma2**2/sigma1**2)
+    
+            e = b**2 - 4*a*c
+            d_e = 2*b*d_b - 4*d_a*c - 4*a*d_c
+            f = 2*a
+            d_f = 2*d_a
+            t = (-b + np.sqrt(e))/(f)
+            d_t = -d_b + (0.5/(np.sqrt(e))*d_e*f - np.sqrt(e)*d_f)/f**2
+    
+            z1 = (t-1)/(sigma1*np.sqrt(2))
+            z2 = (t+1)/(sigma2*np.sqrt(2))
+            d_z1 = (d_t*sigma1 - (t-1)*d_sigma1)/(sigma1**2*np.sqrt(2))
+            d_z2 = (d_t*sigma2 - (t+1)*d_sigma2)/(sigma2**2*np.sqrt(2))
+            
+            y = rber - 1/4*(2 + sp.erf(z1) - sp.erf(z2))
+            d_y = -1/4*(d_z1 * 2/np.sqrt(np.pi) * np.exp(-z1**2) - d_z2 * 2/np.sqrt(np.pi) * np.exp(-z2**2))
+            sigma = sigma - y/d_y
+
+    result.append(sigma)
+
+plt.plot(ratios,result)
 # %%
