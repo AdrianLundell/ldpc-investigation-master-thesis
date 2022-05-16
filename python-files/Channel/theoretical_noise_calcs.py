@@ -89,20 +89,32 @@ x2 = p2.rvs(100000)
 print(m)
 print((sum(x1 > m) + sum(x2 < m))/200000)
 
+#%%
+def plot(t, sigma1, sigma2, mu1 = -1, mu2 =1):
+    """Plot two gaussian distributions with thresholds t"""
+    x = np.linspace(stats.norm.ppf(0.01, loc=mu1, scale=sigma1), stats.norm.ppf(0.99, loc=mu2, scale=sigma2), 100)
+    
+    plt.figure()
+    plt.plot(x, stats.norm.pdf(x, loc=mu1, scale=sigma1), 'black')
+    plt.plot(x, stats.norm.pdf(x, loc=mu2, scale=sigma2), 'black')
+    for threshold in t:
+        plt.plot([threshold, threshold], [0,0.7], '--')
+
+    plt.show()
 # %% Fixed RBER
-ratio = 0.5
+ratio = 0.4
 mu1 = -1
 mu2 = 1
-rber = 0.2
-true_sigma = -1 / (sp.erfinv(2*rber - 1) * np.sqrt(2))
+rber = 0.01
+true_sigma = -1 / (sp.erfinv(2*rber - 1) * np.sqrt(2))*2
 
-sigma = np.linspace(1, true_sigma+1,200)
+sigma = np.linspace(0.1, true_sigma+5,200)
 rber = np.full(sigma.shape, rber) 
-sigma1 = (1+ratio) * sigma 
-sigma2 = (1-ratio) * sigma
+sigma1 = np.sqrt(ratio) * sigma 
+sigma2 = np.sqrt(1-ratio) * sigma
 
-if ratio == 0:
-    t = (mu1+mu2)/2
+if ratio == 0.5:
+    t = np.array([(mu1+mu2)/2]*200)
 else:
     a = sigma2**2 - sigma1**2
     b = -(2*sigma2**2*mu1 - 2*sigma1**2*mu2)
@@ -110,17 +122,17 @@ else:
     t = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
  
 rhs = 1/4*(2 + sp.erf((t-1)/(sigma1*np.sqrt(2))) - sp.erf((t+1)/(sigma2*np.sqrt(2))))
-rhs2 = 1/2*(1 + sp.erf((t-1))/(sigma*np.sqrt(2)))
 
 plt.plot(sigma, rber)
 plt.plot(sigma, rhs)
-#plt.plot(sigma, rhs2)
 plt.plot([true_sigma,true_sigma],[0.1, 0.3], '--')
 plt.show()
 
 diff = np.abs(rber - rhs)
 min_index = np.argmin(diff)
-print(sigma[min_index], sigma1[min_index], sigma2[min_index], true_sigma)
+print(f"sigma, sigma1, sigma2: ", sigma[min_index], sigma1[min_index], sigma2[min_index])
+print(f"Theoretical symmetric: {true_sigma}")
+plot([t[min_index]], sigma1[min_index],sigma2[min_index])
 
 # %% calculate variance 
 sigma = 2
@@ -136,39 +148,48 @@ x = np.append(x1, x2)
 np.var(x)
 # %%
 # %% Fixed RBER
-ratio = 0.5
 mu1 = -1
 mu2 = 1
-rber = 0.00001
-true_sigma = -1 / (sp.erfinv(2*rber - 1) * np.sqrt(2))
-sigma = np.linspace(0.01, true_sigma+2,200)
-
+rber = 0.01
+sigma = np.linspace(0.01, true_sigma+10,500)
 
 result = []
+temp = []
+ratios = np.linspace(0.2,0.5, endpoint=True, num = 10)
 
-for ratio in np.linspace(0,1, endpoint=False, num = 50):
-    sigma1 = (ratio) * sigma 
-    sigma2 = (1-ratio) * sigma
+for ratio in ratios:
+    sigma1 = (1-ratio) * sigma 
+    sigma2 = (ratio) * sigma
 
-    if ratio == 0:
-        t = (mu1+mu2)/2
+    if ratio == 0.5:    
+        t = 0    
+
     else:
         a = sigma2**2 - sigma1**2
         b = -(2*sigma2**2*mu1 - 2*sigma1**2*mu2)
         c = sigma2**2*mu1**2 - sigma1**2*mu2**2 - sigma1**2*sigma2**2*np.log(sigma2**2/sigma1**2)
         t = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
     
-    rhs = 1/4*(2 + sp.erf((t-1)/(sigma1*np.sqrt(2))) - sp.erf((t+1)/(sigma2*np.sqrt(2))))
+    rhs = 1/4*(2 + sp.erf((t-mu2)/(sigma1*np.sqrt(2))) - sp.erf((t-mu1)/(sigma2*np.sqrt(2))))
     
     diff = np.abs(rber - rhs)
     min_index = np.argmin(diff)
-    X, Y = sigma, rhs
     #plt.plot(sigma, rhs)
     #plt.show()
     result.append(sigma[min_index])
 
+    if not ratio==0.5:
+        t = t[min_index]
+    sigma1 = sigma1[min_index]
+    sigma2 = sigma2[min_index]
 
-plt.plot(np.linspace(0,1, endpoint=False, num = 50), result)
+    p1 = 1 - stats.norm.cdf(t, loc=-1, scale = sigma1)
+    p2 = stats.norm.cdf(t, loc=1, scale = sigma2)
+    temp.append(p1 + p2)    
+
+plt.plot(ratios, temp)
+plt.show()
+plt.plot(ratios, result)
 # %%
 # %% Fixed RBER
 ratio = 0.5
@@ -176,8 +197,8 @@ mu1 = -1
 mu2 = 1
 rber = 0.01
 #sigma = np.linspace(0.01, true_sigma+2,200)
-N = 100
-ratios = np.linspace(0.01,0.5, endpoint=True, num=N)
+N = 10
+ratios = np.linspace(0.2,0.5, endpoint=True, num=N)
 result = []
 for ratio in ratios:
 
@@ -213,8 +234,8 @@ for ratio in ratios:
             d_z1 = (d_t*sigma1 - (t-1)*d_sigma1)/(sigma1**2*np.sqrt(2))
             d_z2 = (d_t*sigma2 - (t+1)*d_sigma2)/(sigma2**2*np.sqrt(2))
             
-            y = rber - 1/4*(2 + sp.erf(z1) - sp.erf(z2))
-            d_y = -1/4*(d_z1 * 2/np.sqrt(np.pi) * np.exp(-z1**2) - d_z2 * 2/np.sqrt(np.pi) * np.exp(-z2**2))
+            y = 1/4*(2 + sp.erf(z1) - sp.erf(z2)) - rber
+            d_y = 1/4*(d_z1 * 2/np.sqrt(np.pi) * np.exp(-z1**2) - d_z2 * 2/np.sqrt(np.pi) * np.exp(-z2**2))
             sigma = sigma - y/d_y
 
     result.append(sigma)

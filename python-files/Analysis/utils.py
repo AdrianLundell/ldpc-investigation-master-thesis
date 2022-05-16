@@ -3,6 +3,19 @@
 import numpy as np
 import scipy.special as sp 
 import scipy.stats as stats 
+import matplotlib.pyplot as plt
+
+def plot(t, sigma1, sigma2, mu1 = -1, mu2 =1):
+    """Plot two gaussian distributions with thresholds t"""
+    x = np.linspace(stats.norm.ppf(0.01, loc=mu1, scale=sigma1), stats.norm.ppf(0.99, loc=mu2, scale=sigma2), 100)
+    
+    plt.figure()
+    plt.plot(x, stats.norm.pdf(x, loc=mu1, scale=sigma1), 'black')
+    plt.plot(x, stats.norm.pdf(x, loc=mu2, scale=sigma2), 'black')
+    for threshold in t:
+        plt.plot([threshold, threshold], [0,0.7], '--')
+
+    plt.show()
 
 def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
     """
@@ -18,20 +31,21 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
 
     result = []
     for rber in rbers:
+        sigma = (1-skew)*(4+np.log10(rber)) 
+        
         for i in range(n_iter):
             
             #Good initial approximation
-            sigma = skew*(4+np.log10(rber)) 
             
             #Calculate sigmas for each distribution
-            sigma1 = (skew) * sigma 
-            d_sigma1 = skew 
-            sigma2 = (1-skew) * sigma
-            d_sigma2 = (1-skew)
+            sigma1 = (1-skew) * sigma 
+            d_sigma1 = (1-skew) 
+            sigma2 = (skew) * sigma
+            d_sigma2 = (skew)
 
-            if sigma1 == sigma2:
+            if skew == 0.5:
                 #Return direct result for symmetric distributions
-                sigma = -1 / (sp.erfinv(2*rber - 1) * np.sqrt(2)) *2
+                sigma = -1 / (sp.erfinv(2*rber - 1) * np.sqrt(2)) * 2
                 break
             
             else:
@@ -51,46 +65,27 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
                 d_t = -d_b + (0.5/(np.sqrt(e))*d_e*f - np.sqrt(e)*d_f)/f**2
         
                 #Calculate arguments to erf-funcions
-                z1 = (t-1)/(sigma1*np.sqrt(2))
-                z2 = (t+1)/(sigma2*np.sqrt(2))
-                d_z1 = (d_t*sigma1 - (t-1)*d_sigma1)/(sigma1**2*np.sqrt(2))
-                d_z2 = (d_t*sigma2 - (t+1)*d_sigma2)/(sigma2**2*np.sqrt(2))
+                z1 = (t-mu2)/(sigma2*np.sqrt(2))
+                z2 = (t-mu1)/(sigma1*np.sqrt(2))
+                d_z1 = (d_t*sigma2 - (t-mu2)*d_sigma2)/(sigma2**2*np.sqrt(2))
+                d_z2 = (d_t*sigma1 - (t-mu1)*d_sigma1)/(sigma1**2*np.sqrt(2))
                 
                 #Compute function value and derivative
-                y = rber - 1/4*(2 + sp.erf(z1) - sp.erf(z2))
-                d_y = -1/4*(d_z1 * 2/np.sqrt(np.pi) * np.exp(-z1**2) - d_z2 * 2/np.sqrt(np.pi) * np.exp(-z2**2))
-                
+                y = 1/4*(2 + sp.erf(z1) - sp.erf(z2)) - rber
+                d_y = 1/4*(d_z1 * 2/np.sqrt(np.pi) * np.exp(-z1**2) - d_z2 * 2/np.sqrt(np.pi) * np.exp(-z2**2))
+
                 #Newtons method
                 sigma = sigma - y/d_y
 
-        result.append(sigma)
 
+        result.append(sigma)
     return np.array(result)
 
-#%%
-def mid_point():
-    """Calculate the point of intersection for two gaussian distributions"""
-    mu1 = -1
-    mu2 = 1
-    if sigma1 == sigma2:
-        return (mu1+mu2)/2
+ratios = np.linspace(0.1,0.5)
+y = []
+for ratio in ratios:
+    y.append(rber_to_sigma([0.01], ratio)[0])
+plt.plot(ratios, y)
 
-    else:
-        a = sigma2**2 - sigma1**2
-        b = -(2*sigma2**2*mu1 - 2*sigma1**2*mu2)
-        c = sigma2**2*mu1**2 - sigma1**2*mu2**2 - sigma1**2*sigma2**2*np.log(sigma2**2/sigma1**2)
-        return (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
-
-skew = 0.4
-sigma = rber_to_sigma([0.01], skew)
-sigma1 = sigma * (skew)
-sigma2 = sigma * (1-skew)
-
-p1 = stats.norm(-1,sigma1)
-p2 = stats.norm(1, sigma2)
-x1 = p1.rvs(100000)
-x2 = p2.rvs(100000)
-m = mid_point()
-print((sum(x1 > m) + sum(x2 < m))/200000)
 
 # %%
