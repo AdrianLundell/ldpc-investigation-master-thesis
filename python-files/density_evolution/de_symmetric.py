@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate as interp
 import scipy.signal as sp 
+import scipy.stats as stats
 
 #%% Probability convertion functions
 def density_to_dist(density):
@@ -38,8 +39,6 @@ def gamma(F, F_grid, G_grid):
     
     G0_indices = np.ceil(-np.log(np.tanh(G_grid/2)) / f_step)
     G0_indices = np.clip(G0_indices, 0, zero_index).astype(int)
-    plt.plot(G0_indices)
-    plt.show()
     G0 = 1 - F.take(G0_indices + zero_index)
 
     G1_indices = np.ceil(np.log(np.tanh(G_grid/2)) / f_step)
@@ -62,20 +61,22 @@ def gamma_inv(g, f_grid, g_grid):
 #Simulated density and computed density should look the same
 m = -10 + 20*np.random.rand(10**5)
 
-G0_sampled = -np.log(np.tanh(np.abs(m[m<=0])/2))
-G1_sampled = -np.log(np.tanh(np.abs(m[m>0])/2))
-
 n = 2**10
 m_cdf = np.linspace(0,1, n)
 F_grid = np.linspace(-10, 20, n)
 G_grid = np.linspace(0, 8, n//2)
 G_computed = gamma(m_cdf, F_grid, G_grid)
 
+G0_sampled = -np.log(np.tanh(np.abs(m[m<=0])/2))
+G0_hist, bins = np.histogram(G0_sampled, bins=G_grid)
+G1_sampled = -np.log(np.tanh(np.abs(m[m>0])/2))
+G1_hist, bins = np.histogram(G1_sampled, bins=G_grid)
+
 plt.plot(G_grid, dist_to_density(G_computed[0,:])*10**5)
-plt.hist(G0_sampled, 100)
+plt.plot(G_grid[:-1], G0_hist)
 plt.show()
-plt.plot(G_grid, dist_to_density(G_computed[1,:])*10**5)
-plt.hist(G1_sampled, 100)
+plt.plot(G_grid, dist_to_density(G_computed[1,:])*10**5, "--")
+plt.plot(G_grid[:-1], G0_hist, "--")
 plt.show()
 
 #%%Gamma inverse should yield same result back
