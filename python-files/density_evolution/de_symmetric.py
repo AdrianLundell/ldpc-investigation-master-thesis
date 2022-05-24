@@ -7,40 +7,37 @@ import matplotlib.pyplot as plt
 import scipy.interpolate as interp
 import scipy.signal as sp 
 
-#%%
+#%% Probability convertion functions
 def density_to_dist(density):
+    """Returns the discrete pdf of a cdf"""
     return np.cumsum(density)
 
 def dist_to_density(dist):
+    """Returns the discrete cdf of a pdf"""
     dist = np.hstack((0, dist, 1))
     density = dist[1:] - dist[:-1]
     return density[:-1]
 
-def init_grids(max_val, f_n, g_n):
-    """Returns an evenly spaced grid of n points."""
-    f_grid = np.append(np.linspace(-max_val, max_val, f_n-1), np.inf)
+#%% Test of probability convertion functions
+N = 10
+unif_cdf = np.linspace(1/N,1, N, endpoint=True)
+unif_pdf = np.full(N, 1/N)
 
+plt.plot(density_to_dist(unif_pdf))
+plt.plot(unif_cdf)
+plt.show()
+
+plt.plot(dist_to_density(unif_cdf))
+plt.plot(unif_pdf)
+plt.show()
+
+#%% Gamma convertion functions
+def gamma(F, F_grid, G_grid):
     f_step = abs(f_grid[1] - f_grid[0])
-    max_val = -np.log(np.tanh(f_step))
-    
-    min_step = -np.log(np.tanh(max_val))
-    g_n_max = int(2 ** np.floor(np.log2(max_val/min_step)))
-    #assert g_n < g_n_max, "Too small step size in g_grid."
-    
-    g_grid = np.append(np.linspace(0, max_val, g_n//2-1), np.inf)
-    
-    return f_grid, g_grid
+    G0_indices = np.ceil(np.log(np.tanh(g_grid[1:-1]/2)) / f_step)
+    G0 = 1 - F.take(G0_indices)
 
-def gamma(f, f_grid, g_grid):
-    zero_index = f_grid.size//2 - 1
-
-    g0 = np.array([1-f[-1]])
-    g0 = np.append(g0, 1 - interp.griddata(f_grid, f, -np.log(np.tanh(g_grid[1:-1]/2))))
-    g0 = np.append(g0, 1 - f[zero_index - 1])
-
-    g1 = np.array([0])
-    g1 = np.append(g1, interp.griddata(f_grid, f, np.log(np.tanh(g_grid[1:-1]/2))))
-    g1 = np.append(g1, f[zero_index])
+    G1 = np.append(g1, interp.griddata(f_grid, f, )))
 
     return np.stack((g0,g1))
 
@@ -52,6 +49,12 @@ def gamma_inv(g, f_grid, g_grid):
     f_pos = 1-interp.griddata(g_grid, g[0,:], -np.log(np.tanh(f_grid[n:]/2)))
 
     return np.hstack((f_neg, f_0, f_pos))
+
+#%% Invertion test of gamma
+
+
+#%% Linearity test of gamma
+
 
 
 def rho(x):
