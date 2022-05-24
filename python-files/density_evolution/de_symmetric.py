@@ -33,13 +33,20 @@ plt.show()
 
 #%% Gamma convertion functions
 def gamma(F, F_grid, G_grid):
-    f_step = abs(f_grid[1] - f_grid[0])
-    G0_indices = np.ceil(np.log(np.tanh(g_grid[1:-1]/2)) / f_step)
-    G0 = 1 - F.take(G0_indices)
+    zero_index = F.size//2-1
+    f_step = abs(F_grid[1] - F_grid[0])
+    
+    G0_indices = np.ceil(-np.log(np.tanh(G_grid/2)) / f_step)
+    G0_indices = np.clip(G0_indices, 0, zero_index).astype(int)
+    plt.plot(G0_indices)
+    plt.show()
+    G0 = 1 - F.take(G0_indices + zero_index)
 
-    G1 = np.append(g1, interp.griddata(f_grid, f, )))
+    G1_indices = np.ceil(np.log(np.tanh(G_grid/2)) / f_step)
+    G1_indices = np.clip(G1_indices, -zero_index, 0).astype(int)
+    G1 = F.take(G1_indices + zero_index)
 
-    return np.stack((g0,g1))
+    return np.stack((G0, G1))
 
 def gamma_inv(g, f_grid, g_grid):
     n = f_grid.size//2
@@ -49,6 +56,32 @@ def gamma_inv(g, f_grid, g_grid):
     f_pos = 1-interp.griddata(g_grid, g[0,:], -np.log(np.tanh(f_grid[n:]/2)))
 
     return np.hstack((f_neg, f_0, f_pos))
+
+# Gamma test
+#GAMMA(distribution) is the distribution of gamma(messages)
+#Simulated density and computed density should look the same
+m = -10 + 20*np.random.rand(10**5)
+
+G0_sampled = -np.log(np.tanh(np.abs(m[m<=0])/2))
+G1_sampled = -np.log(np.tanh(np.abs(m[m>0])/2))
+
+n = 2**10
+m_cdf = np.linspace(0,1, n)
+F_grid = np.linspace(-10, 20, n)
+G_grid = np.linspace(0, 8, n//2)
+G_computed = gamma(m_cdf, F_grid, G_grid)
+
+plt.plot(G_grid, dist_to_density(G_computed[0,:])*10**5)
+plt.hist(G0_sampled, 100)
+plt.show()
+plt.plot(G_grid, dist_to_density(G_computed[1,:])*10**5)
+plt.hist(G1_sampled, 100)
+plt.show()
+
+#%%Gamma inverse should yield same result back
+plt.plot(m_cdf)
+plt.plot(gamma_inv(G, F_grid, G_grid))
+plt.show()
 
 #%% Invertion test of gamma
 
