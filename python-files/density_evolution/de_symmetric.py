@@ -38,10 +38,12 @@ def gamma(F, F_grid, G_grid):
     f_step = abs(F_grid[1] - F_grid[0])
     
     G0_indices = np.ceil(-np.log(np.tanh(G_grid/2)) / f_step)
+    G0_indices = np.nan_to_num(G0_indices, nan = np.inf)
     G0_indices = np.clip(G0_indices, 0, zero_index).astype(int)
     G0 = 1 - F.take(G0_indices + zero_index)
 
     G1_indices = np.ceil(np.log(np.tanh(G_grid/2)) / f_step)
+    G1_indices = np.nan_to_num(G0_indices, nan = -np.inf)
     G1_indices = np.clip(G1_indices, -zero_index, 0).astype(int)
     G1 = F.take(G1_indices + zero_index)
 
@@ -56,33 +58,117 @@ def gamma_inv(g, f_grid, g_grid):
 
     return np.hstack((f_neg, f_0, f_pos))
 
-# Gamma test
-#GAMMA(distribution) is the distribution of gamma(messages)
-#Simulated density and computed density should look the same
-m = -10 + 20*np.random.rand(10**5)
 
-n = 2**10
-m_cdf = np.linspace(0,1, n)
-F_grid = np.linspace(-10, 20, n)
-G_grid = np.linspace(0, 8, n//2)
-G_computed = gamma(m_cdf, F_grid, G_grid)
+#%% Test density evolution
+def plot_samples(samples, bins, ax, cdf = False):
+    bins = np.append(bins, np.inf)
+    values, bins = np.histogram(samples, bins) 
+    values = values / len(samples)
+    if cdf: 
+        values = density_to_dist(values)
+    ax.plot(bins[:-1], values)
 
-G0_sampled = -np.log(np.tanh(np.abs(m[m<=0])/2))
-G0_hist, bins = np.histogram(G0_sampled, bins=G_grid)
-G1_sampled = -np.log(np.tanh(np.abs(m[m>0])/2))
-G1_hist, bins = np.histogram(G1_sampled, bins=G_grid)
+def test(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_samples = 10**4):
 
-plt.plot(G_grid, dist_to_density(G_computed[0,:])*10**5)
-plt.plot(G_grid[:-1], G0_hist)
-plt.show()
-plt.plot(G_grid, dist_to_density(G_computed[1,:])*10**5, "--")
-plt.plot(G_grid[:-1], G0_hist, "--")
-plt.show()
+    #compare sampled and theoretical cdf
+    samples = []
+    for i in range(n_samples):
+        x = np.random.rand()
+        sample = f_grid[np.argmax(cdf >= x)]  
+        samples.append(sample)
+    samples = np.array(samples)
 
-#%%Gamma inverse should yield same result back
-plt.plot(m_cdf)
-plt.plot(gamma_inv(G, F_grid, G_grid))
-plt.show()
+    fig, ax = plt.subplots(1,1)
+    ax.set_title("Compare distributions")
+    plot_samples(samples, f_grid, ax, cdf = True)
+    plt.plot(f_grid, cdf)
+    plt.show()
+
+    #Compare sampled and theoretical gamma(cdf)
+    sampled_g0 = -np.log(np.tanh(np.abs(samples[samples<=0])/2))
+    sampled_g1 = -np.log(np.tanh(np.abs(samples[samples>0])/2))    
+    g = gamma(cdf, f_grid, g_grid)
+    
+    fig, axes = plt.subplots(1,2, figsize = (15,10))
+    fig.suptitle("Compare gamma(distribution)")
+    plot_samples(sampled_g0, g_grid, axes[0])
+    plot_samples(sampled_g1, g_grid, axes[1])
+    axes[0].plot(g_grid, dist_to_density(g[0,:]))
+    axes[1].plot(g_grid, dist_to_density(g[1,:]))
+    plt.show()
+
+    #Compare sampled and theoretical rho(gamma(cdf)). 
+    sampled_rho0 = []
+    for i in range(n_samples//2):
+        sample = 0
+        for i, coeff in enumerate(rho_coeffs[1:]):
+            x = np.random.randint(0, sampled_g0.size, i)
+            x = np.take(sampled_g0, x)
+            sample = coeff * np.sum(x)
+        sampled_rho0.append(sample)
+    sampled_rho0 = np.array(sampled_rho0)
+
+    sampled_rho1 = []
+    for i in range(n_samples//2):
+        sample = 0
+        for i, coeff in enumerate(rho_coeffs[1:]):
+            x = np.random.randint(0, sampled_g1.size, i)
+            x = np.take(sampled_g1, x)
+            sample = coeff * np.sum(x)
+        sampled_rho1.append(sample)
+    sampled_rho1 = np.array(sampled_rho1)
+    
+    fig, axes = plt.subplots(1,2, figsize = (15,10))
+    fig.suptitle("Compare rho(gamma(distribution))")
+    plot_samples(sampled_rho0, g_grid, axes[0])
+    plot_samples(sampled_rho1, g_grid, axes[1])
+    plt.show()
+
+    #Compare sampled and theoretical inv gamma
+    sampled_inv0 = -np.log((1 + np.exp(-sampled_rho0))/(1 - np.exp(-sampled_rho0)))
+    sampled_inv1 = np.log((1 + np.exp(-sampled_rho1))/(1 - np.exp(-sampled_rho1)))
+    sampled_inv = np.append(sampled_inv0, sampled_inv1)
+    # sampled_pdf, bins = np.histogram(sampled_inv, 30)
+    
+    # plt.plot(bins[:-1], density_to_dist(sampled_pdf))
+    # plt.title("Compare inv_gamma(rho(gamma(distribution)))")
+    # plt.show()
+    
+    #Compare lambda
+    sampled_lambda = []
+    for i in range(n_samples):
+        sample = 0
+        for i, coeff in enumerate(lambda_coeffs[1:]):
+            x = np.random.randint(0, sampled_inv.size, coeff)
+            x = np.take(sampled_inv, x)
+            sample = coeff * np.sum(x)
+        sampled_lambda.append(sample)
+    sampled_lambda = np.array(sampled_lambda)
+
+    #Compare convolution
+    sampled_conv = []
+    for i in range(n_samples):
+        x1 = sampled_inv[np.random.randint(0, n_samples)]
+        x2 = samples[np.random.randint(0, n_samples)]
+        sample = x1 + x2
+        sampled_conv.append(sample)
+    sampled_conv = np.array(sampled_conv)
+
+    error = sum(sampled_conv == 0)/n_samples
+    print("Error ", error)
+
+n = 2**8
+rho_coeffs = np.array([0, 0, 0, 0, 0, 1])
+lambda_coeffs = np.array([0, 0, 1])
+m_cdf = np.linspace(0.4, 1, 2)
+#f_grid = np.linspace(-10, 10, n)
+#g_grid = np.linspace(0, 8, n//2)
+
+f_grid = np.array([0, np.inf])
+g_grid = np.array([0, np.inf])
+
+
+test(m_cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs)
 
 #%% Invertion test of gamma
 
@@ -91,9 +177,8 @@ plt.show()
 
 
 
-def rho(x):
+def rho(x, coeffs):
     dx = np.stack((dist_to_density(x[0,:]), dist_to_density(x[1,:])))
-    coeffs = np.array([0, 0, 0, 0, 0, 1])
     
     n = x.size//2
     zero_pad_size = n*2**len(coeffs)
@@ -116,9 +201,8 @@ def rho(x):
     y = np.abs(np.fft.ifft(y_ft))
     return y[:cdf_pad_size]
 
-def lambd(x):
+def lambd(x, coeffs):
     dx = dist_to_density(x)
-    coeffs = np.array([0, 0, 1])
 
     n = x.size
     zero_pad_size = n*2**len(coeffs)

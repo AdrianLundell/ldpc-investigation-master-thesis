@@ -32,7 +32,7 @@ rho_coeffs = np.array([0, 0, 0, 0, 0, 1])
 lambda_coeffs = np.array([0, 0, 1])
 n_iter = 10
 
-x0 = 0.5
+x0 = 0.4
 xl = x0
 
 fig, axes = plt.subplots(2,2)
