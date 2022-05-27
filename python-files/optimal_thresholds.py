@@ -52,7 +52,7 @@ def LLR(t):
 #%% Calculate sigmas from noise level in DB for a channel with Es=1
 noise_db = 4
 N0 = 2/10**(noise_db/10)
-sigma_ratio = 0.75 #Distribution of noise between the distributions
+sigma_ratio = 0.5 #Distribution of noise between the distributions
 
 mu1 = -1
 mu2 = 1
@@ -96,6 +96,10 @@ print(f"MI(X,Y) = {mutual_info(t)}")
 offsets = np.arange(0, 1912.5e-3, 7.5e-3)
 mi_result = np.zeros(len(offsets))
 
+sigma1 = 1
+sigma2 = 1
+m = mid_point()
+
 print("Computing...")
 for i, q in enumerate(offsets):
     t = [m-q, m, m+q]
@@ -111,6 +115,7 @@ max_mi_index = np.argmax(mi_result)
 plot([m-offsets[max_mi_index], m, m+offsets[max_mi_index]])
 print(f"MAX MI(X,Y) = {max_mi} for offset {offsets[max_mi_index]}")
 
+print(LLR([-offsets[max_mi_index], 0, offsets[max_mi_index]]))
 
 #%%Exhausive search of optimal mutual info for asymmetric thresholds
 def optimize_threhsolds():
