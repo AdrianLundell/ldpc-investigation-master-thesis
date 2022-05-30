@@ -23,19 +23,18 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
     RBER is here interpretted as the value of the overlapping tails of the two PDFs divided by two, corresponding to the 
     average probability of a faulty read from hard decoding. Sigmas are found as the roots to
         RBER - 1/2[(1-cdf1(t)) + cdf2(t)]
-    found with Newtons method.
+    using Newtons method.
 
-    Skew is the parameter defining the asymmetry if the channel. 
+    Skew is the parameter defining the asymmetry of the channel. 
     """
     
 
     result = []
     for rber in rbers:
+        #Good initial approximation
         sigma = (1-skew)*(4+np.log10(rber)) 
         
         for i in range(n_iter):
-            
-            #Good initial approximation
             
             #Calculate sigmas for each distribution
             sigma1 = (1-skew) * sigma 
@@ -81,6 +80,7 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
         result.append(sigma)
     return np.array(result)
 
+#%% 
 ratios = np.linspace(0.1,0.5)
 y = []
 for ratio in ratios:
@@ -88,4 +88,3 @@ for ratio in ratios:
 plt.plot(ratios, y)
 
 
-# %%
