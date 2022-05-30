@@ -53,8 +53,8 @@ namespace aff3ct
 					// Weighted mean interpolation: https://en.wikipedia.org/wiki/Bilinear_interpolation#Weighted_mean
 					std::vector<R> &q22 = this->data[i];
 					std::vector<R> &q21 = this->data[i - 1];
-					std::vector<R> &q12 = this->data[i - this->n_x];
-					std::vector<R> &q11 = this->data[i - this->n_x - 1];
+					std::vector<R> &q12 = this->data[i - this->n_y];
+					std::vector<R> &q11 = this->data[i - this->n_y - 1];
 
 					x1 = q11[0];
 					x2 = q22[0];

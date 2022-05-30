@@ -11,8 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt 
 
 #%% Help functions
-sigma1 = 0.9
-sigma2 = 0.1
+sigma1 = 0.5
+sigma2 = 0.5
 mu1 = -1 
 mu2 = 1
 
@@ -41,13 +41,26 @@ def plot(t):
 
 def LLR(t):
     """Calculate LLRs for BI-GAWN channel with thresholds t"""
-    p = (np.array([[norm.cdf(t[0], mu1, sigma1), norm.cdf(t[1], mu1, sigma1), norm.cdf(t[2], mu1, sigma1), 1],
-            [norm.cdf(t[0], mu2, sigma2), norm.cdf(t[1], mu2, sigma2),norm.cdf(t[2], mu2, sigma2), 1]]))
+    t = list(t)
+    t.append(np.inf)
+    p = np.array([norm.cdf(np.array(t), mu1, sigma1),
+                  norm.cdf(np.array(t), mu2, sigma2)])
     
-    yx_prob = np.array([p[0, 0], p[0, 1] - p[0, 0], p[0,2] - p[0, 1], p[0, 3] - p[0, 2], 
-                        p[1, 0], p[1, 1] - p[1, 0], p[1,2] - p[1, 1], p[1, 3] - p[1, 2]])
+    yx_prob = np.array([np.ediff1d(p[0,:], to_begin = p[0,0]),
+                        np.ediff1d(p[1,:], to_begin = p[1,0])])
     
-    return  np.log(yx_prob[0:4]/yx_prob[4:])
+    return  np.log(yx_prob[0,:]/yx_prob[1,:])
+
+#%%
+mu1 = -1 
+mu2 = 1
+sigma1 = 1
+sigma2 = 1
+
+x = mid_point()
+print(1 - norm.cdf(x, loc=mu1, scale=sigma1))
+print(norm.cdf(x, loc=mu2, scale=sigma2))
+
 
 #%% Calculate sigmas from noise level in DB for a channel with Es=1
 noise_db = 4
@@ -119,19 +132,20 @@ print(LLR([-offsets[max_mi_index], 0, offsets[max_mi_index]]))
 
 #%%Exhausive search of optimal mutual info for asymmetric thresholds
 def optimize_threhsolds():
+
+#%%Exhausive search of optimal mutual info
+def optimize_threhsolds(symmetric = False, offsets = np.arange(7.5e-3, 1, 7.5e-3)):
     m = middle
-    offsets = np.arange(7.5e-3, 1, 7.5e-3)
-    mi_result = np.zeros((len(offsets), len(offsets)))
+    mi_result = np.full((len(offsets), len(offsets)), -np.inf)
 
     for i, positive_offset in enumerate(offsets):
-        for j, negative_offset in enumerate(offsets):
-            t = [m-negative_offset, m, m+positive_offset]
-            mi_result[i, j] = mutual_info(t)
-
-    #plt.figure()
-    #plt.imshow(mi_result)
-    #plt.colorbar()
-    #plt.show()
+        if symmetric:
+            t = [m-positive_offset, m, m+positive_offset]
+            mi_result[i, i] = mutual_info(t)
+        else:
+            for j, negative_offset in enumerate(offsets):
+                t = [m-negative_offset, m, m+positive_offset]
+                mi_result[i, j] = mutual_info(t)
 
     max_mi = np.max(mi_result)
     max_mi_index = np.unravel_index(np.argmax(mi_result), mi_result.shape)
@@ -140,35 +154,78 @@ def optimize_threhsolds():
 
     return max_mi, pos_offset, neg_offset
 
-# %% Calculate many thresholds and output file with columns
-#noise_db, sigma_ratio, sigma1, sigma2, max_mi, mid_point, neg_offset, pos_offset, llr1, llr2, llr3, llr4
-db_range = np.arange(3,8,0.5)
-sigma_range = [0.2,0.3,0.4,0.5]
+# %% Calculate many thresholds and output file with column
+#ebn0, ratio, T0, llr1, llr2
+ebn0_range = np.arange(0,10,0.5)
+ratio_range = [0,1]
+code_rate = 64/73
+mu1 = -1
+mu2 = 1
 
-result = np.zeros((len(db_range)*len(sigma_range), 12))
+result = np.zeros((len(ebn0_range)*len(ratio_range), 6))
 i = 0
+for ebn0 in ebn0_range:
+    for sigma_ratio in ratio_range:
 
-for noise_db in db_range:
-    for sigma_ratio in sigma_range:
-        N0 = 2/10**(noise_db/10)
-        sigma1 = np.sqrt(N0*sigma_ratio)
-        sigma2 = np.sqrt(N0*(1-sigma_ratio))
+        esn0 = ebn0 + 10*np.log10(code_rate)
+        sigma = np.sqrt(1/(2*10**(esn0/10)))
+        sigma1 = sigma
+        sigma2 = sigma
+
         middle = mid_point()
 
-        print(f"Calculating thresholds for SNR={noise_db}dB, sigma ratio={sigma_ratio}.")
-
-        max_mi, pos_offset, neg_offset = optimize_threhsolds()
-        llr = LLR(np.array([middle-neg_offset, middle, middle+pos_offset]))
-
-        result[i,:] = np.array([noise_db, sigma_ratio, sigma1, sigma2, max_mi, middle, neg_offset, pos_offset, llr[0], llr[1], llr[2], llr[3]])
+        print(f"Calculating thresholds for ebn0={ebn0}dB, sigma ratio={sigma_ratio}.")
+        t0 = middle
+        llr = LLR(np.array([t0]))
+        capacity = mutual_info(t0)
+        result[i,:] = np.array([ebn0, sigma_ratio, t0, llr[0], llr[1], capacity])
 
         i+=1
 
-np.savetxt(fname = "Thresholds.csv", 
+np.savetxt(fname = "Thresholds_symmetric_hard.csv", 
             X = result, 
             delimiter=", ",
             fmt='%f',
-            header ="noise_db, sigma_ratio, sigma1, sigma2, max_mi, middle, neg_offset, pos_offset, llr1, llr2, llr3, llr4")
+            header ="ebn0, sigma_ratio, t0, llr0, llr1, capacity")
+
+# %% Calculate many thresholds and output file with columns
+#ebn0, ratio, T0, T1, T2, llr1, llr2, llr3, llr4
+ebn0_range = np.arange(0,10,0.5)
+ratio_range = [0,1]
+code_rate = 64/73
+mu1 = -1
+mu2 = 1
+
+result = np.zeros((len(ebn0_range)*len(ratio_range), 10))
+i = 0
+for ebn0 in ebn0_range:
+    for sigma_ratio in ratio_range:
+
+        esn0 = ebn0 + 10*np.log10(code_rate)
+        sigma = np.sqrt(1/(2*10**(esn0/10)))
+        sigma1 = sigma
+        sigma2 = sigma
+
+        middle = mid_point()
+
+        print(f"Calculating thresholds for ebn0={ebn0}dB, sigma ratio={sigma_ratio}.")
+
+        max_mi, pos_offset, neg_offset = optimize_threhsolds(symmetric=True)
+        t0 = middle - neg_offset
+        t1 = middle
+        t2 = middle + neg_offset
+        llr = LLR(np.array([t0, t1, t2]))
+        c = mutual_info([t0,t1,t2])
+        result[i,:] = np.array([ebn0, sigma_ratio, t0, t1, t2, llr[0], llr[1], llr[2], llr[3], c])
+
+        i+=1
+
+np.savetxt(fname = "Single_soft_capacity.csv", 
+            X = result, 
+            delimiter=", ",
+            fmt='%f',
+            header ="ebn0, sigma_ratio, t0, t1, t2, llr0, llr1, llr2, llr3, capacity")
+
 # %% Optimise mean performance of assymmetric thresholds 
 db_range = np.arange(3,8,0.5)
 sigma_range = [0.2,0.3,0.4,0.5]
@@ -198,7 +255,7 @@ print(f"Max mean mutual info={max_mi} for offsets +{offsets[max_mi_index[0]]}, -
 #Max mean mutual info=0.8432954142791612 for offsets +0.3825, -0.5175
 # Optimise mean performance of symmetric thresholds 
 
-db_range = np.arange(3,8,0.5)
+db_range = np.arange(0,8,0.5)
 sigma_range = [0.2,0.3,0.4,0.5]
 
 offsets = np.arange(7.5e-3, 1, 7.5e-3)
