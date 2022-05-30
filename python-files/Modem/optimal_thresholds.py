@@ -54,7 +54,7 @@ def mutual_info(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
     return y_entropy - yx_entropy
 
 #%%Exhausive search of optimal mutual info
-def optimize_threhsolds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, offsets = np.arange(7.5e-3, 1, 7.5e-3)):
+def optimize_thresholds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, offsets = np.arange(7.5e-3, 1, 7.5e-3)):
     """Returns optimal offsets for three thresholds
     TODO: Generalize to arbitrary amount of thresholds
     TODO: More clever optimization strategy
@@ -77,10 +77,10 @@ def optimize_threhsolds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, of
     pos_offset = offsets[max_mi_index[0]]
     neg_offset = offsets[max_mi_index[1]]
 
-    return max_mi, pos_offset, neg_offset
+    return np.array([m-neg_offset, m, m+pos_offset]), max_mi
 
 
-#%%
+#%% TODO: Update these functions towork wit new help functions
 if __name__ == "main":
     # %% Calculate many thresholds and output file with column
     #ebn0, ratio, T0, llr1, llr2

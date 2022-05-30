@@ -27,7 +27,11 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
 
     Skew is the parameter defining the asymmetry of the channel. 
     """
-    
+
+    try:
+        rbers = iter(rbers)
+    except TypeError:
+        rbers = [rbers]
 
     result = []
     for rber in rbers:
@@ -81,10 +85,11 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
     return np.array(result)
 
 #%% 
-ratios = np.linspace(0.1,0.5)
-y = []
-for ratio in ratios:
-    y.append(rber_to_sigma([0.01], ratio)[0])
-plt.plot(ratios, y)
+if __name__ == "main":
+    ratios = np.linspace(0.1,0.5)
+    y = []
+    for ratio in ratios:
+        y.append(rber_to_sigma([0.01], ratio)[0])
+    plt.plot(ratios, y)
 
 

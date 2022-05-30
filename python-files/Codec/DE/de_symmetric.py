@@ -2,11 +2,13 @@
 Implementation of asymmetric density evolution from : https://arxiv.org/pdf/cs/0509014.pdf
 """
 #%%
-import numpy as np 
+import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate as interp
-import scipy.signal as sp 
+import scipy.signal as sp
 import scipy.stats as stats
+import discretize_sigma as d
+
 
 #%% Probability convertion functions
 def to_cdf(pdf):
@@ -23,7 +25,7 @@ def to_pdf(cdf):
 def gamma(F, F_grid, G_grid):
     zero_index = F.size//2-1
     F_step = abs(F_grid[1] - F_grid[0])
-    
+
     G0_indices = np.floor(-np.log(np.tanh(G_grid/2)) / F_step)
     G0_indices = np.clip(G0_indices, 0, zero_index).astype(int)
     G0 = 1 - F.take(G0_indices + zero_index)
@@ -42,8 +44,8 @@ def gamma_inv(G, F_grid, G_grid):
     F_neg_indices = np.clip(F_neg_indices, 0, G[1,:].size-1).astype(int)
     F_neg = G[1,:].take(F_neg_indices)
 
-    f_0 = G[0,-1]
-    
+    f_0 = G[1,-1]
+
     F_pos_indices = np.floor(-np.log(np.tanh(F_grid[zero_index+1:]/2)) / G_step)
     F_pos_indices = np.clip(F_pos_indices, 0, G[0,:].size-1).astype(int)
     F_pos = 1 - G[0,:].take(F_pos_indices)
@@ -88,16 +90,17 @@ def lambd(x):
 
         x = x[:np.argmax(x)+1]
         x = np.pad(x, (0,final_size-x.size), constant_values = x.max())
-        
-        y += coeff*x
-        x = x[:current_size]
 
-    return y  
+        y += coeff*x
+        zero = x.size // 2 - 1
+        x = x[zero - current_size//2: zero + current_size//2]
+
+    return y
 
 #%% Run simulation
 #Initialisation
 def init_grids(max_val, f_n, g_n):
-    """Returns an evenly spaced grid of n points."""
+    """Returns an evenly spaced grid of n points"""
     f_grid = np.linspace(-max_val, max_val, f_n)
 
     f_step = abs(f_grid[1] - f_grid[0])
@@ -109,13 +112,11 @@ def init_grids(max_val, f_n, g_n):
 
 
 def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
-    
-    p0 = to_cdf(p0)
-    pl = np.copy(p0)
 
-    fig,axes = plt.subplots(1,2)
+    pl = to_cdf(p0_pdf)
 
     for l in range(n_iter):
+        fig,axes = plt.subplots(1,2)
         x1 = gamma(pl, f_grid, g_grid)
         x2 = rho(x1)
         x3 = gamma_inv(x2, f_grid, g_grid)
@@ -125,11 +126,26 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         current_size = pl.size
         pl = pl[:np.argmax(pl)+1]
         pl = np.pad(pl, (0, current_size-pl.size), constant_values = pl.max())
-        
+
         axes[0].plot(pl)
-        axes[1].scatter(l, pl[1023])
+        axes[1].scatter(l, pl[(2**14*4)//2-1])
 
-    plt.show()
-        
+        # plt.show()
+        # plt.plot(x1[0,:])
+        # plt.show()
+        # plt.plot(x1[1,:])
+        # plt.show()
+        # plt.plot(x2[0,:])
+        # plt.show()
+        # plt.plot(x2[1,:])
+        # plt.show()
+        # plt.plot(x3)
+        # plt.show()
 
+        plt.show()
+
+
+sigma, p0, bins = d.compute_pdf(0.01, 0.5, 2**14, 10)
+f_grid, g_grid, pdf = d.create_pdf(p0, bins, 2**14)
+density_evolution(pdf, f_grid, g_grid, n_iter=5)
 # %%
