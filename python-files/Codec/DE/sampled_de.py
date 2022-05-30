@@ -13,11 +13,10 @@ def to_pdf(cdf):
     pdf = cdf[1:] - cdf[:-1]
     return pdf[:-1]
 
-def plot_samples(samples, bins, cdf = True):
+def plot_samples(samples, bins, n_samples, cdf = True):
     bins = np.append(bins, np.inf)
     values, bins = np.histogram(samples, bins) 
-    values = values / len(samples)
-    
+    values = values/ n_samples
     if cdf: 
         values = to_cdf(values)
     
@@ -38,7 +37,13 @@ def sampled_density_evolution(pdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_
     #gamma
     g0 = -np.log(np.tanh(np.abs(samples[samples<=0])/2))
     g1 = -np.log(np.tanh(np.abs(samples[samples>0])/2))    
-    
+
+    plot_samples(g0, g_grid, n_samples = n_samples)
+    plt.show()
+    plot_samples(g1, g_grid, n_samples = n_samples)
+    plt.show()
+    return
+
     #rho
     sampled_rho0 = []
     for i in range(n_samples//2):
@@ -85,14 +90,16 @@ def sampled_density_evolution(pdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_
         sampled_conv.append(sample)
     sampled_conv = np.array(sampled_conv)
 
+
+
     return sampled_conv
 
 #%%
-sigma, p0, bins = d.compute_pdf(0.01, 0.5, 256, 10)
-f_grid, g_grid, pdf = d.create_pdf(p0, bins, 256)
+sigma, p0, bins = d.compute_pdf(0.01, 0.5, 1024, 10)
+f_grid, g_grid, pdf = d.create_pdf(p0, bins, 1024)
 
 pl = sampled_density_evolution(pdf, f_grid, g_grid, [0, 0, 0, 0, 0, 1], [0,0,1], 10**6)
-
+#%%
 plot_samples(pl, f_grid)
 # %%
 plt.plot(f_grid, to_cdf(pdf))

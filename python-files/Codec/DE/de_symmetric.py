@@ -116,7 +116,6 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
     pl = to_cdf(p0_pdf)
 
     for l in range(n_iter):
-        fig,axes = plt.subplots(1,2)
         x1 = gamma(pl, f_grid, g_grid)
         x2 = rho(x1)
         x3 = gamma_inv(x2, f_grid, g_grid)
@@ -127,13 +126,13 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         pl = pl[:np.argmax(pl)+1]
         pl = np.pad(pl, (0, current_size-pl.size), constant_values = pl.max())
 
-        axes[0].plot(pl)
-        axes[1].scatter(l, pl[(2**14*4)//2-1])
+        #plt.plot(f_grid, pl[512-128:512+128])
+        #axes[1].scatter(l, pl[(2**8*4)//2-1])
 
-        # plt.show()
-        # plt.plot(x1[0,:])
-        # plt.show()
-        # plt.plot(x1[1,:])
+        plt.show()
+        plt.plot(g_grid, x1[0,:])
+        plt.show()
+        plt.plot(g_grid, x1[1,:])
         # plt.show()
         # plt.plot(x2[0,:])
         # plt.show()
@@ -145,7 +144,7 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         plt.show()
 
 
-sigma, p0, bins = d.compute_pdf(0.01, 0.5, 2**14, 10)
-f_grid, g_grid, pdf = d.create_pdf(p0, bins, 2**14)
-density_evolution(pdf, f_grid, g_grid, n_iter=5)
+sigma, p0, bins = d.compute_pdf(0.01, 0.5, 1024, 10)
+f_grid, g_grid, pdf = d.create_pdf(p0, bins, 1024)
+density_evolution(pdf, f_grid, g_grid, n_iter=1)
 # %%
