@@ -107,38 +107,29 @@ def init_grids(max_val, f_n, g_n):
 
     return f_grid, g_grid
 
-llr_lim = 10
-n_grid_f = 512
-n_grid_g = 512
-n_iter = 100
 
-#Hard read of all zero codeword
-p0 = np.zeros(n_grid_f)
-p0[256 - 64] = 0.1
-p0[256 + 64] = 0.9
-
-p0_pdf = np.copy(p0)
-p0 = to_cdf(p0)
-pl = np.copy(p0)
-f_grid, g_grid = init_grids(llr_lim, n_grid_f, n_grid_g)
-
-fig,axes = plt.subplots(1,2)
-
-for l in range(n_iter):
-    x1 = gamma(pl, f_grid, g_grid)
-    x2 = rho(x1)
-    x3 = gamma_inv(x2, f_grid, g_grid)
-    x4 = lambd(x3)
-
-    pl = sp.convolve(p0_pdf, x4)
-    current_size = pl.size
-    pl = pl[:np.argmax(pl)+1]
-    pl = np.pad(pl, (0, current_size-pl.size), constant_values = pl.max())
+def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
     
-    axes[0].plot(pl)
-    axes[1].scatter(l, pl[1023])
+    p0 = to_cdf(p0)
+    pl = np.copy(p0)
 
-plt.show()
-    
+    fig,axes = plt.subplots(1,2)
+
+    for l in range(n_iter):
+        x1 = gamma(pl, f_grid, g_grid)
+        x2 = rho(x1)
+        x3 = gamma_inv(x2, f_grid, g_grid)
+        x4 = lambd(x3)
+
+        pl = sp.convolve(p0_pdf, x4)
+        current_size = pl.size
+        pl = pl[:np.argmax(pl)+1]
+        pl = np.pad(pl, (0, current_size-pl.size), constant_values = pl.max())
+        
+        axes[0].plot(pl)
+        axes[1].scatter(l, pl[1023])
+
+    plt.show()
+        
 
 # %%
