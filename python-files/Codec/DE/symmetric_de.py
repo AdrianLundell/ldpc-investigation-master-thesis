@@ -1,14 +1,13 @@
 """
-Implementation of asymmetric density evolution from : https://arxiv.org/pdf/cs/0509014.pdf
+This file contains methods for a numeric discretized implementation of a general symmetric density evolution.
+
+Source : https://arxiv.org/pdf/cs/0509014.pdf
 """
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.interpolate as interp
 import scipy.signal as sp
-import scipy.stats as stats
 import discretize_sigma as d
-
 
 #%% Probability convertion functions
 def to_cdf(pdf):
@@ -125,8 +124,7 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         plt.show()
         plt.plot(g_grid, x1[1,:])
         plt.show()
-
-"""
+        
         x2 = rho(x1)
         x3 = gamma_inv(x2, f_grid, g_grid)
         x4 = lambd(x3)
@@ -150,8 +148,4 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         plt.show()
 
 
-"""
-sigma, p0, bins = d.compute_pdf(0.01, 0.5, 1024, 10)
-f_grid, g_grid, pdf = d.create_pdf(p0, bins, 1024)
-density_evolution(pdf, f_grid, g_grid, n_iter=1)
-# %%
+

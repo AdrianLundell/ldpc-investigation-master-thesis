@@ -1,3 +1,11 @@
+"""
+This file contains methods for generating the pdf of LLRS for an optimally discretized A-BIAWGN channel.
+
+Note that the distribution is first discretized and then quantized to an equidistant grid, meaning the
+final distribution is not strictly optimal. 
+"""
+
+#Path hack
 import sys 
 import os 
 sys.path.insert(1, os.path.join(sys.path[0], '../..'))
