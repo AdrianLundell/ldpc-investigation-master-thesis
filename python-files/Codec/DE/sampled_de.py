@@ -56,23 +56,22 @@ def rho(samples, rho_coeffs, n_samples):
         x = np.take(samples, x)
         rho[y].append(sum(x))
         
-    return rho
+    return (np.array(rho[0]), np.array(rho[1]))
 
 def gamma_inv(samples):
-    sampled_inv0 = -np.log((1 + np.exp(-samples[0,:]))/(1 - np.exp(-samples[0,:])))
-    sampled_inv1 = np.log((1 + np.exp(-samples[1,:]))/(1 - np.exp(-samples[1,:])))
-    sampled_inv = np.append(sampled_inv0, sampled_inv1)
+    inv_neg = -np.log((1 + np.exp(-samples[1]))/(1 - np.exp(-samples[1])))
+    inv_pos = np.log((1 + np.exp(-samples[0]))/(1 - np.exp(-samples[0])))
+    inv = np.append(inv_neg, inv_pos)
     
-    return sampled_inv
+    return inv
 
-def lambd(samples, lambda_coeffs, n_samples):
+def lambd(samples, coeffs, n_samples):
     sampled_lambda = []
     for i in range(n_samples):
-        sample = 0
-        for i, coeff in enumerate(lambda_coeffs[1:]):
-            x = np.random.randint(0, samples.size, coeff)
-            x = np.take(samples, x)
-            sample = coeff * np.sum(x)
+        #TODO: does not work for irregular codes as it assumes all samples are picked with the largest coefficient.
+        x = np.random.randint(0, samples.size-1, len(coeffs))
+        x = np.take(samples, x)
+        sample = np.sum(x)
         sampled_lambda.append(sample)
     
     return np.array(sampled_lambda)

@@ -38,7 +38,7 @@ def gamma(F, F_grid, G_grid):
     return np.stack((G0, G1))
 
 def gamma_inv(G, F_grid, G_grid):
-    zero_index = F_grid.size//2-1
+    zero_index = F_grid.size//2
     G_step = abs(G_grid[1] - G_grid[0])
 
     F_neg_indices = np.floor(-np.log(np.tanh(-F_grid[:zero_index]/2)) / G_step)
@@ -79,20 +79,32 @@ def rho(x, coeffs):
     return y
 
 def lambd(x, coeffs):
+    x = np.pad(x, (0,x.size), constant_values = 1)
     dx = to_pdf(x)
     final_size = x.size * len(coeffs)
+
+    # plt.plot(dx)
+    # plt.show()
+    # plt.plot(x)
+    # plt.show()
 
     y = np.zeros(final_size)
     for coeff in coeffs[1:]:
         x = sp.convolve(x, dx)
         current_size = x.size
 
+        plt.plot(x)
+        plt.show()
+
         x = x[:np.argmax(x)+1]
         x = np.pad(x, (0,final_size-x.size), constant_values = x.max())
 
         y += coeff*x
-        zero = x.size // 2 - 1
-        x = x[zero - current_size//2: zero + current_size//2]
+        zero = x.size//2
+        x = x[:current_size + 1]
+
+        plt.plot(x)
+        plt.show()
 
     return y
 
