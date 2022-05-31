@@ -15,7 +15,7 @@ def init_pdf(n_thresholds, n_grid):
 
 def create_pdf(p0, bins, n_grid = 512, llr_max = 10):
     """Creates a pdf and grid from values"""
-    x1 = np.linspace(-llr_max, llr_max, n_grid)
+    x1 = np.linspace(-llr_max, llr_max, n_grid, endpoint = False)
     y = np.zeros(x1.shape)
     np.put(y, bins.astype(int), p0)
 
@@ -34,7 +34,7 @@ def compute_pdf(rber, skew, n_grid = 512, llr_max = 10, mu1 = -1, mu2 = 1):
     sigma2 = skew * sigma
 
     thresholds, max_mi = optimize.optimize_thresholds(sigma1, sigma2, mu1, mu2, symmetric = True)
-    thresholds = [optimize.mid_point(sigma1, sigma2, mu1, mu2)]
+    #thresholds = [optimize.mid_point(sigma1, sigma2, mu1, mu2)]
 
     p0 = norm.cdf(np.append(thresholds, np.inf), mu2, sigma2)
     p0 = np.ediff1d(p0, to_begin = p0[0])
@@ -44,7 +44,7 @@ def compute_pdf(rber, skew, n_grid = 512, llr_max = 10, mu1 = -1, mu2 = 1):
     llrs = optimize.llrs(thresholds, sigma1, sigma2)
     step = 2*llr_max / n_grid
     bins = np.round(-llrs / step) + n_grid//2
-    bins = np.clip(bins, 0, n_grid)
+    bins = np.clip(bins, 0, n_grid-1)
 
     return sigma, p0, bins
 

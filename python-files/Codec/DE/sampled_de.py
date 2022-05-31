@@ -30,13 +30,16 @@ def sampled_density_evolution(pdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_
     samples = []
     for i in range(n_samples):
         x = np.random.rand()
-        sample = f_grid[np.argmax(cdf >= x)]  
+        sample = f_grid[np.argmax(cdf >= x) - 1]  
         samples.append(sample)
     samples = np.array(samples)
 
+    plot_samples(samples, f_grid, n_samples)
+    plt.show
+    
     #gamma
-    g0 = -np.log(np.tanh(np.abs(samples[samples<=0])/2))
-    g1 = -np.log(np.tanh(np.abs(samples[samples>0])/2))    
+    g0 = -np.log(np.tanh(np.abs(samples[samples>0])/2))    
+    g1 = -np.log(np.tanh(np.abs(samples[samples<=0])/2))
 
     plot_samples(g0, g_grid, n_samples = n_samples)
     plt.show()
@@ -100,7 +103,7 @@ f_grid, g_grid, pdf = d.create_pdf(p0, bins, 1024)
 
 pl = sampled_density_evolution(pdf, f_grid, g_grid, [0, 0, 0, 0, 0, 1], [0,0,1], 10**6)
 #%%
-plot_samples(pl, f_grid)
+#plot_samples(pl, f_grid)
 # %%
 plt.plot(f_grid, to_cdf(pdf))
 # %%

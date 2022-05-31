@@ -22,12 +22,14 @@ def to_pdf(cdf):
     return pdf[:-1]
 
 #%% Gamma convertion functions
+
+#%%
 def gamma(F, F_grid, G_grid):
-    zero_index = F.size//2-1
+    zero_index = F.size//2
     F_step = abs(F_grid[1] - F_grid[0])
 
     G0_indices = np.floor(-np.log(np.tanh(G_grid/2)) / F_step)
-    G0_indices = np.clip(G0_indices, 0, zero_index).astype(int)
+    G0_indices = np.clip(G0_indices, 0, zero_index - 1).astype(int)
     G0 = 1 - F.take(G0_indices + zero_index)
 
     G1_indices = np.floor(np.log(np.tanh(G_grid/2)) / F_step)
@@ -116,7 +118,15 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
     pl = to_cdf(p0_pdf)
 
     for l in range(n_iter):
+        plt.plot(pl)
+        plt.show()
         x1 = gamma(pl, f_grid, g_grid)
+        plt.plot(g_grid, x1[0,:])
+        plt.show()
+        plt.plot(g_grid, x1[1,:])
+        plt.show()
+
+"""
         x2 = rho(x1)
         x3 = gamma_inv(x2, f_grid, g_grid)
         x4 = lambd(x3)
@@ -129,10 +139,6 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         #plt.plot(f_grid, pl[512-128:512+128])
         #axes[1].scatter(l, pl[(2**8*4)//2-1])
 
-        plt.show()
-        plt.plot(g_grid, x1[0,:])
-        plt.show()
-        plt.plot(g_grid, x1[1,:])
         # plt.show()
         # plt.plot(x2[0,:])
         # plt.show()
@@ -144,6 +150,7 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         plt.show()
 
 
+"""
 sigma, p0, bins = d.compute_pdf(0.01, 0.5, 1024, 10)
 f_grid, g_grid, pdf = d.create_pdf(p0, bins, 1024)
 density_evolution(pdf, f_grid, g_grid, n_iter=1)
