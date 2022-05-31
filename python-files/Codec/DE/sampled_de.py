@@ -44,28 +44,19 @@ def gamma(samples):
     return (g0, g1)
 
 def rho(samples, rho_coeffs, n_samples):
-    
-    sampled_rho0 = []
-    for i in range(n_samples//2):
-        sample = 0
-        for i, coeff in enumerate(rho_coeffs[1:]):
-            x = np.random.randint(0, samples[0,:].size, i)
-            x = np.take(samples[0,:], x)
-            sample = coeff * np.sum(x)
-        sampled_rho0.append(sample)
-    rho0 = np.array(sampled_rho0)
-
-    sampled_rho1 = []
-    for i in range(n_samples//2):
-        sample = 0
-        for i, coeff in enumerate(rho_coeffs[1:]):
-            x = np.random.randint(0, samples[1,:].size, i)
-            x = np.take(samples[1,:], x)
-            sample = coeff * np.sum(x)
-        sampled_rho1.append(sample)
-    rho1 = np.array(sampled_rho1)
-    
-    return np.stack((rho0, rho1))
+    lim = samples[0].size
+    samples = np.append(samples[0], samples[1])
+    rho = ([], [])
+    for i in range(n_samples):
+        #TODO: does not work for irregular codes as it assumes all samples are picked with the largest coefficient.
+        x = np.random.randint(0, samples.size-1, len(rho_coeffs))
+        y = x < lim
+        y = y.astype(int)
+        y = sum(y) % 2
+        x = np.take(samples, x)
+        rho[y].append(sum(x))
+        
+    return rho
 
 def gamma_inv(samples):
     sampled_inv0 = -np.log((1 + np.exp(-samples[0,:]))/(1 - np.exp(-samples[0,:])))

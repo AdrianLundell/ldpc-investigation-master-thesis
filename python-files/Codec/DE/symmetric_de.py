@@ -54,9 +54,8 @@ def gamma_inv(G, F_grid, G_grid):
     return np.hstack((F_neg, f_0, F_pos))
 
 #%% Convolution functions
-def rho(x):
+def rho(x, coeffs):
     dx = np.stack((to_pdf(x[0,:]), to_pdf(x[1,:])))
-    coeffs = np.array([0, 0, 0, 0, 0, 1])
     final_size = x.size//2 * len(coeffs)
 
     x0 = x[0,:]
@@ -79,9 +78,8 @@ def rho(x):
 
     return y
 
-def lambd(x):
+def lambd(x, coeffs):
     dx = to_pdf(x)
-    coeffs = np.array([0, 0, 1])
     final_size = x.size * len(coeffs)
 
     y = np.zeros(final_size)
