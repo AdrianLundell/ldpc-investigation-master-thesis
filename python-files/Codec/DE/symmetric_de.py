@@ -79,7 +79,7 @@ def rho(x, coeffs):
     return y
 
 def lambd(x, coeffs):
-    x = np.pad(x, (0,x.size), constant_values = 1)
+    x = np.pad(x, (x.size//2,x.size//2), constant_values = (0,1))
     dx = to_pdf(x)
     final_size = x.size * len(coeffs)
 
@@ -93,18 +93,14 @@ def lambd(x, coeffs):
         x = sp.convolve(x, dx)
         current_size = x.size
 
-        plt.plot(x)
-        plt.show()
-
         x = x[:np.argmax(x)+1]
-        x = np.pad(x, (0,final_size-x.size), constant_values = x.max())
+        padding1 = np.ceil((-current_size+final_size)/2)
+        padding2 = np.floor((-current_size+final_size)/2 + (current_size-x.size))
+        x = np.pad(x, (int(padding1),int(padding2)), constant_values = (0,1))
 
         y += coeff*x
         zero = x.size//2
-        x = x[:current_size + 1]
-
-        plt.plot(x)
-        plt.show()
+        x = x[zero - current_size//2:zero + current_size//2]
 
     return y
 
