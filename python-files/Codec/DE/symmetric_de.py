@@ -79,14 +79,9 @@ def rho(x, coeffs):
     return y
 
 def lambd(x, coeffs):
-    x = np.pad(x, (x.size//2,x.size//2), constant_values = (0,1))
+    x = np.pad(x, (x.size//2, x.size//2), constant_values = (0,1))
     dx = to_pdf(x)
     final_size = x.size * len(coeffs)
-
-    # plt.plot(dx)
-    # plt.show()
-    # plt.plot(x)
-    # plt.show()
 
     y = np.zeros(final_size)
     for coeff in coeffs[1:]:
@@ -94,14 +89,29 @@ def lambd(x, coeffs):
         current_size = x.size
 
         x = x[:np.argmax(x)+1]
-        padding1 = np.ceil((-current_size+final_size)/2)
-        padding2 = np.floor((-current_size+final_size)/2 + (current_size-x.size))
-        x = np.pad(x, (int(padding1),int(padding2)), constant_values = (0,1))
+        padding1 = int(np.ceil((-current_size+final_size)/2))
+        padding2 = int(np.floor((-current_size+final_size)/2))
+        padding3 = int((current_size-x.size))
+        x = np.pad(x, (padding1, padding2 + padding3), constant_values = (0,1))
 
         y += coeff*x
-        zero = x.size//2
-        x = x[zero - current_size//2:zero + current_size//2]
+        x = x[padding1:-padding2]
+    
+    y = y[y.size//4:-y.size//4]
+    return y
 
+def conv(x, x0):
+    x0 = np.pad(x0, (x0.size, x0.size), constant_values = (0,1))
+    x = np.pad(x, (x.size, x.size), constant_values = (0,1))
+    dx = to_pdf(x)
+
+    y = sp.convolve(x0, dx)
+
+    current_size = y.size
+    y = y[:np.argmax(y)+1]
+    y = np.pad(y, (0, current_size-y.size), constant_values = y.max())
+    
+    y = y[y.size//4: -y.size//4]
     return y
 
 #%% Run simulation
@@ -116,7 +126,6 @@ def init_grids(max_val, f_n, g_n):
     g_grid = np.linspace(0, max_val, g_n//2)
 
     return f_grid, g_grid
-
 
 def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
 
@@ -135,10 +144,6 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         x3 = gamma_inv(x2, f_grid, g_grid)
         x4 = lambd(x3)
 
-        pl = sp.convolve(p0_pdf, x4)
-        current_size = pl.size
-        pl = pl[:np.argmax(pl)+1]
-        pl = np.pad(pl, (0, current_size-pl.size), constant_values = pl.max())
 
         #plt.plot(f_grid, pl[512-128:512+128])
         #axes[1].scatter(l, pl[(2**8*4)//2-1])

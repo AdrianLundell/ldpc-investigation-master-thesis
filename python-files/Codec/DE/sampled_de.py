@@ -83,6 +83,7 @@ def conv(samples1, samples2, n_samples):
         x2 = samples2[np.random.randint(0, n_samples)]
         sample = x1 + x2
         sampled_conv.append(sample)
+        
     sampled_conv = np.array(sampled_conv)
 
     return sampled_conv
