@@ -143,18 +143,7 @@ def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
         x2 = rho(x1)
         x3 = gamma_inv(x2, f_grid, g_grid)
         x4 = lambd(x3)
-
-
-        #plt.plot(f_grid, pl[512-128:512+128])
-        #axes[1].scatter(l, pl[(2**8*4)//2-1])
-
-        # plt.show()
-        # plt.plot(x2[0,:])
-        # plt.show()
-        # plt.plot(x2[1,:])
-        # plt.show()
-        # plt.plot(x3)
-        # plt.show()
+        pl = conv(x4, )
 
         plt.show()
 

@@ -2,7 +2,6 @@
 This file puts together the methods from discretize_sigma, sampled_de and symmetric_de to 
 show correctness of the algorithms by comparing sampled and theoretical distributions.
 """
-from math import gamma
 import sampled_de
 import symmetric_de
 import discretize_sigma
