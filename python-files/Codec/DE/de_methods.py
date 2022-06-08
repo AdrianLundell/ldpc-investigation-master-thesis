@@ -1,15 +1,14 @@
 """
-This file contains methods for a numeric discretized implementation of a general symmetric density evolution.
+This file contains methods for a numeric discretized implementation of density evolution for a general distribution.
 
-Source : https://arxiv.org/pdf/cs/0509014.pdf
+Sources: 
+https://arxiv.org/pdf/cs/0509014.pdf
+https://arxiv.org/pdf/2001.01249.pdf
+
 """
-#%%
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.signal as sp
-import discretize_sigma as d
 
-#%% Probability convertion functions
 def to_cdf(pdf):
     """Returns the discrete pdf of a cdf"""
     return np.cumsum(pdf)
@@ -20,9 +19,6 @@ def to_pdf(cdf):
     pdf = cdf[1:] - cdf[:-1]
     return pdf[:-1]
 
-#%% Gamma convertion functions
-
-#%%
 def gamma(F, F_grid, G_grid):
     zero_index = F.size//2
     F_step = abs(F_grid[1] - F_grid[0])
@@ -53,7 +49,6 @@ def gamma_inv(G, F_grid, G_grid):
 
     return np.hstack((F_neg, f_0, F_pos))
 
-#%% Convolution functions
 def rho(x, coeffs):
     dx = np.stack((to_pdf(x[0,:]), to_pdf(x[1,:])))
     final_size = x.size//2 * len(coeffs)
@@ -113,39 +108,3 @@ def conv(x, x0):
     
     y = y[y.size//4: -y.size//4]
     return y
-
-#%% Run simulation
-#Initialisation
-def init_grids(max_val, f_n, g_n):
-    """Returns an evenly spaced grid of n points"""
-    f_grid = np.linspace(-max_val, max_val, f_n)
-
-    f_step = abs(f_grid[1] - f_grid[0])
-    max_val = -np.log(np.tanh(f_step))
-
-    g_grid = np.linspace(0, max_val, g_n//2)
-
-    return f_grid, g_grid
-
-def density_evolution(p0_pdf, f_grid, g_grid, n_iter = 50):
-
-    pl = to_cdf(p0_pdf)
-
-    for l in range(n_iter):
-        plt.plot(pl)
-        plt.show()
-        x1 = gamma(pl, f_grid, g_grid)
-        plt.plot(g_grid, x1[0,:])
-        plt.show()
-        plt.plot(g_grid, x1[1,:])
-        plt.show()
-        
-        x2 = rho(x1)
-        x3 = gamma_inv(x2, f_grid, g_grid)
-        x4 = lambd(x3)
-        pl = conv(x4, )
-
-        plt.show()
-
-
-
