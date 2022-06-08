@@ -36,7 +36,7 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
         diff = sum((pl_old - pl)**2)/np.where((pl>0) & (pl <1))[0].size
         pl_old = pl
 
-        zero_index = pl.size//2 + 5
+        zero_index = pl.size//2
         error = pl[zero_index]
         
         if plot:
