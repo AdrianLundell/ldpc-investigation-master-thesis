@@ -108,3 +108,18 @@ def conv(x, x0):
     
     y = y[y.size//4: -y.size//4]
     return y
+
+def conv(x, x0):
+
+    dx = to_pdf(x)
+
+    final_size = x.size + x0.size
+
+    x0 = np.pad(x0, (0, 2**16-x0.size))
+    dx = np.pad(dx, (0, 2**16-dx.size))
+
+    y = np.abs(np.fft.ifft(np.fft.fft(dx)*np.fft.fft(x0)))    
+    y = y[:final_size]
+    y[np.argmax(y):] = 1
+
+    return y
