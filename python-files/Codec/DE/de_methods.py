@@ -73,7 +73,7 @@ def rho(x, coeffs):
 
     return y
 
-def lambd(x, coeffs):
+def lambd_regular(x, coeffs):
     x = np.pad(x, (x.size//2, x.size//2), constant_values = (0,1))
     dx = to_pdf(x)
     final_size = x.size * len(coeffs)
@@ -95,25 +95,31 @@ def lambd(x, coeffs):
     y = y[y.size//4:-y.size//4]
     return y
 
-def conv(x, x0):
-    x0 = np.pad(x0, (x0.size, x0.size), constant_values = (0,1))
-    x = np.pad(x, (x.size, x.size), constant_values = (0,1))
+def lambd(x, coeffs):
     dx = to_pdf(x)
-
-    y = sp.convolve(x0, dx)
-
-    current_size = y.size
-    y = y[:np.argmax(y)+1]
-    y = np.pad(y, (0, current_size-y.size), constant_values = y.max())
+    final_size = x.size
+    for i in range(len(coeffs)-1):
+        final_size = (final_size + x.size) - 1
     
-    y = y[y.size//4: -y.size//4]
+    x = np.pad(x, (0, 2**16 - x.size))
+    dx = np.pad(dx, (0, 2**16 - dx.size))
+
+    x_ft = np.fft.fft(x)
+    dx_ft = np.fft.fft(dx)
+    y_ft = np.zeros(2**16, complex)
+
+    for coeff in coeffs[1:]:
+        x_ft = x_ft * dx_ft
+        y_ft += coeff*x_ft
+    
+    y = np.abs(np.fft.ifft(y_ft)[:final_size])
+    y[np.argmax(y):] = 1
+
     return y
 
 def conv(x, x0):
-
     dx = to_pdf(x)
-
-    final_size = x.size + x0.size
+    final_size = x.size + x0.size - 1
 
     x0 = np.pad(x0, (0, 2**16-x0.size))
     dx = np.pad(dx, (0, 2**16-dx.size))
