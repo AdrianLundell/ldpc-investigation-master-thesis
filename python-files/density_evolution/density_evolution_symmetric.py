@@ -171,7 +171,7 @@ class de_algorithm(object):
         """
         # Centers of the bins
         y_max_idx = y_size-1
-        y = np.arange(y_min, y_min+y_step*y_size, y_step)
+        y = np.arange(y_min, y_min+y_step*y_size, y_step, dtype=np.float64)
         p_y = np.zeros(y_size)
 
         if y_variable == "gamma":
@@ -184,14 +184,14 @@ class de_algorithm(object):
         ufl = 0
 
         # Iterate through each bin and map it onto p_y
-        y_min_boundary = y[0]-1/2*y_step
-        max_y_boundary = y[-1] + 1/2*y_step
+        y_min_boundary = y_min-1/2*y_step
+        y_max_boundary = y_min + y_step*(y_size-1) + 1/2*y_step
 
         for i in range(x_size):
             y_idx_range = (y_bin_boundaries[:, i]-y_min)/y_step
             y_idx_range = np.rint(y_idx_range)
-            y_lower_idx = int(y_idx_range[0])
-            y_upper_idx = int(y_idx_range[1])
+            y_lower_idx = y_idx_range[0]
+            y_upper_idx = y_idx_range[1]
 
             out_of_range = False
             partly_out_of_range = False
@@ -215,14 +215,14 @@ class de_algorithm(object):
             # If part of the range is above the index range of y
             if not out_of_range and y_upper_idx > y_max_idx:
                 y_upper_idx = y_max_idx
-                y_bin_boundaries[1, i] = max_y_boundary
+                y_bin_boundaries[1, i] = y_max_boundary
                 partly_out_of_range = True
 
             if not out_of_range:
                 # If entire interval maps on a singe index of y
                 if y_lower_idx == y_upper_idx:
                     p = p_x[i]*x_step/y_step
-                    p_y[y_lower_idx] += p
+                    p_y[int(y_lower_idx)] += p
 
                 # If only maps to two indices of y
                 elif y_upper_idx-y_lower_idx == 1:
@@ -230,11 +230,11 @@ class de_algorithm(object):
                     lowfrac = abs(y_bin_boundaries[0, i] - bdy)/y_step
                     highfrac = abs(y_bin_boundaries[1, i]-bdy)/y_step
                     p = np.zeros(2)
-                    p[0] += coeffs[y_lower_idx] * \
+                    p[0] += coeffs[int(y_lower_idx)] * \
                         lowfrac*p_x[i]
-                    p[1] += coeffs[y_upper_idx] * \
+                    p[1] += coeffs[int(y_upper_idx)] * \
                         highfrac*p_x[i]
-                    p_y[y_lower_idx: y_upper_idx+1] += p
+                    p_y[int(y_lower_idx): int(y_upper_idx+1)] += p
 
                 # If maps onto multiple indices of y
                 else:
@@ -243,14 +243,14 @@ class de_algorithm(object):
                     lowfrac = abs(y_bin_boundaries[0, i]-lowbdy)/y_step
                     highfrac = abs(y_bin_boundaries[1, i]-highbdy)/y_step
 
-                    p = np.zeros(y_upper_idx-y_lower_idx+1)
-                    p[0] = coeffs[y_lower_idx] * \
+                    p = np.zeros(int(y_upper_idx-y_lower_idx+1))
+                    p[0] = coeffs[int(y_lower_idx)] * \
                         lowfrac*p_x[i]
-                    p[-1] = coeffs[y_upper_idx] * \
+                    p[-1] = coeffs[int(y_upper_idx)] * \
                         highfrac*p_x[i]
-                    p[1:-1] = coeffs[y_lower_idx+1:y_upper_idx] * \
+                    p[1:-1] = coeffs[int(y_lower_idx+1):int(y_upper_idx)] * \
                         p_x[i]  # Ser skumt ut
-                    p_y[y_lower_idx:y_upper_idx+1] += p
+                    p_y[int(y_lower_idx):int(y_upper_idx+1)] += p
 
             if partly_out_of_range:
 
@@ -286,11 +286,11 @@ class de_algorithm(object):
         # Create zeropadding for message
         zeropad_pos = np.zeros(size_zeropad)
         zeropad_pos[:size_p-1] = p_gamma_pos*convolve_step
-        zeropad_pos[size_p] = ofl_pos
+        zeropad_pos[size_p-1] = ofl_pos
 
         zeropad_neg = np.zeros(size_zeropad)
         zeropad_neg[:size_p-1] = p_gamma_neg*convolve_step
-        zeropad_neg[size_p] = ofl_neg
+        zeropad_neg[size_p-1] = ofl_neg
 
         prob_pos_fin = np.sum(zeropad_pos)
         prob_pos = prob_pos_fin + ufl_pos
@@ -306,13 +306,13 @@ class de_algorithm(object):
         prob_result_zero = 0
 
         for c in range(i+1):
-            prob_c_zero = (1-(prob_pos/(prob_pos+prob_zero)))**(i-c) * \
-                binom(i, c)*prob_neg**c*(prob_pos+prob_zero)**(i-c)
+            prob_c_zero = (1-(prob_pos/(prob_pos+prob_zero))**(i-c)) * \
+                (binom(i, c)*prob_neg**c)*((prob_pos+prob_zero)**(i-c))
             prob_result_zero += prob_c_zero
 
-            factor1 = (1-ufl_neg)**c*(1-ufl_pos)**(i-c)
-            factor2 = binom(i, c)*prob_neg**c*prob_pos**(i-c)
-            F_c = F_pos_fin**(i-c)*F_neg_fin**c
+            factor1 = ((1-ufl_neg)**c)*((1-ufl_pos)**(i-c))
+            factor2 = (binom(i, c)*prob_neg**c)*(prob_pos**(i-c))
+            F_c = (F_pos_fin**(i-c))*(F_neg_fin**c)
             F_c *= factor1*factor2
 
             if c % 2 == 0:
@@ -321,10 +321,10 @@ class de_algorithm(object):
                 F_result_neg += F_c
 
             for d in range(i-c+1):
-                w = (1-ufl_pos)**c*(1-ufl_neg)**d
+                w = ((1-ufl_pos)**c)*((1-ufl_neg)**d)
                 v = (1-w)*math.factorial(i)/(math.factorial(c)
                                              * math.factorial(d)*math.factorial(i-c-d))
-                v = v*prob_neg**c*prob_pos**d*prob_zero**(i-c-d)
+                v = v*(prob_neg**c)*(prob_pos**d)*(prob_zero**(i-c-d))
                 prob_result_zero += v
 
         f_result_pos = np.fft.ifft(F_result_pos)
@@ -353,6 +353,7 @@ class de_algorithm(object):
         bin_gamma_boundaries = np.stack(
             (bin_gamma_lower_bounds, bin_gamma_upper_bounds), axis=0)
         ext_bin_boundaries = 2*np.arctanh(np.exp(bin_gamma_boundaries))
+        ext_bin_boundaries[1, -1] = np.Inf  # Numeric thing
 
         f_ext_pos, ofl_pos, ufl_pos = self.map_densities(
             convolve_step, convolve_size, f_gamma_pos, ext_bin_boundaries, ext_pos_min, ext_pos_step, ext_pos_size, "ext")
@@ -379,20 +380,18 @@ class de_algorithm(object):
     def compute_p_l(self):
 
         max_dv = self.lam.size
-        self.p_l[:] = 0
-        min_ext = self.ext_min
-        ext_step = self.ext_step
-        ext_elements = self.ext_size
+        self.p_l[:] = 0  # Reset elements
         size_p_0 = self.p_0.size
         size_q_l = self.q_l.size
+
         for j in range(1, max_dv):  # Edges of degree 1 are not valid
             if self.lam[j] != 0:
-                size_zeropad = size_p_0+size_q_l*j-j
+                size_zeropad = size_p_0+(size_q_l-1)*j
                 zeropad_p_0 = np.zeros(size_zeropad)
-                zeropad_p_0[:size_p_0] = self.p_0*ext_step
+                zeropad_p_0[:size_p_0] = self.p_0*self.ext_step
 
                 zeropad_q = np.zeros(size_zeropad)
-                zeropad_q[:size_q_l] = self.q_l*ext_step
+                zeropad_q[:size_q_l] = self.q_l*self.ext_step
 
                 F_p_0 = np.fft.fft(zeropad_p_0)
                 F_q = np.fft.fft(zeropad_q)**j
@@ -401,18 +400,18 @@ class de_algorithm(object):
 
                 zeropad_p = np.fft.ifft(F_p)
 
-                minx = min_ext + min_ext*j
+                minx = self.ext_min + self.ext_min*j
 
-                ext_min_idx = round((min_ext-minx)/ext_step)
-                ext_max_idx = ext_min_idx+ext_elements-1
+                ext_min_idx = round((self.ext_min-minx)/self.ext_step)
+                ext_max_idx = ext_min_idx+self.ext_size-1
 
                 ufl = abs(np.sum(zeropad_p[:ext_min_idx]))
                 ofl = abs(np.sum(zeropad_p[ext_max_idx+1:]))
 
                 f_ext = zeropad_p[ext_min_idx:ext_max_idx+1]
-                f_ext[0] = ufl
-                f_ext[-1] = ofl
+                f_ext[0] += ufl
+                f_ext[-1] += ofl
 
-                f_ext = np.absolute(f_ext)/ext_step
+                f_ext = np.absolute(f_ext)/self.ext_step
 
                 self.p_l += self.lam[j]*f_ext

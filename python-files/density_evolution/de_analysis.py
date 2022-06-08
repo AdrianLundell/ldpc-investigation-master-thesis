@@ -11,6 +11,7 @@ from scipy.special import binom
 from time import process_time
 from density_evolution_symmetric import de_algorithm
 
+
 # %%
 # Degree distributions
 lam = np.array([0, 0.2895, 0.3158, 0, 0, 0.3947])
