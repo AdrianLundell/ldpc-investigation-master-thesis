@@ -22,7 +22,7 @@ def to_pdf(cdf):
 def convolution_pad(x, final_size):
     """Returns the given array padded to at least double the final_length to avoid circular convolution, rounded to the nearest power of two"""
     nearest_power = np.ceil(np.log2(final_size))
-    padding = int(2**nearest_power - x.size)
+    padding = int(2**nearest_power - x.size)    
     x = np.pad(x, (0, padding))
 
     return x
@@ -75,20 +75,20 @@ def rho(x, coeffs):
     
     """
     final_size = (x[0,:].size + (x[0,:].size - 1) * (len(coeffs) - 1))
-    dx = np.stack((to_pdf(x[0,:]), to_pdf(x[1,:])))
-    x = np.stack((convolution_pad(x[0,:], final_size), convolution_pad(x[1,:], final_size)))
-    dx = np.stack((convolution_pad(dx[0,:], final_size), convolution_pad(dx[1,:], final_size)))
+    dx0, dx1 = to_pdf(x[0,:]), to_pdf(x[1,:])
+    x0, x1 = convolution_pad(x[0,:], final_size), convolution_pad(x[1,:], final_size)
+    dx0, dx1 = convolution_pad(dx0, final_size), convolution_pad(dx1, final_size)
 
-    x_ft = np.fft.fft(x)
-    dx_ft = np.fft.fft(dx)
-    y_ft = np.zeros(x.shape, complex)
+    x0_ft, x1_ft = np.fft.fft(x0), np.fft.fft(x1)
+    dx0_ft, dx1_ft = np.fft.fft(dx0), np.fft.fft(dx1)
+    y0_ft, y1_ft = np.zeros(x0.shape, complex), np.zeros(x1.shape, complex)
     
     for coeff in coeffs[1:]:
-        x_ft = np.stack((x_ft[0,:]*dx_ft[0,:] + x_ft[1,:]*dx_ft[1,:], \
-                         x_ft[1,:]*dx_ft[0,:] + x_ft[0,:]*dx_ft[1,:]))
-        y_ft += coeff * x_ft
+        x0_ft, x1_ft = x0_ft*dx0_ft + x1_ft*dx1_ft, \
+                       x0_ft*dx1_ft + x1_ft*dx0_ft
+        y0_ft, y1_ft = y0_ft + coeff * x0_ft, y1_ft + coeff * x1_ft
 
-    y = np.abs(np.fft.ifft(y_ft)[:,:final_size])
+    y = np.stack((np.abs(np.fft.ifft(y0_ft)[:final_size]), np.abs(np.fft.ifft(y1_ft)[:final_size])))
     y[0,np.argmax(y[0,:]):] = np.max(y[0,:])
     y[1,np.argmax(y[1,:]):] = np.max(y[1,:])
 
@@ -146,7 +146,7 @@ def conv_old(x, x0):
 
 def lambd_old(x, coeffs):
     """
-    Naive implementation of lambd using sp.convolve (much slower for large coefficients, kept for reference)
+    Naive implementation of lambd using sp.convolve
     """
     x = np.pad(x, (x.size//2, x.size//2), constant_values = (0,1))
     dx = to_pdf(x)

@@ -69,8 +69,7 @@ def bisection_search(min, max, eval, tol = 1e-4):
 
 #%%
 if __name__ == "__main__":
-    t0 = time.time()
-    n_grid = 8192
+    n_grid = 256
     rho_coeffs = np.array([0,1.1203e-04, 0.0023, 0.0056, 0.0092,0.0126,0.0153,0.0172,0.0185,0.0193,0.0203,0.0220,0.0235,0.0253,0.0267,0.0251,0.0240,0.0195,6.4078e-04, 0.7129])
     lambda_coeffs = np.array([0,0.9464,0.0325,0.0033,0.0022,0.0018,0.0015,0.0013,0.0012,0.0011,0.0010,9.8768e-04,9.4196e-04,9.0299e-04,8.6939e-04,8.4013e-04,8.1443e-04,7.9168e-04,7.7141e-04,7.5322e-04])
 
@@ -82,11 +81,12 @@ if __name__ == "__main__":
         f_grid, g_grid, pdf = generate_distributions.create_pdf(p0, bins, n_grid)
         cdf = de_methods.to_cdf(pdf)
 
-        return symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, plot = False)
+        result = symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, plot = False)
+
+        return result
 
     result = bisection_search(min, max, eval)
 
     print(result)
-    print(time.time()-t0)
 
 #%%
