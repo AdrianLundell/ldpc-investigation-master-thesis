@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 t0 = time.time()
 n_grid = 8192
 
-ensamble = (4, 8)
+ensamble = (3, 6)
 lambda_coeffs = [0]*ensamble[0]
 lambda_coeffs[-1] = 1
 rho_coeffs = [0]*ensamble[1]
@@ -34,10 +34,10 @@ def eval(x):
     cdf = np.zeros(n_grid)
     cdf[n_grid//2:] = x
     cdf[-1] = 1
-  #  plt.plot(cdf)
- #   plt.show()
+    #plt.plot(cdf)
+    #plt.show()
 
-    return density_evolution.symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, plot = True)
+    return density_evolution.symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, plot = False)
 
 result = density_evolution.bisection_search(min, max, eval)
 

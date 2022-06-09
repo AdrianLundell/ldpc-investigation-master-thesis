@@ -2,24 +2,39 @@
 This file contains methods for a numeric discretized implementation of density evolution for a general distribution.
 
 Sources: 
-https://arxiv.org/pdf/cs/0509014.pdf
-https://arxiv.org/pdf/2001.01249.pdf
+https://arxiv.org/pdf/cs/0509014.pdf [1]
+https://arxiv.org/pdf/2001.01249.pdf [2]
 
 """
 import numpy as np
 import scipy.signal as sp
 
 def to_cdf(pdf):
-    """Returns the discrete pdf of a cdf"""
+    """Returns the discrete pdf from a given cdf"""
     return np.cumsum(pdf)
 
 def to_pdf(cdf):
-    """Returns the discrete cdf of a pdf"""
+    """Returns the discrete pdf from a given cdf"""
     cdf = np.hstack((0, cdf, 1))
     pdf = cdf[1:] - cdf[:-1]
     return pdf[:-1]
 
+def convolution_pad(x, final_size):
+    """Returns the given array padded to at least double the final_length to avoid circular convolution, rounded to the nearest power of two"""
+    nearest_power = np.ceil(np.log2(final_size))
+    padding = int(2**nearest_power - x.size)    
+    x = np.pad(x, (0, padding))
+
+    return x
+
 def gamma(F, F_grid, G_grid):
+    """
+    Given a discrete stochastic variable f defined by a cdf with probabilities F for each value on F_grid,
+    calculates the cdf of the transformed variable 
+        g = gamma(f)
+    with gamma defined as in [1]. 
+    Because G has to be an equidistant grid for numeric purposes, this creates a small quantization error.
+    """
     zero_index = F.size//2
     F_step = abs(F_grid[1] - F_grid[0])
 
@@ -34,6 +49,12 @@ def gamma(F, F_grid, G_grid):
     return np.stack((G0, G1))
 
 def gamma_inv(G, F_grid, G_grid):
+    """
+    Given a discrete stochastic variable g defined by a 2 dimensional cdf with probabilities G for each value on (GF(2) x G_grid),
+    calculates the cdf of the transformed variable 
+        f = gamma^-1(g)
+    with gamma^-1 defined as the inverse of gamma in [2].
+    """
     zero_index = F_grid.size//2
     G_step = abs(G_grid[1] - G_grid[0])
 
@@ -50,30 +71,83 @@ def gamma_inv(G, F_grid, G_grid):
     return np.hstack((F_neg, f_0, F_pos))
 
 def rho(x, coeffs):
-    dx = np.stack((to_pdf(x[0,:]), to_pdf(x[1,:])))
-    final_size = x.size//2 * len(coeffs)
+    """
+    
+    """
+    final_size = (x[0,:].size + (x[0,:].size - 1) * (len(coeffs) - 1))
+    dx0, dx1 = to_pdf(x[0,:]), to_pdf(x[1,:])
+    x0, x1 = convolution_pad(x[0,:], final_size), convolution_pad(x[1,:], final_size)
+    dx0, dx1 = convolution_pad(dx0, final_size), convolution_pad(dx1, final_size)
 
-    x0 = x[0,:]
-    x1 = x[1,:]
-    y = np.zeros((2,final_size))
+    x0_ft, x1_ft = np.fft.fft(x0), np.fft.fft(x1)
+    dx0_ft, dx1_ft = np.fft.fft(dx0), np.fft.fft(dx1)
+    y0_ft, y1_ft = np.zeros(x0.shape, complex), np.zeros(x1.shape, complex)
+    
     for coeff in coeffs[1:]:
-        x0, x1 = sp.convolve(x0, dx[0,:]) + sp.convolve(x1, dx[1,:]),\
-                 sp.convolve(x1, dx[0,:]) + sp.convolve(x0, dx[1,:])
-        current_size = x.size//2
+        x0_ft, x1_ft = x0_ft*dx0_ft + x1_ft*dx1_ft, \
+                       x0_ft*dx1_ft + x1_ft*dx0_ft
+        y0_ft, y1_ft = y0_ft + coeff * x0_ft, y1_ft + coeff * x1_ft
 
-        x0 = x0[:np.argmax(x0)+1]
-        x1 = x1[:np.argmax(x1)+1]
-        x0 = np.pad(x0, (0,final_size-x0.size), constant_values = x0.max())
-        x1 = np.pad(x1, (0,final_size-x1.size), constant_values = x1.max())
-        y[0,:] += coeff * x0
-        y[1,:] += coeff * x1
-
-        x0 = x0[:current_size]
-        x1 = x1[:current_size]
+    y = np.stack((np.abs(np.fft.ifft(y0_ft)[:final_size]), np.abs(np.fft.ifft(y1_ft)[:final_size])))
+    y[0,np.argmax(y[0,:]):] = np.max(y[0,:])
+    y[1,np.argmax(y[1,:]):] = np.max(y[1,:])
 
     return y
-
+   
 def lambd(x, coeffs):
+    dx = to_pdf(x)
+    final_size = x.size + (x.size - 1) * (len(coeffs) - 1)
+    
+    x = convolution_pad(x, final_size)
+    dx = convolution_pad(dx, final_size)
+
+    x_ft = np.fft.fft(x)
+    dx_ft = np.fft.fft(dx)
+    y_ft = np.zeros(x.size, complex)
+
+    for coeff in coeffs[1:]:
+        x_ft = x_ft * dx_ft
+        y_ft += coeff*x_ft
+    
+    y = np.abs(np.fft.ifft(y_ft)[:final_size])
+    y[np.argmax(y):] = 1
+    return y
+
+def conv(x, x0):
+    """
+    """
+    dx = to_pdf(x)
+    final_size = x.size + x0.size - 1
+
+    x0 = convolution_pad(x0, final_size)
+    dx = convolution_pad(dx, final_size)
+
+    y = np.abs(np.fft.ifft(np.fft.fft(dx)*np.fft.fft(x0))[:final_size])    
+    y[np.argmax(y):] = 1
+    return y
+
+
+def conv_old(x, x0):
+    """
+    Naive implementation of conv using sp.convolve, kept for reference.
+    """
+    x0 = np.pad(x0, (x0.size, x0.size), constant_values = (0,1))
+    x = np.pad(x, (x.size, x.size), constant_values = (0,1))
+    dx = to_pdf(x)
+
+    y = sp.convolve(x0, dx)
+
+    current_size = y.size
+    y = y[:np.argmax(y)+1]
+    y = np.pad(y, (0, current_size-y.size), constant_values = y.max())
+    
+    y = y[y.size//4: -y.size//4]
+    return y
+
+def lambd_old(x, coeffs):
+    """
+    Naive implementation of lambd using sp.convolve
+    """
     x = np.pad(x, (x.size//2, x.size//2), constant_values = (0,1))
     dx = to_pdf(x)
     final_size = x.size * len(coeffs)
@@ -95,16 +169,29 @@ def lambd(x, coeffs):
     y = y[y.size//4:-y.size//4]
     return y
 
-def conv(x, x0):
-    x0 = np.pad(x0, (x0.size, x0.size), constant_values = (0,1))
-    x = np.pad(x, (x.size, x.size), constant_values = (0,1))
-    dx = to_pdf(x)
-
-    y = sp.convolve(x0, dx)
-
-    current_size = y.size
-    y = y[:np.argmax(y)+1]
-    y = np.pad(y, (0, current_size-y.size), constant_values = y.max())
+def rho_old(x, coeffs):
+    """
     
-    y = y[y.size//4: -y.size//4]
+    """
+    dx = np.stack((to_pdf(x[0,:]), to_pdf(x[1,:])))
+    final_size = x.size//2 * len(coeffs)
+
+    x0 = x[0,:]
+    x1 = x[1,:]
+    y = np.zeros((2,final_size))
+    for coeff in coeffs[1:]:
+        x0, x1 = sp.convolve(x0, dx[0,:]) + sp.convolve(x1, dx[1,:]),\
+                 sp.convolve(x1, dx[0,:]) + sp.convolve(x0, dx[1,:])
+        current_size = x.size//2
+
+        x0 = x0[:np.argmax(x0)+1]
+        x1 = x1[:np.argmax(x1)+1]
+        x0 = np.pad(x0, (0,final_size-x0.size), constant_values = x0.max())
+        x1 = np.pad(x1, (0,final_size-x1.size), constant_values = x1.max())
+        y[0,:] += coeff * x0
+        y[1,:] += coeff * x1
+
+        x0 = x0[:current_size]
+        x1 = x1[:current_size]
+
     return y

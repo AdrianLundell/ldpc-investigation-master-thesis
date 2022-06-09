@@ -1,6 +1,19 @@
 #%%
 import numpy as np 
 import matplotlib.pyplot as plt 
+#%%
+
+a = np.zeros(1024)
+a[512-100:] = 0.1
+a[512-50:] = 0.2
+a[512+50:] = 0.5
+a[512+100:] = 1
+a = np.pad(a, (1024 + 512,1024 + 512), constant_values = (0,1))
+A = np.fft.fft(a)
+
+plt.plot(A)
+
+
 
 #%% Binary erasure channel erasure limit
 rho_coeffs = np.array([0, 0, 0, 0, 0, 1])

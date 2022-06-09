@@ -16,9 +16,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 np.seterr(divide='ignore')
 
-def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_iter = 50, tol = 1e-6, plot = True):
+def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_iter = 50, tol = 1e-6, plot = False):
     if plot: 
         fig, axes = plt.subplots(1,2)
+
+    #assert np.sum(rho_coeffs[1:]) == 1, "Invalid rho polynom"
+    #assert np.sum(lambda_coeffs[1:]) == 1, "Invalid lambda polynom"
 
     pl = cdf 
     p0 = cdf
@@ -36,7 +39,7 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
         diff = sum((pl_old - pl)**2)/np.where((pl>0) & (pl <1))[0].size
         pl_old = pl
 
-        zero_index = pl.size//2 + 5
+        zero_index = pl.size//2
         error = pl[zero_index]
         
         if plot:
@@ -65,9 +68,8 @@ def bisection_search(min, max, eval, tol = 1e-4):
     return (min + max)/2
 
 #%%
-if __name__ == "main":
-    t0 = time.time()
-    n_grid = 8192
+if __name__ == "__main__":
+    n_grid = 256
     rho_coeffs = np.array([0,1.1203e-04, 0.0023, 0.0056, 0.0092,0.0126,0.0153,0.0172,0.0185,0.0193,0.0203,0.0220,0.0235,0.0253,0.0267,0.0251,0.0240,0.0195,6.4078e-04, 0.7129])
     lambda_coeffs = np.array([0,0.9464,0.0325,0.0033,0.0022,0.0018,0.0015,0.0013,0.0012,0.0011,0.0010,9.8768e-04,9.4196e-04,9.0299e-04,8.6939e-04,8.4013e-04,8.1443e-04,7.9168e-04,7.7141e-04,7.5322e-04])
 
@@ -79,9 +81,12 @@ if __name__ == "main":
         f_grid, g_grid, pdf = generate_distributions.create_pdf(p0, bins, n_grid)
         cdf = de_methods.to_cdf(pdf)
 
-        return symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, plot = False)
+        result = symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, plot = False)
+
+        return result
 
     result = bisection_search(min, max, eval)
 
     print(result)
-    print(time.time()-t0)
+
+#%%

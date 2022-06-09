@@ -4,7 +4,6 @@ This file contains methods for generating the pdf of LLRS for an optimally discr
 Note that the distribution is first discretized and then quantized to an equidistant grid, meaning the
 final distribution is approximate. 
 """
-
 #Path hack
 import sys 
 import os 
@@ -14,7 +13,6 @@ import Modem.optimal_thresholds as optimize
 import Analysis.utils as utils
 
 import numpy as np 
-import matplotlib.pyplot as plt 
 from scipy.stats import norm
 
 def init_pdf(n_thresholds, n_grid):
@@ -33,14 +31,13 @@ def create_pdf(p0, bins, n_grid = 512, llr_max = 10):
 
     return x1, x2, y    
 
-def compute_pdf(rber, skew, n_grid = 512, llr_max = 10, mu1 = -1, mu2 = 1):
+def compute_pdf(rber, skew = 0.5, n_grid = 512, llr_max = 30, mu1 = -1, mu2 = 1):
     """Returns values and bin numbers of the pdf defining the A-BIAWGN (sigma, ratio) 
        discretized by three thresholds and quantized to the grid of n_grid points over (-llr_max, llr_max)"""
-
     sigma = utils.rber_to_sigma(rber, skew)
     sigma1 = (1-skew) * sigma
     sigma2 = skew * sigma
-
+    
     thresholds, max_mi = optimize.optimize_thresholds(sigma1, sigma2, mu1, mu2, symmetric = True)
     #thresholds = [optimize.mid_point(sigma1, sigma2, mu1, mu2)]
 
@@ -56,4 +53,23 @@ def compute_pdf(rber, skew, n_grid = 512, llr_max = 10, mu1 = -1, mu2 = 1):
 
     return sigma, p0, bins
 
+#Create database over thresholds
+if __name__ == "__main__":
 
+    name = "double_soft_symmetric.txt"
+    skew = 0.5
+    rber_list = np.linspace(0.001, 0.5, 1000, endpoint=False)
+    result = np.zeros((rber_list.size, 10))
+
+    for i, rber in enumerate(rber_list):
+        sigma = utils.rber_to_sigma(rber, skew)
+        sigma1 = (1-skew) * sigma
+        sigma2 = skew * sigma
+        thresholds, capacity = optimize.optimize_thresholds(sigma1, sigma2, symmetric = True)
+        llrs = optimize.llrs(thresholds, sigma1, sigma2)
+
+        row = np.hstack((sigma, skew, capacity, thresholds, llrs))
+
+        result[i,:] = row
+    
+    np.savetxt()
