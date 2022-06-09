@@ -56,10 +56,20 @@ def compute_pdf(rber, skew = 0.5, n_grid = 512, llr_max = 30, mu1 = -1, mu2 = 1)
 #Create database over thresholds
 if __name__ == "__main__":
 
-    rber_list = np.linspace(0.001, 0.5, 1000)
-    result = np.zeros((rber_list.size, 3))
+    name = "double_soft_symmetric.txt"
+    skew = 0.5
+    rber_list = np.linspace(0.001, 0.5, 1000, endpoint=False)
+    result = np.zeros((rber_list.size, 10))
 
     for i, rber in enumerate(rber_list):
-        result[i, :] = np.array(compute_pdf(rber, 0.5, ))
+        sigma = utils.rber_to_sigma(rber, skew)
+        sigma1 = (1-skew) * sigma
+        sigma2 = skew * sigma
+        thresholds, capacity = optimize.optimize_thresholds(sigma1, sigma2, symmetric = True)
+        llrs = optimize.llrs(thresholds, sigma1, sigma2)
 
-    #np.savetxt(densities)
+        row = np.hstack((sigma, skew, capacity, thresholds, llrs))
+
+        result[i,:] = row
+    
+    np.savetxt()
