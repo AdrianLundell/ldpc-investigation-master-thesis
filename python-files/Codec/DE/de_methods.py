@@ -19,6 +19,14 @@ def to_pdf(cdf):
     pdf = cdf[1:] - cdf[:-1]
     return pdf[:-1]
 
+def convolution_pad(x, final_size):
+    """Returns the given array padded to at least double the final_length to avoid circular convolution, rounded to the nearest power of two"""
+    nearest_power = np.ceil(np.log2(final_size))
+    padding = int(2**nearest_power - x.size)
+    x = np.pad(x, (0, padding))
+
+    return x
+
 def gamma(F, F_grid, G_grid):
     """
     Given a discrete stochastic variable f defined by a cdf with probabilities F for each value on F_grid,
@@ -66,41 +74,36 @@ def rho(x, coeffs):
     """
     
     """
+    final_size = (x[0,:].size + (x[0,:].size - 1) * (len(coeffs) - 1))
     dx = np.stack((to_pdf(x[0,:]), to_pdf(x[1,:])))
-    final_size = x.size//2 * len(coeffs)
+    x = np.stack((convolution_pad(x[0,:], final_size), convolution_pad(x[1,:], final_size)))
+    dx = np.stack((convolution_pad(dx[0,:], final_size), convolution_pad(dx[1,:], final_size)))
 
-    x0 = x[0,:]
-    x1 = x[1,:]
-    y = np.zeros((2,final_size))
+    x_ft = np.fft.fft(x)
+    dx_ft = np.fft.fft(dx)
+    y_ft = np.zeros(x.shape, complex)
+    
     for coeff in coeffs[1:]:
-        x0, x1 = sp.convolve(x0, dx[0,:]) + sp.convolve(x1, dx[1,:]),\
-                 sp.convolve(x1, dx[0,:]) + sp.convolve(x0, dx[1,:])
-        current_size = x.size//2
+        x_ft = np.stack((x_ft[0,:]*dx_ft[0,:] + x_ft[1,:]*dx_ft[1,:], \
+                         x_ft[1,:]*dx_ft[0,:] + x_ft[0,:]*dx_ft[1,:]))
+        y_ft += coeff * x_ft
 
-        x0 = x0[:np.argmax(x0)+1]
-        x1 = x1[:np.argmax(x1)+1]
-        x0 = np.pad(x0, (0,final_size-x0.size), constant_values = x0.max())
-        x1 = np.pad(x1, (0,final_size-x1.size), constant_values = x1.max())
-        y[0,:] += coeff * x0
-        y[1,:] += coeff * x1
-
-        x0 = x0[:current_size]
-        x1 = x1[:current_size]
+    y = np.abs(np.fft.ifft(y_ft)[:,:final_size])
+    y[0,np.argmax(y[0,:]):] = np.max(y[0,:])
+    y[1,np.argmax(y[1,:]):] = np.max(y[1,:])
 
     return y
    
 def lambd(x, coeffs):
     dx = to_pdf(x)
-    final_size = x.size
-    for i in range(len(coeffs)-1):
-        final_size = (final_size + x.size) - 1
+    final_size = x.size + (x.size - 1) * (len(coeffs) - 1)
     
-    x = np.pad(x, (0, 2**16 - x.size))
-    dx = np.pad(dx, (0, 2**16 - dx.size))
+    x = convolution_pad(x, final_size)
+    dx = convolution_pad(dx, final_size)
 
     x_ft = np.fft.fft(x)
     dx_ft = np.fft.fft(dx)
-    y_ft = np.zeros(2**16, complex)
+    y_ft = np.zeros(x.size, complex)
 
     for coeff in coeffs[1:]:
         x_ft = x_ft * dx_ft
@@ -108,7 +111,6 @@ def lambd(x, coeffs):
     
     y = np.abs(np.fft.ifft(y_ft)[:final_size])
     y[np.argmax(y):] = 1
-
     return y
 
 def conv(x, x0):
@@ -117,17 +119,15 @@ def conv(x, x0):
     dx = to_pdf(x)
     final_size = x.size + x0.size - 1
 
-    x0 = np.pad(x0, (0, 2**16-x0.size))
-    dx = np.pad(dx, (0, 2**16-dx.size))
+    x0 = convolution_pad(x0, final_size)
+    dx = convolution_pad(dx, final_size)
 
-    y = np.abs(np.fft.ifft(np.fft.fft(dx)*np.fft.fft(x0)))    
-    y = y[:final_size]
+    y = np.abs(np.fft.ifft(np.fft.fft(dx)*np.fft.fft(x0))[:final_size])    
     y[np.argmax(y):] = 1
-
     return y
 
 
-def conv_direct(x, x0):
+def conv_old(x, x0):
     """
     Naive implementation of conv using sp.convolve, kept for reference.
     """
@@ -144,7 +144,7 @@ def conv_direct(x, x0):
     y = y[y.size//4: -y.size//4]
     return y
 
-def lambd_direct(x, coeffs):
+def lambd_old(x, coeffs):
     """
     Naive implementation of lambd using sp.convolve (much slower for large coefficients, kept for reference)
     """
@@ -167,4 +167,31 @@ def lambd_direct(x, coeffs):
         x = x[padding1:-padding2]
     
     y = y[y.size//4:-y.size//4]
+    return y
+
+def rho_old(x, coeffs):
+    """
+    
+    """
+    dx = np.stack((to_pdf(x[0,:]), to_pdf(x[1,:])))
+    final_size = x.size//2 * len(coeffs)
+
+    x0 = x[0,:]
+    x1 = x[1,:]
+    y = np.zeros((2,final_size))
+    for coeff in coeffs[1:]:
+        x0, x1 = sp.convolve(x0, dx[0,:]) + sp.convolve(x1, dx[1,:]),\
+                 sp.convolve(x1, dx[0,:]) + sp.convolve(x0, dx[1,:])
+        current_size = x.size//2
+
+        x0 = x0[:np.argmax(x0)+1]
+        x1 = x1[:np.argmax(x1)+1]
+        x0 = np.pad(x0, (0,final_size-x0.size), constant_values = x0.max())
+        x1 = np.pad(x1, (0,final_size-x1.size), constant_values = x1.max())
+        y[0,:] += coeff * x0
+        y[1,:] += coeff * x1
+
+        x0 = x0[:current_size]
+        x1 = x1[:current_size]
+
     return y
