@@ -72,9 +72,8 @@ def gamma_inv(G, F_grid, G_grid):
 
 def rho(x, coeffs):
     """
-    
     """
-    final_size = (x[0,:].size + (x[0,:].size - 1) * (len(coeffs) - 1))
+    final_size = (x[0,:].size - 1)*len(coeffs) + 1
     dx0, dx1 = to_pdf(x[0,:]), to_pdf(x[1,:])
     x0, x1 = convolution_pad(x[0,:], final_size), convolution_pad(x[1,:], final_size)
     dx0, dx1 = convolution_pad(dx0, final_size), convolution_pad(dx1, final_size)
@@ -95,8 +94,10 @@ def rho(x, coeffs):
     return y
    
 def lambd(x, coeffs):
+    """
+    """
+    final_size = (x.size - 1)*len(coeffs) + 1
     dx = to_pdf(x)
-    final_size = x.size + (x.size - 1) * (len(coeffs) - 1)
     
     x = convolution_pad(x, final_size)
     dx = convolution_pad(dx, final_size)
