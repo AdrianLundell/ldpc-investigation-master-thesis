@@ -67,3 +67,42 @@ plt.show()
 plt.plot(to_pdf(unif_cdf))
 plt.plot(unif_pdf)
 plt.show()
+#%%
+import numpy as np 
+
+def count_edges(coeffs):
+    x = np.arange(1, len(coeffs) + 1)
+    return coeffs @ x
+
+n_vn = 8
+n_cn = 4
+L = np.array([0,0,0,0,n_vn])
+
+def valid_poly(coeffs, n):
+    """
+    Calculates coeffs matching code rate by distributing edges evenly over n nodes
+        coeffs: A vector of degree counts,
+        n: The number of nodes to distribute the edges over
+    """
+
+    tot_edges = count_edges(coeffs)
+    x = np.zeros(n, int)
+    for i in range(tot_edges):
+        j = np.mod(i, (n))
+        x[j] += 1
+
+    coeffs = np.bincount(x)
+
+    return coeffs[1:]
+
+def edge_perspective(coeffs, n):
+    """
+    Computes the edge perspective coefficients from degree counts
+    """
+    pass
+
+"""
+Idea: 
+    Calculate "Base vectors" of rho and lambda with one in one place and zero in all others.
+    Create new individuals as linear combinations of base vectors (making sure to get only positive coefficients)
+"""
