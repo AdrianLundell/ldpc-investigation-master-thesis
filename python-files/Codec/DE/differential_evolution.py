@@ -95,10 +95,19 @@ def eval(x, rho, lam):
 
 
 # %% Optimization
+
+# Np: number of individuals in population
+# gens: Number of generations. Around 5000
+# F: mutation variable. Usually in interval [0.1,1].
+# Cr: recombination probability, [0,1].
+
 Np = 100
 gens = 10000
 F = 0.5  # Mutation variable. Usually in interval [0.1,1]
 Cr = 0.7  # Recombination probability
+D = np.size(C_c, 1)
+
+
 D = np.size(C_c, 1)
 
 
@@ -181,8 +190,6 @@ Saving final population to ...
     """
 print(status)
 
-print("Elapsed time:",
-      t1_stop-t1_start)
 
 # %% Get the best solution
 
