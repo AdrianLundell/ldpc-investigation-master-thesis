@@ -3,6 +3,9 @@ from time import process_time
 import numpy as np
 from scipy.optimize import linprog
 from scipy.linalg import null_space
+import density_evolution
+import generate_distributions
+import de_methods
 import random
 
 R = 0.5
@@ -59,18 +62,44 @@ def poly_eval(p, x):
 
 def compute_cost(x, dc):
     cost = 0
+    in_domain = True
     for xi in x:
         if xi < 0:
             cost += 100 - 10*xi
+            in_domain = False
 
     if cost == 0:
         rho = x[:dc]
         lam = x[dc:]
+        min = 1e-5
+        max = 0.1
+        result = density_evolution.bisection_search(
+            min, max, lambda x: eval(x, rho, lam))
+        cost = -result
 
-    return cost
+    return cost, in_domain
+
+
+def eval(x, rho, lam):
+    n_grid = 256
+    sigma, p0, bins = generate_distributions.compute_pdf(
+        x, 0.5, n_grid, 30)
+    f_grid, g_grid, pdf = generate_distributions.create_pdf(
+        p0, bins, n_grid)
+    cdf = de_methods.to_cdf(pdf)
+
+    result = density_evolution.symmetric_density_evolution(
+        cdf, f_grid, g_grid, rho, lam, plot=False)
+
+    return result
+
 
 # %% Optimization
 
+# Np: number of individuals in population
+# gens: Number of generations. Around 5000
+# F: mutation variable. Usually in interval [0.1,1].
+# Cr: recombination probability, [0,1].
 
 Np = 100
 gens = 10000
@@ -79,15 +108,32 @@ Cr = 0.7  # Recombination probability
 D = np.size(C_c, 1)
 
 
-t1_start = process_time()
+D = np.size(C_c, 1)
+
+
+header = f"""
+===================================================================
+Optimizing code ensamble through differential evolution algorithm.
+Number of individuals: {Np}.
+Number of generations: {gens}.
+Parameter settings: F = {F}, Cr = {Cr}
+-------------------------------------------------------------------
+"""
+print(header)
+print("Initialising...")
+
+
 # x = x_0 + eta*C_c
 # Initialize population
 eta_Np = np.random.rand(D, Np)
 cost_Np = np.zeros(Np)
 cost_gen = np.zeros(gens)
+domain_Np = np.full(Np, False)
 
 # Optimize population over generations
+t1_start = process_time()
 for g in range(gens):
+
     u_Np = np.copy(eta_Np)
     for i in range(Np):
         # Generate selection parameters according to algorithm
@@ -111,20 +157,39 @@ for g in range(gens):
         # Selection
         if g == 0:
             x = compute_x(x_0, C_c, eta_Np[:, i])
-            cost_Np[i] = compute_cost(x, dc)
+            cost, in_domain = compute_cost(x, dc)
+            cost_Np[i] = cost
+            domain_Np[i] = in_domain
 
         x = compute_x(x_0, C_c, u_Np[:, i])
-        cost = compute_cost(x, dc)
+        cost, in_domain = compute_cost(x, dc)
 
         if cost < cost_Np[i]:
             eta_Np[:, i] = u_Np[:, i]
             cost_Np[i] = cost
+            domain_Np[i] = in_domain
 
     cost_gen[g] = np.sum(cost_Np)/Np
 
-t1_stop = process_time()
-print("Elapsed time:",
-      t1_stop-t1_start)
+    # Status parameters
+    n_domain = domain_Np.sum()
+    if n_domain != 0:
+        min_cost = np.min(cost_Np[domain_Np])
+        rber_best = -min_cost
+    else:
+        rber_best = 0
+    t1_stop = process_time()
+    status = f"{g} generations completed.  Average cost:{cost_gen[g]:.2f}.  Individuals in domain: {n_domain}. Best RBER: {rber_best}"
+    print(status, end='\r', flush=True)
+
+
+status = f"""
+Finished!
+Saving final population to ...
+===================================================================
+    """
+print(status)
+
 
 # %% Get the best solution
 
