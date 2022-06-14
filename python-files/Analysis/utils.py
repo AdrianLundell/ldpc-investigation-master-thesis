@@ -85,11 +85,13 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
     return np.array(result)
 
 #%% 
-if __name__ == "main":
-    ratios = np.linspace(0.1,0.5)
+if __name__ == "__main__":
+    ratios = np.linspace(0.005,0.5)
     y = []
     for ratio in ratios:
         y.append(rber_to_sigma([0.01], ratio)[0])
+    
     plt.plot(ratios, y)
+    plt.show()
 
 

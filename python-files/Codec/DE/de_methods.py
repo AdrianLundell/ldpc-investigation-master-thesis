@@ -128,7 +128,7 @@ def conv(x, x0):
     return y
 
 
-def conv_old(x, x0):
+def conv(x, x0):
     """
     Naive implementation of conv using sp.convolve, kept for reference.
     """
@@ -145,7 +145,7 @@ def conv_old(x, x0):
     y = y[y.size//4: -y.size//4]
     return y
 
-def lambd_old(x, coeffs):
+def lambd(x, coeffs):
     """
     Naive implementation of lambd using sp.convolve
     """
@@ -170,7 +170,7 @@ def lambd_old(x, coeffs):
     y = y[y.size//4:-y.size//4]
     return y
 
-def rho_old(x, coeffs):
+def rho(x, coeffs):
     """
     
     """

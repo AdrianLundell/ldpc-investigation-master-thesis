@@ -12,6 +12,7 @@ import de_methods
 import generate_distributions
 import numpy as np 
 import matplotlib.pyplot as plt
+
 np.seterr(divide='ignore')
 
 def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_iter = 50, tol = 1e-3, plot = False):
@@ -56,11 +57,13 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
 
         if is_zero:
             error = 0
-            print("Is zero")
+          #  print("Is zero")
         if is_converged:
-            print("Converged")
+           # print("Converged")
+           pass
         if max_iter:
-            print("MAX")
+            #print("MAX")
+            pass
         if is_zero or is_converged or max_iter:
             if plot:
                 plt.show()
@@ -68,8 +71,6 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
             return error
         
         i += 1
-
-
 
 def bisection_search(min, max, eval, tol = 1e-4):
     while max - min > tol:

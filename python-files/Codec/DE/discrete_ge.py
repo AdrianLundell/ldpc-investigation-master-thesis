@@ -1,11 +1,8 @@
 #%%
 import numpy as np 
-import time 
-
-t0 = time.time()
-n_cn = 9//3
-n_vn = 73//3
-n_pop = 50
+import density_evolution as de
+import generate_distributions as gd
+import de_methods as dm 
 
 def init_population(n_pop, n_cn, n_vn):
     population = np.zeros((n_pop, n_cn, n_vn), int)
@@ -50,13 +47,25 @@ def evaluate(i):
     condition2 = np.all(cn_degrees <= 25)
 
     if condition1 and condition2:
-        rho_node = np.bincount(vn_degrees)
+        rho_node = np.bincount(vn_degrees)[1:]
         rho_edge = np.arange(1,len(rho_node)+1) * rho_node / np.sum(np.arange(1,len(rho_node)+1) * rho_node)
-        lam_node = np.bincount(cn_degrees)
-        rho_edge = np.arange(1,len(lam_node)+1) * lam_node / np.sum(np.arange(1,len(lam_node)+1) * lam_node)
+        lam_node = np.bincount(cn_degrees)[1:]
+        lam_edge = np.arange(1,len(lam_node)+1) * lam_node / np.sum(np.arange(1,len(lam_node)+1) * lam_node)
 
-        fitness = np.max(vn_degrees)
+        def eval(x):
+            n_grid = 512
+            sigma, p0, bins = gd.compute_pdf(x)
+            f_grid, g_grid, pdf = gd.create_pdf(p0, bins)
+            cdf = dm.to_cdf(pdf)
+            #f_grid, g_grid, pdf = gd.init_pdf(x, n_grid)
+            result = de.symmetric_density_evolution(cdf, f_grid, g_grid, rho_edge, lam_edge, plot = True)
+
+            return result
+
+        fitness = de.bisection_search(0.001, 0.5, eval)
         return fitness
+
+
     else:
         return -1
 
@@ -64,28 +73,26 @@ def evaluate(i):
 fname = None
 
 if fname is None:
-    population = init_population(n_pop, n_cn, n_vn)
-    fitness = np.full(n_pop, -np.inf)
-    n_pop = 50
+    n_pop = 10
     n_generations = 100
-    n_vn = 73
-    n_cn = 9
+    n_vn = 10
+    n_cn = 10
     p_vertical = 0.5
     p_horizontal = 0.5 
-    p_mutation = 0.01
+    p_mutation = 0.1
+    population = init_population(n_pop, n_cn, n_vn)
+    fitness = np.full(n_pop, -np.inf)
 
     fname = "test_ge.npz"
 else:
     data = np.load(fname)
     
-    population = init_population(n_pop, n_cn, n_vn)
-    fitness = np.full(n_pop, -np.inf)
-    
+    population = data["population"]
+    fitness = data["fitness"]
     n_pop = data["n_pop"]
     n_generations = data["n_generations"]
     n_vn = data["n_vn"]
     n_cn = data["n_cn"]
-    
     p_vertical = data["p_vertical"]
     p_horizontal = data["p_horizontal"]
     p_mutation = data["p_mutation"]
@@ -94,17 +101,17 @@ else:
 
 print(f"""
 ===================================================================
-Optimization
+Running optimisation of {n_cn}x{n_vn} protograph. 
 ===================================================================
 """)
 
 try:
+    #Initial evaluation
+    for j in range(n_pop):
+        if fitness[j] == -np.inf:
+            fitness[j] = evaluate(population[j,:,:])
+
     for i in range(n_generations):
-        
-        #Evaluate new individuals
-        for j in range(n_pop):
-            if fitness[j] == -np.inf:
-                fitness[j] = evaluate(population[j,:,:])
 
         #Select with elitism
         population_new = np.zeros(population.shape, int)
@@ -117,7 +124,7 @@ try:
         fitness = fitness_new
 
         #Crossover
-        for j in range(1, n_pop, 2):
+        for j in range(1, n_pop-1, 2):
             if np.random.rand() < p_vertical:
                 population[j], population[j+1] = vertical_crossover(population[j], population[j+1])
                 fitness[j], fitness[j+1] = -np.inf, -np.inf
@@ -131,7 +138,12 @@ try:
                 population[j] = mutation(population[j])
                 fitness[j] = -np.inf
 
-        status = f"Generation {i}/{n_generations} Best/median/mean fitness: {np.max(fitness)}"
+        #Evaluate new individuals
+        for j in range(n_pop):
+            if fitness[j] == -np.inf:
+                fitness[j] = evaluate(population[j,:,:])
+
+        status = f"Generation {i}/{n_generations}. Best/median/mean/min/variance fitness: {np.max(fitness)}/{np.median(fitness)}/{np.mean(fitness)}/{np.min(fitness)}/{np.var(fitness)}.                                "
         print(status, end='\r', flush=True)
 
 finally:
