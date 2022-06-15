@@ -1,0 +1,13 @@
+# This config script allows for easily seeing which variable can be changed by the user
+differential_evolution:
+  R: 0.5 # R: code rate
+  dv: 10 # dc: max variable node edge-perspective degree
+  dc: 10 # dc: max check node edge-perspective degree
+  Np: 100 # Np: number of individuals in population
+  gens: 5000 # gens: Number of generations. Around 5000
+  F: 0.5 # F: mutation variable. Usually in interval [0.1,1].
+  Cr: 0.7 # Cr: recombination probability, [0,1].
+  load_initial_pop: False # If previous training has been done, one can start from that by setting to True
+  input_file: # Set file to load data from
+  output_file: # Set file to write to
+
