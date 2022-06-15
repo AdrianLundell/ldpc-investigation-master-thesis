@@ -72,7 +72,7 @@ def compute_cost(x, dc):
         rho = x[:dc]
         lam = x[dc:]
         min = 1e-5
-        max = 0.1
+        max = 0.4
         result = density_evolution.bisection_search(
             min, max, lambda x: eval(x, rho, lam))
         cost = -result
@@ -207,6 +207,25 @@ finally:
         eta_best = eta_Np[:, idx]
         x_best = compute_x(x_0, C_c, eta_best)
         np.save(f, x_best)
+
+    with open('x_Np.npy', 'wb') as f:
+        # Save entire population
+        x_Np = np.zeros((Np, D))
+        for i in range(Np):
+            x_Np[:, i] = compute_x(x_0, C_c, eta_Np[:, i])
+        np.save(f, x_Np)
+
+# %% Perform tests on population where all individuals are valid
+
+x_Np = np.load('x_Np.npy', allow_pickle=True)
+if x_Np:
+    Np = np.size(x_Np, 1)
+    tst_mat = np.zeros((3, Np))
+    for i in range(iter):
+        tst_mat[:, i] = np.matmul(C, x[:, i])
+
+    res = np.sum(tst_mat, axis=1)/Np
+    print(res)  # Should [0,1,1]
 
 
 # %% Get the best solution
