@@ -157,8 +157,8 @@ def conv(x, x0):
     y = y[y.size//4: -y.size//4]
     return y
 
-
 def lambd(x, coeffs):
+    
     """
     Naive implementation of lambd using sp.convolve
     """
@@ -182,7 +182,6 @@ def lambd(x, coeffs):
 
     y = y[y.size//4:-y.size//4]
     return y
-
 
 def rho(x, coeffs):
     """

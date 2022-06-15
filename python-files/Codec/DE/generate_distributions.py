@@ -15,7 +15,6 @@ import Analysis.utils as utils
 
 import numpy as np 
 from scipy.stats import norm
-import pandas as pd
 import matplotlib.pyplot as plt 
 
 global data
@@ -29,13 +28,13 @@ def init_pdf(rber, n_grid = 512, llr_max = 30):
     #Load database if not loaded
     global data
     if data is None:
-        data = np.loadtxt("/home/adrianlundell/ldpc-investigation-master-thesis/double_soft_symmetric.txt", delimiter = ",", skiprows=1)
+        data = np.loadtxt("C:/Users/adria/.vscode/Projects/ldpc-investigation-master-thesis/double_soft_symmetric.txt", delimiter = ",", skiprows=1)
     
     #Interpolate values on rber
     rber_step = data[1, 1] - data[0, 1]
     rber_index = (rber - data[0,1])/rber_step    
-    index0 = int(np.floor(rber_index))
-    index1 = int(np.ceil(rber_index))   
+    index0 = int(np.floor(rber_index)) - 1 
+    index1 = int(np.ceil(rber_index)) - 1
     values = data[index0,:] + (data[index1] - data[index0]) * (rber_index - index0)
 
     #Set values
@@ -69,7 +68,7 @@ def init_pdf(rber, n_grid = 512, llr_max = 30):
 
 #%%
 
-def create_pdf(p0, bins, n_grid = 512, llr_max = 10):
+def create_pdf(p0, bins, n_grid = 512, llr_max = 30):
     """Creates a pdf and grid from values"""
     x1 = np.linspace(-llr_max, llr_max, n_grid, endpoint = False)
     y = np.zeros(x1.shape)
@@ -105,10 +104,12 @@ def compute_pdf(rber, skew = 0.5, n_grid = 512, llr_max = 30, mu1 = -1, mu2 = 1)
 
 #Create database over thresholds
 if __name__ == "__main__":
+    
+    import pandas as pd
 
     name = "double_soft_symmetric.txt"
     skew = 0.5
-    rber_list = np.linspace(0.001, 0.5, 100, endpoint=False)
+    rber_list = np.linspace(0.5, 0.9, 200, endpoint=False)
     result = np.zeros((rber_list.size, 11))
 
     for i, rber in enumerate(rber_list):

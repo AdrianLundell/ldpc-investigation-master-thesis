@@ -12,6 +12,7 @@ import de_methods
 import generate_distributions
 import numpy as np
 import matplotlib.pyplot as plt
+
 np.seterr(divide='ignore')
 
 
@@ -71,8 +72,7 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
 
         i += 1
 
-
-def bisection_search(min, max, eval, tol=1e-4):
+def bisection_search(min, max, eval, tol = 1e-4):
     while max - min > tol:
         x = (min + max)/2
         result = eval(x)

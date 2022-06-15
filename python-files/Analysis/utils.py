@@ -1,3 +1,4 @@
+
 #%%
 """Utility methods for result analysis"""
 import numpy as np
@@ -84,12 +85,38 @@ def rber_to_sigma(rbers, skew = 0.5, n_iter = 10, mu1 = -1, mu2 = 1):
         result.append(sigma)
     return np.array(result)
 
+def mutual_info(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
+    """Calculates the mutual infromation of the A-BIAWGN channel discretized with thresholds t"""
+    p = np.array([stats.norm.cdf(np.array(t), mu1, sigma1),
+                  stats.norm.cdf(np.array(t), mu2, sigma2)])
+    
+    yx_prob = np.array(([np.ediff1d(p[0,:], to_begin = p[0,0])],
+                       [np.ediff1d(p[1,:], to_begin = p[1,0])]))
+
+    y_prob = 0.5 * (yx_prob[0,:] + yx_prob[1,:])
+
+    y_prob = y_prob.flatten()
+    y_entropy = -(y_prob @ np.log2(y_prob))
+
+    yx_prob = yx_prob.flatten()
+    yx_entropy = -(yx_prob @ np.log2(yx_prob))*0.5
+
+    return y_entropy - yx_entropy
+
 #%% 
-if __name__ == "main":
-    ratios = np.linspace(0.1,0.5)
+if __name__ == "__main__":
+
+    
+
+#%%
+    ratios = np.linspace(0.005,0.5)
     y = []
     for ratio in ratios:
         y.append(rber_to_sigma([0.01], ratio)[0])
+    
     plt.plot(ratios, y)
+    plt.show()
+
+
 
 
