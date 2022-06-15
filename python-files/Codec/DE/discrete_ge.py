@@ -3,6 +3,7 @@ import numpy as np
 import density_evolution as de
 import generate_distributions as gd
 import de_methods as dm 
+import matplotlib.pyplot as plt 
 
 def init_population(n_pop, n_cn, n_vn):
     population = np.zeros((n_pop, n_cn, n_vn), int)
@@ -53,12 +54,17 @@ def evaluate(i):
         lam_edge = np.arange(1,len(lam_node)+1) * lam_node / np.sum(np.arange(1,len(lam_node)+1) * lam_node)
 
         def eval(x):
+            plot = False
             n_grid = 512
-            sigma, p0, bins = gd.compute_pdf(x)
-            f_grid, g_grid, pdf = gd.create_pdf(p0, bins)
+
+            f_grid, g_grid, pdf = gd.init_pdf(x, n_grid)
             cdf = dm.to_cdf(pdf)
-            #f_grid, g_grid, pdf = gd.init_pdf(x, n_grid)
-            result = de.symmetric_density_evolution(cdf, f_grid, g_grid, rho_edge, lam_edge, plot = True)
+
+            if plot:
+                plt.plot(f_grid, cdf)
+                plt.show()
+
+            result = de.symmetric_density_evolution(cdf, f_grid, g_grid, rho_edge, lam_edge, plot = plot)
 
             return result
 
@@ -75,10 +81,10 @@ fname = None
 if fname is None:
     n_pop = 10
     n_generations = 100
-    n_vn = 10
-    n_cn = 10
-    p_vertical = 0.5
-    p_horizontal = 0.5 
+    n_vn = 73
+    n_cn = 9
+    p_vertical = 0.3
+    p_horizontal = 0.3 
     p_mutation = 0.1
     population = init_population(n_pop, n_cn, n_vn)
     fitness = np.full(n_pop, -np.inf)

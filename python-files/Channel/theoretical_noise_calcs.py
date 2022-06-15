@@ -27,6 +27,9 @@ for s in sigma:
     capacities.append(capacity)
 
 #%%
+
+
+#%%
 plt.figure(figsize=(15,5))
 plt.subplot(1,3,1)
 plt.plot(ebn0, capacities)
