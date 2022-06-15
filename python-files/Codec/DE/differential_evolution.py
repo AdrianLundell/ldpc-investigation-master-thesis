@@ -89,9 +89,20 @@ def eval(x, rho, lam):
     cdf = de_methods.to_cdf(pdf)
 
     result = density_evolution.symmetric_density_evolution(
-        cdf, f_grid, g_grid, rho, lam, plot=False)
+        cdf, f_grid, g_grid, rho, lam, plot=False, prnt=False)
 
     return result
+
+
+# %% Test bisection search method on initial guess
+rho = x_0[:dc]
+lam = x_0[dc:]
+#rho = np.array([0, 0.5, 0.5])
+#lam = np.array([0, 0.5, 0.5])
+min = 1e-5
+max = 0.4
+result = density_evolution.bisection_search(
+    min, max, lambda x: eval(x, rho, lam))
 
 
 # %% Optimization
@@ -130,65 +141,72 @@ cost_Np = np.zeros(Np)
 cost_gen = np.zeros(gens)
 domain_Np = np.full(Np, False)
 
-# Optimize population over generations
-t1_start = process_time()
-for g in range(gens):
+try:
+    # Optimize population over generations
+    t1_start = process_time()
+    for g in range(gens):
 
-    u_Np = np.copy(eta_Np)
-    for i in range(Np):
-        # Generate selection parameters according to algorithm
-        r0 = random.randint(0, Np-1)
-        r1 = random.randint(0, Np-1)
-        r2 = random.randint(0, Np-1)
-        jrand = random.randint(0, D-1)
-        while (r0 == i):
+        u_Np = np.copy(eta_Np)
+        for i in range(Np):
+            # Generate selection parameters according to algorithm
             r0 = random.randint(0, Np-1)
-        while (r1 == i or r1 == r0):
             r1 = random.randint(0, Np-1)
-        while (r2 == i or r2 == r0 or r2 == r1):
             r2 = random.randint(0, Np-1)
+            jrand = random.randint(0, D-1)
+            while (r0 == i):
+                r0 = random.randint(0, Np-1)
+            while (r1 == i or r1 == r0):
+                r1 = random.randint(0, Np-1)
+            while (r2 == i or r2 == r0 or r2 == r1):
+                r2 = random.randint(0, Np-1)
 
-        # Mutation and cross over
-        cr_arr = np.random.rand(D)
-        for j in range(D):
-            if (cr_arr[j] < Cr or j == jrand):
-                u_Np[j, i] = eta_Np[j, r0] + F*(eta_Np[j, r1]-eta_Np[j, r2])
+            # Mutation and cross over
+            cr_arr = np.random.rand(D)
+            for j in range(D):
+                if (cr_arr[j] < Cr or j == jrand):
+                    u_Np[j, i] = eta_Np[j, r0] + F * \
+                        (eta_Np[j, r1]-eta_Np[j, r2])
 
-        # Selection
-        if g == 0:
-            x = compute_x(x_0, C_c, eta_Np[:, i])
+            # Selection
+            if g == 0:
+                x = compute_x(x_0, C_c, eta_Np[:, i])
+                cost, in_domain = compute_cost(x, dc)
+                cost_Np[i] = cost
+                domain_Np[i] = in_domain
+
+            x = compute_x(x_0, C_c, u_Np[:, i])
             cost, in_domain = compute_cost(x, dc)
-            cost_Np[i] = cost
-            domain_Np[i] = in_domain
 
-        x = compute_x(x_0, C_c, u_Np[:, i])
-        cost, in_domain = compute_cost(x, dc)
+            if cost < cost_Np[i]:
+                eta_Np[:, i] = u_Np[:, i]
+                cost_Np[i] = cost
+                domain_Np[i] = in_domain
 
-        if cost < cost_Np[i]:
-            eta_Np[:, i] = u_Np[:, i]
-            cost_Np[i] = cost
-            domain_Np[i] = in_domain
+        cost_gen[g] = np.sum(cost_Np)/Np
 
-    cost_gen[g] = np.sum(cost_Np)/Np
+        # Status parameters
+        n_domain = domain_Np.sum()
+        if n_domain != 0:
+            min_cost = np.min(cost_Np[domain_Np])
+            rber_best = -min_cost
+        else:
+            rber_best = 0
+        t1_stop = process_time()
+        status = f"{g} generations completed.  Average cost:{cost_gen[g]:.2f}.  Individuals in domain: {n_domain}. Best RBER: {rber_best}"
+        print(status, end='\r', flush=True)
 
-    # Status parameters
-    n_domain = domain_Np.sum()
-    if n_domain != 0:
-        min_cost = np.min(cost_Np[domain_Np])
-        rber_best = -min_cost
-    else:
-        rber_best = 0
-    t1_stop = process_time()
-    status = f"{g} generations completed.  Average cost:{cost_gen[g]:.2f}.  Individuals in domain: {n_domain}. Best RBER: {rber_best}"
-    print(status, end='\r', flush=True)
-
-
-status = f"""
-Finished!
-Saving final population to ...
-===================================================================
-    """
-print(status)
+    status = f"""
+    Finished!
+    Saving final population to ...
+    ===================================================================
+        """
+    print(status)
+finally:
+    with open('x_best.npy', 'wb') as f:
+        idx = np.argmin(cost_Np)
+        eta_best = eta_Np[:, idx]
+        x_best = compute_x(x_0, C_c, eta_best)
+        np.save(f, x_best)
 
 
 # %% Get the best solution
