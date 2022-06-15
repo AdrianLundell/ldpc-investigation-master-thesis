@@ -229,7 +229,7 @@ def main():
     C_c, x_0 = add_one_degree(C_c, x_0, dc)
 
     # 4. Perform optimization through differential evolution
-    differential_evolution(C_c, x_0, prnt=True):
+    differential_evolution(C_c, x_0, prnt=True)
 
 
 if __name__ == '__main__':
