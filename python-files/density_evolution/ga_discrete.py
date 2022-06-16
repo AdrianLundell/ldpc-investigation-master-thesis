@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from config import cfg
 cfg_de = cfg.get('density_evolution')
 cfg_disc = cfg_de.get('ga_disc')
-run_name = cfg.get("run_id")
+run_id = cfg.get("run_id")
 
 
 def init_population(n_pop, n_cn, n_vn):
@@ -97,7 +97,7 @@ def ga_discrete():
     p_vertical = cfg_disc.get("p_vertical")
     p_horizontal = cfg_disc.get("p_horizontal")
     p_mutation = cfg_disc.get("p_mutation")
-    fname = run_name + ".npz"
+    fname = "data/" + run_id + "_discrete.npz"
 
     if load_population:
         data = np.load(fname)

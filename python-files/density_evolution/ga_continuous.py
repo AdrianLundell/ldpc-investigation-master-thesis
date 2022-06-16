@@ -10,6 +10,7 @@ import random
 from config import cfg
 cfg_de = cfg.get('density_evolution')
 cfg_cont = cfg_de.get('ga_continous')
+run_id = cfg.get("run_id")
 
 
 def start_point(R, dv, dc):
