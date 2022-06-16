@@ -1,0 +1,8 @@
+n_vn : 73
+n_cn : 9 
+scaling_factor : 8
+girth_search_depth : 3
+seed : None
+gcd : False
+input_fname : "test.npz"
+output_fname : "test.qc"

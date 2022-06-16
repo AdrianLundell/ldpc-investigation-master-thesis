@@ -37,7 +37,8 @@ try:
 
         status = f"{i+1}/{settings['n_rber']} rbers computed.  "
         print(status, end = "\r", flush=True)
-
+except:
+    print("Threshold calculation failed, writing completed values to file.")
 finally:
     header = "RBER, SIGMA, SIGMA1, SIGMA2, CAPACITY, "
     for i in range(settings["n_thresholds"]):

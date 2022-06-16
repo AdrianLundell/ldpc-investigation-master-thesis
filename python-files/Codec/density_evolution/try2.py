@@ -106,3 +106,23 @@ Idea:
     Calculate "Base vectors" of rho and lambda with one in one place and zero in all others.
     Create new individuals as linear combinations of base vectors (making sure to get only positive coefficients)
 """
+def edge_perspective(coeffs, n):
+    """
+    Computes the edge perspective coefficients from degree counts
+    """
+    x = np.arange(1, len(coeffs) + 1) * coeffs
+    x = x / np.sum(x)
+
+    return x
+    
+def mix(x1, x2):
+
+    x1_bound = np.min(x2 / x1)
+    x2_bound = np.min(x1 / x2)
+    coeff = -x1_bound + np.random.rand()*np.abs(x1_bound - x2_bound)
+    
+
+
+n_vn = 8
+n_cn = 4
+L = np.array([0,0,0,0, n_vn])
