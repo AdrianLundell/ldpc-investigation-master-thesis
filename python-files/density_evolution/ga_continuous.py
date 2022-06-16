@@ -3,8 +3,7 @@ from time import process_time
 import numpy as np
 from scipy.optimize import linprog
 from scipy.linalg import null_space
-import density_evolution
-import de_utils
+import de_utils as de_u
 import random
 
 from config import cfg
@@ -61,71 +60,44 @@ def poly_eval(p, x):
     return p*x**exp
 
 
-def compute_cost(x, dc):
-    cost = 0
+def compute_fitness(x, dc):
+    fitness = 0
     in_domain = True
     for xi in x:
         if xi < 0:
-            cost += 100 - 10*xi
+            fitness = -100 + 10*xi
             in_domain = False
 
-    if cost == 0:
+    if fitness == 0:
         rho = x[:dc]
         lam = x[dc:]
-        min = 1e-5
-        max = 0.4
-        result = density_evolution.bisection_search(
-            min, max, lambda x: eval(x, rho, lam))
-        cost = -result
+        min = cfg_de.get("min_rber")
+        max = cfg_de.get("max_rber")
+        result = de_u.bisection_search(
+            min, max, rho, lam)
+        fitness = 100*result
 
-    return cost, in_domain
-
-
-def eval(x, rho, lam):
-    n_grid = 256
-    sigma, p0, bins = de_utils.compute_pdf(
-        x, 0.5, n_grid, 30)
-    f_grid, g_grid, pdf = de_utils.create_pdf(
-        p0, bins, n_grid)
-    cdf = de_utils.to_cdf(pdf)
-
-    result = density_evolution.symmetric_density_evolution(
-        cdf, f_grid, g_grid, rho, lam, plot=False, prnt=False)
-
-    return result
+    return fitness, in_domain
 
 
-def save_population(eta_Np):
-    with open('eta_Np.npy', 'wb') as f:
-        np.save(f, eta_Np)
-
-
-def save_best_individual(C_c, x_0, eta_Np, cost_Np):
-    with open('x_best.npy', 'wb') as f:
-        idx = np.argmin(cost_Np)
-        eta_best = eta_Np[:, idx]
-        x_best = compute_x(x_0, C_c, eta_best)
-        np.save(f, x_best)
-
-# Optimization
-
-
-def differential_evolution(C_c, x_0, dc, prnt=True):
+def differential_evolution(C_c, x_0, dc):
     # Np: number of individuals in population
     # gens: Number of generations. Around 5000
     # F: mutation variable. Usually in interval [0.1,1].
     # Cr: recombination probability, [0,1].
 
     Np = cfg_de.get('Np')
-    gens = cfg_de.get('gens')
+    gens = cfg_de.get('generations')
     F = cfg_de.get('F')
     Cr = cfg_de.get('Cr')
     D = np.size(C_c, 1)
+    load_population = cfg_de.get("load_population")
+    de_u.save_params()
 
-    D = np.size(C_c, 1)
-
-    if prnt:
+    print_terminal = cfg_de.get("print_terminal")
+    if print_terminal:
         header = f"""
+        ga_continuous.py
         ===================================================================
         Optimizing code ensamble through differential evolution algorithm.
         Number of individuals: {Np}.
@@ -134,15 +106,19 @@ def differential_evolution(C_c, x_0, dc, prnt=True):
         -------------------------------------------------------------------
         """
         print(header)
-        print("Initialising...")
 
     # x = x_0 + C_c*eta
     # Initialize population
-    eta_Np = np.random.rand(D, Np)
-    cost_Np = np.zeros(Np)
-    cost_gen = np.zeros(gens)
-    domain_Np = np.full(Np, False)
+    if load_population:
+        fname = "data/" + run_id + ".npz"
+        data = np.load(fname)
+        eta_Np = data["population"]
+        fitness_Np = data["fitness"]
+    else:
+        eta_Np = np.random.rand(D, Np)
+        fitness_Np = np.zeros(Np)
 
+    domain_Np = np.full(Np, False)
     try:
         # Optimize population over generations
         t1_start = process_time()
@@ -172,30 +148,33 @@ def differential_evolution(C_c, x_0, dc, prnt=True):
                 # Selection
                 if g == 0:
                     x = compute_x(x_0, C_c, eta_Np[:, i])
-                    cost, in_domain = compute_cost(x, dc)
-                    cost_Np[i] = cost
+                    fitness, in_domain = compute_fitness(x, dc)
+                    fitness_Np[i] = fitness
                     domain_Np[i] = in_domain
 
                 x = compute_x(x_0, C_c, u_Np[:, i])
-                cost, in_domain = compute_cost(x, dc)
+                fitness, in_domain = compute_fitness(x, dc)
 
-                if cost < cost_Np[i]:
+                if fitness > fitness_Np[i]:
                     eta_Np[:, i] = u_Np[:, i]
-                    cost_Np[i] = cost
+                    fitness_Np[i] = fitness
                     domain_Np[i] = in_domain
 
-            cost_gen[g] = np.sum(cost_Np)/Np
+            if g % 10 == 0:
+                de_u.save_fitness(fitness_Np, g)
+
+            ave_fitness = np.sum(fitness_Np)/Np
 
             # Write current status
-            if prnt:
+            if print_terminal:
                 n_domain = domain_Np.sum()
                 if n_domain != 0:
-                    min_cost = np.min(cost_Np[domain_Np])
-                    rber_best = -min_cost
+                    max_fitness = np.max(fitness_Np[domain_Np])
+                    rber_best = -max_fitness
                 else:
                     rber_best = 0
                 t1_stop = process_time()
-                status = f"{g} generations completed.  Average cost:{cost_gen[g]:.2f}.  Individuals in domain: {n_domain}. Best RBER: {rber_best}"
+                status = f"{g} generations completed.  Average fitness:{ave_fitness:.2f}.  Individuals in domain: {n_domain}. Best RBER: {rber_best}"
                 print(status, end='\r', flush=True)
 
         status = f"""
@@ -205,9 +184,7 @@ def differential_evolution(C_c, x_0, dc, prnt=True):
             """
         print(status)
     finally:
-        save_best_individual(C_c, x_0, eta_Np, cost_Np)
-
-        save_population(eta_Np)
+        de_u.save_population(eta_Np, fitness_Np)
 
 
 def ga_continous(print_terminal):
@@ -228,4 +205,4 @@ def ga_continous(print_terminal):
     C_c, x_0 = add_one_degree(C_c, x_0, dc)
 
     # 4. Perform optimization through differential evolution
-    differential_evolution(C_c, x_0, dc, prnt=True)
+    differential_evolution(C_c, x_0, dc)

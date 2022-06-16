@@ -6,12 +6,14 @@ https://arxiv.org/pdf/cs/0509014.pdf [1]
 https://arxiv.org/pdf/2001.01249.pdf [2]
 
 """
+from config import cfg
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 import Analysis.utils as utils
 import Modem.optimal_thresholds as optimize
 import numpy as np
 import scipy.signal as sp
+import pandas as pd
 import sys
 import os
 sys.path.insert(1, os.path.join(sys.path[0], '../..'))
@@ -19,6 +21,9 @@ sys.path.insert(1, os.path.join(sys.path[0], '../..'))
 
 global data
 data = None
+
+cfg_de = cfg.get('density_evolution')
+run_id = cfg.get('run_id')
 
 
 def to_cdf(pdf):
@@ -327,10 +332,27 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
         i += 1
 
 
-def bisection_search(min, max, eval, tol=1e-4):
+def eval(rber, rho_edge, lam_edge):
+    plot = False
+    n_grid = cfg_de.get("n_grid")
+
+    f_grid, g_grid, pdf = init_pdf(rber, n_grid)
+    cdf = to_cdf(pdf)
+
+    if plot:
+        plt.plot(f_grid, cdf)
+        plt.show()
+
+    result = symmetric_density_evolution(
+        cdf, f_grid, g_grid, rho_edge, lam_edge, plot=False)
+
+    return result
+
+
+def bisection_search(min, max, rho_edge, lam_edge, tol=1e-4):
     while max - min > tol:
         x = (min + max)/2
-        result = eval(x)
+        result = eval(x, rho_edge, lam_edge)
 
         if result == 0:
             min = x
@@ -340,3 +362,60 @@ def bisection_search(min, max, eval, tol=1e-4):
             raise Exception
 
     return (min + max)/2
+
+
+def save_params():
+    algorithm = cfg_de.get("algorithm")
+    data = {
+        "R": cfg_de.get("R"),
+        "Np": cfg_de.get("Np"),
+        "generations": cfg_de.get("generations"),
+        "n_grid": cfg_de.get("n_grid"),
+        "algorithm": algorithm
+    }
+
+    if algorithm == "da_continuous":
+        data_c = {
+            "F": cfg_de.get("F"),
+            "Cr": cfg_de.get("Cr"),
+            "dv": cfg_de.get("dv"),
+            "dc": cfg_de.get("dc")
+        }
+        data.update(data_c)
+
+    if algorithm == "da_discrete":
+        data_d = {
+            "n_vn": cfg_de.get("n_vn"),
+            "n_cn": cfg_de.get("n_cn"),
+            "p_vertical": cfg_de.get("p_vertical"),
+            "p_horizontal": cfg_de.get("p_horizontal"),
+            "p_mutation": cfg_de.get("p_mutation")
+        }
+        data.update(data_d)
+
+    df = pd.DataFrame.from_dict(data)
+
+    os.makedirs('../params_data', exist_ok=True)
+    fname = "../params_data/" + run_id + "_params.csv"
+    df.to_csv(fname)
+
+
+def save_fitness(fitness, generation):
+    if generation == 0:
+        mode = 'w'
+    else:
+        mode = 'a'
+
+    generation = str(generation)
+    data = {
+        generation: fitness
+    }
+    fname = "data/" + run_id + "_fitness.csv"
+    df = pd.DataFrame(data)
+    df.to_csv(fname, mode=mode, index=False, header=False)
+
+
+def save_population(population, fitness):
+    fname = "data/" + run_id + ".npz"
+    with open(fname, 'wb') as f:
+        np.savez(f, population=population, fitness=fitness)
