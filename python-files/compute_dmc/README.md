@@ -1,4 +1,5 @@
-BACKGROUND
+**BACKGROUND**
+
 Channel model design is an essential part of the ldpc-code optimisation process since the final code is designed to be optimal for the the specific channel. The closer this channel model is to the real case, the more suited the code will be also to the real case.
 
 A NAND flash memory is often modeled as an AWGN-like channel, however this model fails to capture two important characteristics:
