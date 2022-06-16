@@ -223,7 +223,7 @@ def rho(x, coeffs):
     return y
 
 
-def init_pdf(rber, n_grid=512, llr_max=30):
+def init_pdf(rber, file_path, n_grid=512, llr_max=30):
     """Returns density values of a DMC pdf and its grid in F and G from a look up table."""
     mu1 = -1
     mu2 = 1
@@ -231,8 +231,7 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     # Load database if not loaded
     global data
     if data is None:
-        data = np.loadtxt(
-            "C:/Users/adria/.vscode/Projects/ldpc-investigation-master-thesis/double_soft_symmetric.txt", delimiter=",", skiprows=1)
+        data = np.loadtxt(file_path, delimiter=",", skiprows=1)
 
     # Interpolate values on rber
     rber_step = data[1, 1] - data[0, 1]
@@ -269,3 +268,75 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     x2 = np.linspace(0, max_val, n_grid)
 
     return x1, x2, y
+
+
+def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_iter=50, tol=1e-3, plot=False, prnt=False):
+    if plot:
+        fig, axes = plt.subplots(3, 2)
+
+    #assert np.sum(rho_coeffs[1:]) == 1, "Invalid rho polynom"
+    #assert np.sum(lambda_coeffs[1:]) == 1, "Invalid lambda polynom"
+
+    pl = cdf
+    p0 = cdf
+    pl_old = 0
+    i = 0
+    diff = np.inf
+    error = np.inf
+    while True:
+        x1 = gamma(pl, f_grid, g_grid)
+        x2 = rho(x1, rho_coeffs)
+        x3 = gamma_inv(x2, f_grid, g_grid)
+        x4 = lambd(x3, lambda_coeffs)
+        pl = conv(x4, p0)
+
+        diff = sum((pl_old - pl)**2)
+        pl_old = pl
+
+        zero_index = pl.size//2
+        error = pl[zero_index]
+
+        if plot:
+            axes[0, 0].plot(x1[0, :])
+            axes[0, 0].plot(x1[1, :])
+            axes[0, 1].plot(x2[0, :])
+            axes[0, 1].plot(x2[1, :])
+            axes[1, 0].plot(x3)
+            axes[1, 1].plot(x4)
+            axes[2, 0].plot(pl)
+            axes[2, 1].scatter(i, error)
+
+        is_converged = (diff < 1e-9)
+        is_zero = (error < tol)
+        max_iter = (i == n_iter)
+
+        if is_zero:
+            error = 0
+            if prnt:
+                print("Is zero")
+        if is_converged and prnt:
+            print("Converged")
+        if max_iter and prnt:
+            print("MAX")
+        if is_zero or is_converged or max_iter:
+            if plot:
+                plt.show()
+
+            return error
+
+        i += 1
+
+
+def bisection_search(min, max, eval, tol=1e-4):
+    while max - min > tol:
+        x = (min + max)/2
+        result = eval(x)
+
+        if result == 0:
+            min = x
+        elif result > 0:
+            max = x
+        else:
+            raise Exception
+
+    return (min + max)/2
