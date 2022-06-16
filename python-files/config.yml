@@ -1,21 +1,21 @@
+run_id: "Run1"
 compute_dmc:
 density_evolution:
   R: 0.5 # R: code rate
   dv: 10 # dc: max variable node edge-perspective degree
   dc: 10 # dc: max check node edge-perspective degree
   Np: 100 # Np: number of individuals in population
-  gens: 5000 # gens: number of generations. Around 5000
+  generations: 5000 # gens: number of generations. Around 5000
   n_grid: 1024 #n_grid: number of bins in pdf
   algorithm: "ga_discrete" # algorithm: choose between ga_discrete or ga_continuous
-  load_initial_pop: False # If previous training has been done, one can start from that by setting to True
-  output_file: "data/output.npz" # Set file to write to
-  dmc_file_path: # File path to the file that has been run in ../compute_dmc/compute_dmc.py
+  load_population: False # If previous training has been done, one can start from that by setting to True
   print_terminal: True # If set to true the log will be outputed in terminal. Otherwise written to log/log.txt
   ga_continuous:
     F: 0.5 # F: mutation variable. Usually in interval [0.1,1].
     Cr: 0.7 # Cr: recombination probability, [0,1].
-    input_file: "data/input_continous.npz" # Set file to load data from
-    output_file: "data/output_continous.npz" # Set file to write to
   ga_discrete:
-    input_file: "data/input_continous.npz" # Set file to load data from
-    output_file: "data/output_continous.npz" # Set file to write to
+    n_vn: 73
+    n_cn: 9
+    p_vertical: 0.3
+    p_horizontal: 0.3
+    p_mutation: 0.1
