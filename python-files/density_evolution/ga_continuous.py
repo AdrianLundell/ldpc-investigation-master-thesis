@@ -8,9 +8,8 @@ import de_utils
 import random
 
 from config import cfg
-
-# This script assumes that tests in aff3ct have been run with  printData = true in Channel_AWGN_asymmetric_test.cpp
-cfg = cfg.get('differential_evolution')
+cfg_de = cfg.get('density_evolution')
+cfg_cont = cfg_de.get('ga_continous')
 
 
 def start_point(R, dv, dc):
@@ -116,10 +115,10 @@ def differential_evolution(C_c, x_0, dc, prnt=True):
     # F: mutation variable. Usually in interval [0.1,1].
     # Cr: recombination probability, [0,1].
 
-    Np = cfg.get('Np')
-    gens = cfg.get('gens')
-    F = cfg.get('F')
-    Cr = cfg.get('Cr')
+    Np = cfg_de.get('Np')
+    gens = cfg_de.get('gens')
+    F = cfg_de.get('F')
+    Cr = cfg_de.get('Cr')
     D = np.size(C_c, 1)
 
     D = np.size(C_c, 1)
@@ -210,11 +209,11 @@ def differential_evolution(C_c, x_0, dc, prnt=True):
         save_population(eta_Np)
 
 
-def main():
+def ga_continous(print_terminal):
 
-    R = cfg.get('R')
-    dv = cfg.get('dv')
-    dc = cfg.get('dc')
+    R = cfg_de.get('R')
+    dv = cfg_de.get('dv')
+    dc = cfg_de.get('dc')
 
     # x = [rho;lam]
     # 1. Compute an initial start point
@@ -229,7 +228,3 @@ def main():
 
     # 4. Perform optimization through differential evolution
     differential_evolution(C_c, x_0, dc, prnt=True)
-
-
-if __name__ == '__main__':
-    main()
