@@ -74,11 +74,11 @@ class Tanner_graph:
 
     def get_check_degrees(self) -> list:
         """Returns the degree of all check nodes of the graph"""
-        return [len(self.nodes[i]) for i in range(self.n_cn)]
+        return np.array([len(self.nodes[i]) for i in range(self.n_cn)])
 
     def get_var_degrees(self) -> list:
         """Returns the degree of all check nodes of the graph"""
-        return [len(self.nodes[i]) for i in range(self.n_cn, self.n_nodes)]
+        return np.array([len(self.nodes[i]) for i in range(self.n_cn, self.n_nodes)])
 
     def get_H(self):
         """Generates a dense representation of the graph"""

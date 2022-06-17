@@ -21,7 +21,9 @@ def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes,
 
             G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
         
-            if gcd:
+            if len(G.get_adjecent_cn(current_cn_index)) == 17+1:
+                new_girth == -np.inf
+            elif gcd:
                 new_girth = shortest_cycles_gcd(G, current_cn_index, current_vn_index, vn_distances, cn_distances)
             else:
                 new_girth = shortest_cycles(G, current_cn_index, current_vn_index)
@@ -32,10 +34,9 @@ def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes,
                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
                     cn_girths.flat[enumerated_cn_indexes[0:t+1]] = girths[t+1]
                     max_girth[0] = girths[t+1]
-
-                    if new_girth == np.inf:
-                        G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
-                        break
+                    # if new_girth == np.inf:
+                    #     G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
+                    #     break
 
                 else: 
                     if gcd:
@@ -252,7 +253,7 @@ def vn_polynomial_repr(vn_polynomial):
     s = ""
     for degree, coeff in enumerate(vn_polynomial):
         if coeff:
-            s += f"{coeff}*x^{degree} + "
+            s += f"{coeff}*x^{degree+1} + "
 
     return s[:-2]
 
@@ -274,7 +275,7 @@ def strategy1(max_girth, cn_girths, G, vn_index):
             cn_local_girths[i] = shortest_cycles(G, cn_index, vn_index)
             G.remove_cyclical_edge_set(cn_index, vn_index)
     survivors = survivors[cn_local_girths == np.max(cn_local_girths)]
-   
+
     if survivors.size == 1:
         return int(survivors)   
     # 3)
