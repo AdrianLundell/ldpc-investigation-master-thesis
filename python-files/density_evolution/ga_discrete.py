@@ -1,6 +1,5 @@
 import numpy as np
-import density_evolution as de
-import de_utils as di
+import de_utils as de_u
 import matplotlib.pyplot as plt
 
 from config import cfg
@@ -41,6 +40,7 @@ def mutation(i):
 
 
 def tournament(population, fitness, n_competitiors=3):
+    n_pop = cfg_de.get("Np")
     competitors_index = np.random.choice(n_pop, n_competitiors, replace=False)
     competitors_fitness = fitness[competitors_index]
     winner_index = competitors_index[np.argmax(competitors_fitness)]
@@ -64,23 +64,9 @@ def evaluate(i):
         lam_edge = np.arange(1, len(lam_node)+1) * lam_node / \
             np.sum(np.arange(1, len(lam_node)+1) * lam_node)
 
-        def eval(x):
-            plot = False
-            n_grid = 512
-
-            f_grid, g_grid, pdf = di.init_pdf(x, n_grid)
-            cdf = di.to_cdf(pdf)
-
-            if plot:
-                plt.plot(f_grid, cdf)
-                plt.show()
-
-            result = de.symmetric_density_evolution(
-                cdf, f_grid, g_grid, rho_edge, lam_edge, plot=plot)
-
-            return result
-
-        fitness = de.bisection_search(0.001, 0.5, eval)
+        min = cfg_de.get("min_rber")
+        max = cfg_de.get("max_rber")
+        fitness = de_u.bisection_search(min, max, rho_edge, lam_edge)
         return fitness
 
     else:
@@ -97,9 +83,12 @@ def ga_discrete():
     p_vertical = cfg_disc.get("p_vertical")
     p_horizontal = cfg_disc.get("p_horizontal")
     p_mutation = cfg_disc.get("p_mutation")
-    fname = "data/" + run_id + "_discrete.npz"
+    print_terminal = cfg_de.get("print_terminal")
+
+    de_u.save_params()
 
     if load_population:
+        fname = "data/" + run_id + ".npz"
         data = np.load(fname)
         population = data["population"]
         fitness = data["fitness"]
@@ -107,11 +96,15 @@ def ga_discrete():
         population = init_population(n_pop, n_cn, n_vn)
         fitness = np.full(n_pop, -np.inf)
 
-    print(f"""
-    ===================================================================
-    Running optimisation of {n_cn}x{n_vn} protograph. 
-    ===================================================================
-    """)
+    if print_terminal:
+        print(f"""
+        ga_disrete.py
+        ===================================================================
+        Running optimisation of {n_cn}x{n_vn} protograph. 
+        Number of individuals: {n_pop}.
+        Number of generations: {n_generations}.
+        -------------------------------------------------------------------
+        """)
 
     try:
         # Initial evaluation
@@ -154,19 +147,20 @@ def ga_discrete():
                 if fitness[j] == -np.inf:
                     fitness[j] = evaluate(population[j, :, :])
 
-            status = f"Generation {i}/{n_generations}. Best/median/mean/min/variance fitness: {np.max(fitness)}/{np.median(fitness)}/{np.mean(fitness)}/{np.min(fitness)}/{np.var(fitness)}.                                "
-            print(status, end='\r', flush=True)
+            if i % 10 == 0:
+                de_u.save_fitness(fitness, i)
+
+            if print_terminal:
+                status = f"Generation {i}/{n_generations}. Best/median/mean/min/variance fitness: {np.max(fitness)}/{np.median(fitness)}/{np.mean(fitness)}/{np.min(fitness)}/{np.var(fitness)}.                                "
+                print(status, end='\r', flush=True)
+
+        if print_terminal:
+            status = f"""
+            -------------------------------------------------------------------
+            Finished!
+            ===================================================================
+                """
+            print(status)
 
     finally:
-        with open(fname, 'wb') as f:
-            np.savez(f, population=population,
-                     fitness=fitness,
-
-                     n_pop=np.array(n_pop),
-                     n_generations=np.array(n_generations),
-                     n_vn=np.array(n_vn),
-                     n_cn=np.array(n_cn),
-
-                     p_vertical=np.array(p_vertical),
-                     p_horizontal=np.array(p_horizontal),
-                     p_mutation=np.array(p_mutation))
+        de_u.save_population(population, fitness)
