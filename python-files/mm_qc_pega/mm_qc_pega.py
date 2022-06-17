@@ -49,7 +49,7 @@ for current_vn_index in range(0, G.n_vn, G.N):
     d = vn_degrees[current_vn_index]
     for k in range(1, int(d+1)):
         rk = int(min(settings["girth_search_depth"], d - k +1))
-        max_girth, cn_girths = peg_utils.rk_edge_local_girth(G, current_vn_index, rk, gcd = settings["gcd"])
+        max_girth, cn_girths = peg_utils.rk_edge_local_girth(G, current_vn_index, rk, cn_degrees)
     
         ci = peg_utils.strategy1(max_girth, cn_girths, G, current_vn_index, cn_degrees)
         G.add_cyclical_edge_set(ci, current_vn_index)
@@ -63,8 +63,11 @@ for current_vn_index in range(0, G.n_vn, G.N):
 
 print("")
 print(f"Edge growth finsihed. Total elapsed time: {int(dt//60)} minutes, {dt % 60:.2f} seconds.")
-print(np.bincount(G.get_check_degrees())[1:]/G.n_cn, data["cn_degree_node"])
-print(np.bincount(G.get_var_degrees())[1:]/G.n_vn, data["vn_degree_node"])
+print(np.bincount(G.get_check_degrees())[1:]/G.n_cn)
+print(data["cn_degree_node"])
+print(np.bincount(G.get_var_degrees())[1:]/G.n_vn)
+print(data["vn_degree_node"])
+
 peg_utils.graph_stats(G)
 
 H = galois.GF2(G.get_H().astype(int))

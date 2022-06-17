@@ -6,59 +6,48 @@ import galois
 from itertools import combinations
 import matplotlib.pyplot as plt
 
-def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd = False, vn_distances = None, cn_distances = None):
+def rk_edge_local_girth_layer(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, cn_degrees = None):
     """
     DFS calculation of the rk-edge local girth based on Algorithm 2 in 
     https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8241708
     """
 
-    for i in range(int(enumerated_cn_max[t])):
-        current_cn_index = i  #Reduncy to allow differentiating between i and node_i
-        
+    for current_cn_index in range(int(enumerated_cn_max[t])):
+        if t == 0:
+            max_girth = np.array([-np.inf])
+
         if not G.has_cyclical_edge_set((current_cn_index, current_vn_index)):
-            enumerated_cn_indexes[t] = current_cn_index
-            enumerated_cn_max[t+1] = i
+            enumerated_cn_indexes[t] = current_cn_index #Keep track of path of this branch of the DFS-search tree 
+            enumerated_cn_max[t+1] = current_cn_index   #In next step in DFS-search limit search to enumerated cn_s
 
             G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
         
-            if len(G.get_adjecent_cn(current_cn_index)) == 17+1:
-                new_girth == -np.inf
-            elif gcd:
-                new_girth = shortest_cycles_gcd(G, current_cn_index, current_vn_index, vn_distances, cn_distances)
+            if not cn_degrees is None:
+                #Limit maximum cn_degree if given by assigning minimum girth
+                if len(G.get_adjecent_cn(current_cn_index)) == np.max(cn_degrees) + 1:
+                    new_girth = -np.inf
+                else:
+                    new_girth = shortest_cycles(G, current_cn_index, current_vn_index)
             else:
+                #Else calculate metric (girth) for this branch of the DFS-search tree
                 new_girth = shortest_cycles(G, current_cn_index, current_vn_index)
 
+            #Update if this edge decreased the girth of the node
             girths[t+1] = min(girths[t], new_girth)
 
             if max_girth[0] <= girths[t+1]:
-                if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
+                if t == rk-1:
+                    #We have found a complete branch of the DFS search tree with currently maximal girth, meaning all nodes in the path has this potential rk-girth.
                     cn_girths.flat[enumerated_cn_indexes[0:t+1]] = girths[t+1]
                     max_girth[0] = girths[t+1]
-                    # if new_girth == np.inf:
-                    #     G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
-                    #     break
 
-                else: 
-                    if gcd:
-                        vn_indexes = list(range(G.n_cn, G.n_nodes))
-                        vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
-                        
-                        cn_distances = {}
-                        T = np.arange(G.N)
-                        for ci in range(0, G.n_cn, G.N):
-                            cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
-                            cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
-                    else:
-                        vn_distances = None 
-                        cn_distances = None
-                
-                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
-            else:
-                pass        
+                else:
+                    #Branch not complete yet but still potentially better than current girth, keep searching     
+                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, cn_degrees)      
 
             G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
 
-def rk_edge_local_girth(G, current_vn_index, rk, gcd = False):
+def rk_edge_local_girth(G, current_vn_index, rk, cn_degrees = None):
     """
     Calculate the maximum girth possible when adding an edge from current_vn_index to each check node, with a look-ahead depth of rk. 
     """
@@ -73,21 +62,76 @@ def rk_edge_local_girth(G, current_vn_index, rk, gcd = False):
     girths[0] = np.inf 
 
     #Calculate local girths from all variable nodes and from the circulant for i = 0, N, m-N
-    if gcd:
-        vn_indexes = list(range(G.n_cn, G.n_nodes))
-        vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
-        
-        cn_distances = {}
-        T = np.arange(G.N)
-        for ci in range(0, G.n_cn, G.N):
-            cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
-            cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
-    else:
-        vn_distances = None 
-        cn_distances = None
-
     rk_edge_local_girth_layer(G, current_vn_index, rk, t, 
-                        enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, gcd, vn_distances, cn_distances)
+                        enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, cn_degrees)
+
+    return max_girth, cn_girths
+
+
+def rk_edge_local_girth_layer_gcd(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances, cn_degrees = None):
+    for current_cn_index in range(int(enumerated_cn_max[t])):
+        
+        if not G.has_cyclical_edge_set((current_cn_index, current_vn_index)):
+            enumerated_cn_indexes[t] = current_cn_index #Keep track of path of this branch of the DFS-search tree 
+            enumerated_cn_max[t+1] = current_cn_index   #In next step in DFS-search limit search to 
+
+            G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
+        
+            if not cn_degrees is None:
+                if len(G.get_adjecent_cn(current_cn_index)) == np.max(cn_degrees) + 1:
+                    new_girth == -np.inf
+            else:
+                new_girth = shortest_cycles_gcd(G, current_cn_index, current_vn_index, vn_distances, cn_distances)
+
+            girths[t+1] = min(girths[t], new_girth)
+
+            if max_girth[0] <= girths[t+1]:
+                if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
+                    cn_girths.flat[enumerated_cn_indexes[0:t+1]] = girths[t+1]
+                    max_girth[0] = girths[t+1]
+
+                else: 
+                    vn_indexes = list(range(G.n_cn, G.n_nodes))
+                    vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
+                    
+                    cn_distances = {}
+                    T = np.arange(G.N)
+                    for ci in range(0, G.n_cn, G.N):
+                        cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
+                        cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
+                
+                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
+            else:
+                pass        
+
+            G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
+
+def rk_edge_local_girth_gcd(G, current_vn_index, rk, cn_degrees = None):
+    """
+    Calculate the maximum girth possible when adding an edge from current_vn_index to each check node, with a look-ahead depth of rk. 
+    """
+    t = 0
+    enumerated_cn_indexes = np.zeros(rk+1, dtype=int) #s in article
+    enumerated_cn_max = np.zeros(rk+1, dtype=int) #u in article
+    girths = np.zeros(rk+1) 
+    max_girth = np.array([-np.inf])
+    cn_girths = np.full(G.n_cn, -np.inf)
+
+    enumerated_cn_max[0] = G.n_cn
+    girths[0] = np.inf 
+
+    #Calculate local girths from all variable nodes and from the circulant for i = 0, N, m-N
+    vn_indexes = list(range(G.n_cn, G.n_nodes))
+    vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
+    
+    cn_distances = {}
+    T = np.arange(G.N)
+    for ci in range(0, G.n_cn, G.N):
+        cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
+        cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
+
+    rk_edge_local_girth_layer_gcd(G, current_vn_index, rk, t, 
+                        enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
 
     return max_girth, cn_girths
 
@@ -257,31 +301,42 @@ def vn_polynomial_repr(vn_polynomial):
 
     return s[:-2]
 
-def strategy1(max_girth, cn_girths, G, vn_index):
-    # 0)
+def strategy1(max_girth, cn_girths, G, vn_index, cn_degrees):
+    #Enforce single weight circulant matrices
     for cn in range(G.n_cn):
         if G.has_cyclical_edge_set((cn, vn_index)):
-            cn_girths[cn] == -max_girth
-    # 1)
-    survivors = np.argwhere(cn_girths == max_girth)
-    if survivors.size == 1:
-        return int(survivors)
+            cn_girths[cn] == -np.inf
+    #Keep edges of maximal r-girth
+    girth_survivors = np.argwhere(cn_girths == np.max(cn_girths))
+    
+    #Keep edges of maximal shortest cycle after adding an edge
+    # cn_local_girths = np.zeros(survivors.size)
+    # for i in range(survivors.size):
+    #     cn_index = int(survivors[i])
+    #     if G.add_cyclical_edge_set(cn_index, vn_index):
+    #         cn_local_girths[i] = shortest_cycles(G, cn_index, vn_index)
+    #         G.remove_cyclical_edge_set(cn_index, vn_index)
+    # survivors = survivors[cn_local_girths == np.max(cn_local_girths)]
+ 
+    #Keep edges with maximal free degree
+    current_degrees = G.get_check_degrees()
+    free_degrees = cn_degrees - current_degrees
+    free_degrees_survivors = np.take(free_degrees, girth_survivors)
 
-    # 2)
-    cn_local_girths = np.zeros(survivors.size)
-    for i in range(survivors.size):
-        cn_index = int(survivors[i])
-        if G.add_cyclical_edge_set(cn_index, vn_index):
-            cn_local_girths[i] = shortest_cycles(G, cn_index, vn_index)
-            G.remove_cyclical_edge_set(cn_index, vn_index)
-    survivors = survivors[cn_local_girths == np.max(cn_local_girths)]
+    survivors = girth_survivors[free_degrees_survivors == np.max(free_degrees_survivors)]
+    survivor = int(np.random.choice(survivors))
+    
+    if free_degrees[survivor] == 0:
+        cond1 = (cn_degrees > cn_degrees[survivor]) 
+        cond2 = (current_degrees[survivor] >= current_degrees)
+        candidate_nodes = np.argwhere(np.logical_and(cond1, cond2))
+        
+        if len(candidate_nodes) > 0:
+            swap_node = np.random.choice(candidate_nodes)
+            cn_degrees[survivor], cn_degrees[swap_node] = cn_degrees[swap_node], cn_degrees[survivor]
+        else:
+            cn_girths[girth_survivors] = -np.inf
+            max_girth = np.max(cn_girths)
+            survivor = strategy1(max_girth, cn_girths, G, vn_index, cn_degrees)
 
-    if survivors.size == 1:
-        return int(survivors)   
-    # 3)
-    check_degrees = np.take(G.get_check_degrees(), survivors)
-    survivors = survivors[check_degrees == np.min(check_degrees)]
-    # 4)
-    result = survivors[np.random.randint(survivors.size)]
-
-    return int(result)
+    return survivor
