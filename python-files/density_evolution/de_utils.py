@@ -6,17 +6,18 @@ https://arxiv.org/pdf/cs/0509014.pdf [1]
 https://arxiv.org/pdf/2001.01249.pdf [2]
 
 """
-from config import cfg
-import matplotlib.pyplot as plt
-from scipy.stats import norm
-import Analysis.utils as utils
-import Modem.optimal_thresholds as optimize
-import numpy as np
-import scipy.signal as sp
-import pandas as pd
+
 import sys
+sys.path.insert(
+    0, '/home/fredrikblomgren/CAS/MasterThesis/ldpc-investigation-master-thesis/python-files')
+
 import os
-sys.path.insert(1, os.path.join(sys.path[0], '../..'))
+import pandas as pd
+import scipy.signal as sp
+import numpy as np
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+from config import cfg
 
 
 global data
@@ -228,15 +229,16 @@ def rho(x, coeffs):
     return y
 
 
-def init_pdf(rber, file_path, n_grid=512, llr_max=30):
+def init_pdf(rber, n_grid=512, llr_max=30):
     """Returns density values of a DMC pdf and its grid in F and G from a look up table."""
     mu1 = -1
     mu2 = 1
 
     # Load database if not loaded
     global data
+    file_path = cfg_de.get("dmc_file")
     if data is None:
-        data = np.loadtxt(file_path, delimiter=",", skiprows=1)
+        data = np.loadtxt(file_path, delimiter=" ", skiprows=1)
 
     # Interpolate values on rber
     rber_step = data[1, 1] - data[0, 1]
@@ -367,29 +369,29 @@ def bisection_search(min, max, rho_edge, lam_edge, tol=1e-4):
 def save_params():
     algorithm = cfg_de.get("algorithm")
     data = {
-        "R": cfg_de.get("R"),
-        "Np": cfg_de.get("Np"),
-        "generations": cfg_de.get("generations"),
-        "n_grid": cfg_de.get("n_grid"),
-        "algorithm": algorithm
+        "R": [cfg_de.get("R")],
+        "Np": [cfg_de.get("Np")],
+        "generations": [cfg_de.get("generations")],
+        "n_grid": [cfg_de.get("n_grid")],
+        "algorithm": [algorithm]
     }
 
-    if algorithm == "da_continuous":
+    if algorithm == "ga_continuous":
         data_c = {
-            "F": cfg_de.get("F"),
-            "Cr": cfg_de.get("Cr"),
-            "dv": cfg_de.get("dv"),
-            "dc": cfg_de.get("dc")
+            "F": [cfg_de.get("F")],
+            "Cr": [cfg_de.get("Cr")],
+            "dv": [cfg_de.get("dv")],
+            "dc": [cfg_de.get("dc")]
         }
         data.update(data_c)
 
-    if algorithm == "da_discrete":
+    if algorithm == "ga_discrete":
         data_d = {
-            "n_vn": cfg_de.get("n_vn"),
-            "n_cn": cfg_de.get("n_cn"),
-            "p_vertical": cfg_de.get("p_vertical"),
-            "p_horizontal": cfg_de.get("p_horizontal"),
-            "p_mutation": cfg_de.get("p_mutation")
+            "n_vn": [cfg_de.get("n_vn")],
+            "n_cn": [cfg_de.get("n_cn")],
+            "p_vertical": [cfg_de.get("p_vertical")],
+            "p_horizontal": [cfg_de.get("p_horizontal")],
+            "p_mutation": [cfg_de.get("p_mutation")]
         }
         data.update(data_d)
 

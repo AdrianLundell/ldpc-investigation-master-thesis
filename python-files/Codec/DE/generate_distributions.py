@@ -6,15 +6,16 @@ final distribution is approximate.
 """
 # %%
 # Path hack
+
+import sys
+import os
+sys.path.insert(1, os.path.join(sys.path[0], '../..'))
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
 import Analysis.utils as utils
 import Modem.optimal_thresholds as optimize
-import sys
-import os
-sys.path.insert(1, os.path.join(sys.path[0], '../..'))
-
 
 global data
 data = None

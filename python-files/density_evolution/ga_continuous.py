@@ -8,7 +8,7 @@ import random
 
 from config import cfg
 cfg_de = cfg.get('density_evolution')
-cfg_cont = cfg_de.get('ga_continous')
+cfg_cont = cfg_de.get('ga_continuous')
 run_id = cfg.get("run_id")
 
 
@@ -65,7 +65,7 @@ def compute_fitness(x, dc):
     in_domain = True
     for xi in x:
         if xi < 0:
-            fitness = -100 + 10*xi
+            fitness += -100 + 10*xi
             in_domain = False
 
     if fitness == 0:
@@ -88,8 +88,8 @@ def differential_evolution(C_c, x_0, dc):
 
     Np = cfg_de.get('Np')
     gens = cfg_de.get('generations')
-    F = cfg_de.get('F')
-    Cr = cfg_de.get('Cr')
+    F = cfg_cont.get('F')
+    Cr = cfg_cont.get('Cr')
     D = np.size(C_c, 1)
     load_population = cfg_de.get("load_population")
     de_u.save_params()
@@ -170,7 +170,7 @@ def differential_evolution(C_c, x_0, dc):
                 n_domain = domain_Np.sum()
                 if n_domain != 0:
                     max_fitness = np.max(fitness_Np[domain_Np])
-                    rber_best = -max_fitness
+                    rber_best = max_fitness
                 else:
                     rber_best = 0
                 t1_stop = process_time()
@@ -187,11 +187,11 @@ def differential_evolution(C_c, x_0, dc):
         de_u.save_population(eta_Np, fitness_Np)
 
 
-def ga_continous(print_terminal):
+def ga_continous():
 
     R = cfg_de.get('R')
-    dv = cfg_de.get('dv')
-    dc = cfg_de.get('dc')
+    dv = cfg_cont.get('dv')
+    dc = cfg_cont.get('dc')
 
     # x = [rho;lam]
     # 1. Compute an initial start point

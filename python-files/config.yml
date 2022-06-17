@@ -5,11 +5,12 @@ density_evolution:
   Np: 100 # Np: number of individuals in population
   generations: 5000 # gens: number of generations. Around 5000
   n_grid: 1024 #n_grid: number of bins in pdf
-  min_rber: 1e-5 # Lowest rber in search interval
+  min_rber: 0.000001 # Lowest rber in search interval
   max_rber: 0.4 # Highest rber in search interval
-  algorithm: "ga_discrete" # algorithm: choose between ga_discrete or ga_continuous
+  algorithm: "ga_continuous" # algorithm: choose between ga_discrete or ga_continuous
   load_population: False # If previous training has been done, one can start from that by setting to True
   print_terminal: True # If set to true the log will be outputed in terminal. Otherwise written to log/log.txt
+  dmc_file: "../compute_dmc/data/4_05_AWGN.csv"
   ga_continuous:
     F: 0.5 # F: mutation variable. Usually in interval [0.1,1].
     Cr: 0.7 # Cr: recombination probability, [0,1].
