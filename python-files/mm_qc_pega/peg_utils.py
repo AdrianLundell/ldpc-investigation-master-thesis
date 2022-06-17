@@ -333,7 +333,10 @@ def strategy1(max_girth, cn_girths, G, vn_index, cn_degrees):
         
         if len(candidate_nodes) > 0:
             swap_node = np.random.choice(candidate_nodes)
-            cn_degrees[survivor], cn_degrees[swap_node] = cn_degrees[swap_node], cn_degrees[survivor]
+            x = G.proto_index(swap_node)
+            new_val = cn_degrees[swap_node]
+            cn_degrees[x*G.N:(x+1)*G.N] = cn_degrees[survivor]
+            cn_degrees[survivor] = new_val
         else:
             cn_girths[girth_survivors] = -np.inf
             max_girth = np.max(cn_girths)

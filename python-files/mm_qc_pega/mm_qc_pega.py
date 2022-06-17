@@ -16,7 +16,7 @@ except:
     settings = {
                 "n" : 73,
                 "m" : 9,
-                "scaling_factor" : 1,
+                "scaling_factor" : 3,
                 "girth_search_depth" : 3,
                 "seed" : 0,
                 "gcd" : False,
