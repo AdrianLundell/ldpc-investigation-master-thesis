@@ -6,6 +6,8 @@ from scipy.linalg import null_space
 import de_utils as de_u
 import random
 
+
+
 from config import cfg
 cfg_de = cfg.get('density_evolution')
 cfg_cont = cfg_de.get('ga_continuous')
@@ -94,18 +96,27 @@ def differential_evolution(C_c, x_0, dc):
     load_population = cfg_de.get("load_population")
     de_u.save_params()
 
+    code_rate = cfg_cont.get("R")
+    dv = cfg_cont.get("dv")
+    dc = cfg_cont.get("dc")
+
     print_terminal = cfg_de.get("print_terminal")
+    header = f"""
+    Running ga_continuous.py
+    ===================================================================
+    Optimizing code ensamble through differential evolution algorithm.
+    Code rate: {code_rate:.2f}.
+    Number of individuals: {Np}.
+    Number of generations: {gens}.
+    Max variable node degree: {dv}.
+    Max check node degree: {dc}.
+    Parameter settings: F = {F}, Cr = {Cr}
+    -------------------------------------------------------------------
+    """
     if print_terminal:
-        header = f"""
-        ga_continuous.py
-        ===================================================================
-        Optimizing code ensamble through differential evolution algorithm.
-        Number of individuals: {Np}.
-        Number of generations: {gens}.
-        Parameter settings: F = {F}, Cr = {Cr}
-        -------------------------------------------------------------------
-        """
         print(header)
+    else:
+        de_u.log(header,'w')
 
     # x = x_0 + C_c*eta
     # Initialize population
@@ -114,15 +125,23 @@ def differential_evolution(C_c, x_0, dc):
         data = np.load(fname)
         eta_Np = data["population"]
         fitness_Np = data["fitness"]
+        g_start = int(data["generation"][0])+1
+        dim_0 = np.size(fitness_Np, axis=0)
+        if gens != np.size(fitness_Np, axis=0):
+            fitness_Np_new = np.zeros((gens, Np))
+            fitness_Np_new[:dim_0] = fitness_Np
+            fitness_Np = fitness_Np_new
     else:
         eta_Np = np.random.rand(D, Np)
-        fitness_Np = np.zeros(Np)
+        fitness_Np = np.zeros((gens,Np))
+        g_start = 0
 
     domain_Np = np.full(Np, False)
+    
     try:
         # Optimize population over generations
         t1_start = process_time()
-        for g in range(gens):
+        for g in range(g_start,gens):
 
             u_Np = np.copy(eta_Np)
             for i in range(Np):
@@ -149,47 +168,56 @@ def differential_evolution(C_c, x_0, dc):
                 if g == 0:
                     x = compute_x(x_0, C_c, eta_Np[:, i])
                     fitness, in_domain = compute_fitness(x, dc)
-                    fitness_Np[i] = fitness
+                    fitness_Np[g, i] = fitness
                     domain_Np[i] = in_domain
+                else:
+                    x = compute_x(x_0, C_c, u_Np[:, i])
+                    fitness, in_domain = compute_fitness(x, dc)
 
-                x = compute_x(x_0, C_c, u_Np[:, i])
-                fitness, in_domain = compute_fitness(x, dc)
+                    if fitness > fitness_Np[g-1, i]:
+                        eta_Np[:, i] = u_Np[:, i]
+                        fitness_Np[g, i] = fitness
+                        domain_Np[i] = in_domain
+                    else:
+                        fitness_Np[g, i] = fitness_Np[g-1, i]
 
-                if fitness > fitness_Np[i]:
-                    eta_Np[:, i] = u_Np[:, i]
-                    fitness_Np[i] = fitness
-                    domain_Np[i] = in_domain
-
-            if g % 10 == 0:
-                de_u.save_fitness(fitness_Np, g)
-
-            ave_fitness = np.sum(fitness_Np)/Np
+            ave_fitness = np.sum(fitness_Np[g,:])/Np
 
             # Write current status
-            if print_terminal:
-                n_domain = domain_Np.sum()
-                if n_domain != 0:
-                    max_fitness = np.max(fitness_Np[domain_Np])
-                    rber_best = max_fitness
-                else:
-                    rber_best = 0
-                t1_stop = process_time()
-                status = f"{g} generations completed.  Average fitness:{ave_fitness:.2f}.  Individuals in domain: {n_domain}. Best RBER: {rber_best}"
+            
+            n_domain = domain_Np.sum()
+            if n_domain != 0:
+                rber_max = np.max(fitness_Np[g,domain_Np])
+                rber_min = np.min(fitness_Np[g,domain_Np])
+            else:
+                rber_max = 0
+                rber_min = 0
+            t1_stop = process_time()
+            status = f"{g} generations completed.  Average fitness:{ave_fitness:.2f}.  Individuals in domain: {n_domain}. Max RBER: {rber_max:.2f}. Min RBER: {rber_min:.2f} "
+            if print_terminal:    
                 print(status, end='\r', flush=True)
+            else:
+                de_u.log(status,'a')
+
+            if g % int(cfg_de.get("save_interval")) == 0:
+                de_u.save_population(eta_Np, fitness_Np, g)
 
         status = f"""
-        -------------------------------------------------------------------
-        Finished!
-        ===================================================================
+    -------------------------------------------------------------------
+    Finished!
+    ===================================================================
             """
-        print(status)
+        if print_terminal:
+            print(status)
+        else:
+            de_u.log(status,'a')
     finally:
-        de_u.save_population(eta_Np, fitness_Np)
+        de_u.save_population(eta_Np, fitness_Np, g)
 
 
 def ga_continous():
 
-    R = cfg_de.get('R')
+    R = cfg_cont.get('R')
     dv = cfg_cont.get('dv')
     dc = cfg_cont.get('dc')
 

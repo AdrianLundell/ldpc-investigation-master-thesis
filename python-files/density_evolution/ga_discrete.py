@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from config import cfg
 cfg_de = cfg.get('density_evolution')
-cfg_disc = cfg_de.get('ga_disc')
+cfg_disc = cfg_de.get('ga_discrete')
 run_id = cfg.get("run_id")
 
 
@@ -67,10 +67,10 @@ def evaluate(i):
         min = cfg_de.get("min_rber")
         max = cfg_de.get("max_rber")
         fitness = de_u.bisection_search(min, max, rho_edge, lam_edge)
-        return fitness
+        return fitness*100
 
     else:
-        return -1
+        return -100
 
 
 def ga_discrete():
@@ -92,75 +92,97 @@ def ga_discrete():
         data = np.load(fname)
         population = data["population"]
         fitness = data["fitness"]
+        i_start = int(data["generation"][0]) + 1
+        dim_0 = np.size(fitness, axis=0)
+        if n_generations != np.size(fitness, axis=0):
+            fitness_new = np.zeros((n_generations, n_generations))
+            fitness_new[:dim_0] = fitness
+            fitness = fitness_new
     else:
         population = init_population(n_pop, n_cn, n_vn)
-        fitness = np.full(n_pop, -np.inf)
+        fitness = np.full((n_generations, n_pop), -np.inf)
+        i_start = 0
 
+    code_rate = (n_vn-n_cn)/n_vn
+    
+    header = f"""
+    Running ga_disrete.py
+    ===================================================================
+    Optimizing {n_cn}x{n_vn} protograph.
+    Code rate: {code_rate:.2f}.
+    Number of individuals: {n_pop}.
+    Number of generations: {n_generations}.
+    Mutation probability: {p_mutation:.2f}.
+    Vertical probability: {p_vertical:.2f}.
+    Horizontal probability: {p_horizontal:.2f}.
+    -------------------------------------------------------------------
+    """
     if print_terminal:
-        print(f"""
-        ga_disrete.py
-        ===================================================================
-        Running optimisation of {n_cn}x{n_vn} protograph. 
-        Number of individuals: {n_pop}.
-        Number of generations: {n_generations}.
-        -------------------------------------------------------------------
-        """)
+        print(header)
+    else:
+        de_u.log(header, 'w')
 
     try:
         # Initial evaluation
         for j in range(n_pop):
-            if fitness[j] == -np.inf:
-                fitness[j] = evaluate(population[j, :, :])
+            if fitness[0,j] == -np.inf:
+                fitness[0,j] = evaluate(population[j, :, :])
 
-        for i in range(n_generations):
+        for i in range(i_start,n_generations-1):
 
             # Select with elitism
             population_new = np.zeros(population.shape, int)
-            fitness_new = np.full(fitness.shape, -np.inf)
-            population_new[0] = population[np.argmax(fitness)]
-            fitness_new[0] = fitness[np.argmax(fitness)]
+            #fitness_new = np.full(fitness.shape, -np.inf)
+            population_new[0] = population[np.argmax(fitness[i,:])]
+            fitness[i+1,0] = fitness[i,np.argmax(fitness[i,:])]
             for j in range(1, n_pop):
-                population_new[j], fitness_new[j] = tournament(
-                    population, fitness)
+                population_new[j], fitness[i+1,j] = tournament(
+                    population, fitness[i,:])
             population = population_new
-            fitness = fitness_new
+            #fitness = fitness_new
 
             # Crossover
             for j in range(1, n_pop-1, 2):
                 if np.random.rand() < p_vertical:
                     population[j], population[j +
                                               1] = vertical_crossover(population[j], population[j+1])
-                    fitness[j], fitness[j+1] = -np.inf, -np.inf
+                    fitness[i,j], fitness[i,j+1] = -np.inf, -np.inf
                 if np.random.rand() < p_horizontal:
                     population[j], population[j +
                                               1] = horizontal_crossover(population[j], population[j+1])
-                    fitness[j], fitness[j+1] = -np.inf, -np.inf
+                    fitness[i+1,j], fitness[i+1,j+1] = -np.inf, -np.inf
 
             # Mutation
             for j in range(1, n_pop):
                 if np.random.rand():
                     population[j] = mutation(population[j])
-                    fitness[j] = -np.inf
+                    fitness[i+1,j] = -np.inf
 
             # Evaluate new individuals
             for j in range(n_pop):
-                if fitness[j] == -np.inf:
-                    fitness[j] = evaluate(population[j, :, :])
+                if fitness[i+1,j] == -np.inf:
+                    fitness[i+1,j] = evaluate(population[j, :, :])
 
-            if i % 10 == 0:
-                de_u.save_fitness(fitness, i)
-
-            if print_terminal:
-                status = f"Generation {i}/{n_generations}. Best/median/mean/min/variance fitness: {np.max(fitness)}/{np.median(fitness)}/{np.mean(fitness)}/{np.min(fitness)}/{np.var(fitness)}.                                "
+            
+            status = f"{i} generations completed. RBER: best: {np.max(fitness[i+1,:]):.2f}, min: {np.min(fitness[i+1,:]):.2f}, mean: {np.mean(fitness[i+1,:]):.2f}, variance: {np.var(fitness[i+1,:]):.2f}.                                "
+            if print_terminal:    
                 print(status, end='\r', flush=True)
+            else:
+                de_u.log(status, 'a')
 
-        if print_terminal:
-            status = f"""
-            -------------------------------------------------------------------
-            Finished!
-            ===================================================================
-                """
+            if i % int(cfg_de.get("save_interval")) == 0:
+                de_u.save_population(population,fitness,i)
+
+    
+        status = f"""
+    -------------------------------------------------------------------
+    Finished!
+    ===================================================================
+            """
+        if print_terminal:    
             print(status)
+        else:
+            de_u.log(status,'a')
 
     finally:
-        de_u.save_population(population, fitness)
+        de_u.save_population(population, fitness, i)
