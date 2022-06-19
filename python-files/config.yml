@@ -1,21 +1,23 @@
 run_id: "Run1"
+n_processes: 4 # number of process to be used for multiprocessing. Only need if running parallel scripts
 compute_dmc:
 density_evolution:
-  R: 0.5 # R: code rate
-  Np: 100 # Np: number of individuals in population
-  generations: 5000 # gens: number of generations. Around 5000
-  n_grid: 1024 #n_grid: number of bins in pdf
-  min_rber: 0.000001 # Lowest rber in search interval
-  max_rber: 0.4 # Highest rber in search interval
-  algorithm: "ga_continuous" # algorithm: choose between ga_discrete or ga_continuous
-  load_population: False # If previous training has been done, one can start from that by setting to True
-  print_terminal: True # If set to true the log will be outputed in terminal. Otherwise written to log/log.txt
-  dmc_file: "../compute_dmc/data/4_05_AWGN.csv"
+  Np: 100 # number of individuals in population
+  generations: 1000 # number of generations.
+  n_grid: 512 # number of bins in pdf
+  min_rber: 0.001 # lowest rber in search interval (>=0.001)
+  max_rber: 0.4 # highest rber in search interval (<0.5)
+  algorithm: "ga_continuous_parallel" # choose between "ga_discrete", "ga_continuous", "ga_discrete_parallel" or "ga_continuous_parallel"
+  load_population: False # if previous training has been done, one can start from that by setting to True
+  save_interval: 1 # how many generations that should pass before saving population
+  print_terminal: True # if set to true the log will be outputed in terminal. Otherwise written to log/log.txt
+  dmc_file: "../compute_dmc/data/4_05_AWGN.csv" # file from compute_dmc calculation
   ga_continuous:
-    F: 0.5 # F: mutation variable. Usually in interval [0.1,1].
-    Cr: 0.7 # Cr: recombination probability, [0,1].
-    dv: 10 # dc: max variable node edge-perspective degree
-    dc: 10 # dc: max check node edge-perspective degree
+    R: 0.5 # code rate
+    F: 0.5 # mutation variable. Usually in interval [0.1,1].
+    Cr: 0.7 # recombination probability, [0,1].
+    dv: 10 # max variable node edge-perspective degree
+    dc: 10 # max check node edge-perspective degree
   ga_discrete:
     n_vn: 73
     n_cn: 9
