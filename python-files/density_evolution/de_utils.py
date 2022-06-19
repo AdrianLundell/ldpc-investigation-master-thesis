@@ -6,23 +6,27 @@ https://arxiv.org/pdf/cs/0509014.pdf [1]
 https://arxiv.org/pdf/2001.01249.pdf [2]
 
 """
-from config import cfg
-import matplotlib.pyplot as plt
-from scipy.stats import norm
-import Analysis.utils as utils
-import Modem.optimal_thresholds as optimize
-import numpy as np
-import scipy.signal as sp
-import pandas as pd
+
 import sys
+sys.path.insert(
+    0, '/home/fredrikblomgren/CAS/MasterThesis/ldpc-investigation-master-thesis/python-files')
+
 import os
-sys.path.insert(1, os.path.join(sys.path[0], '../..'))
+import pandas as pd
+import scipy.signal as sp
+import numpy as np
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+from config import cfg
+from threading import Thread
 
 
 global data
 data = None
 
 cfg_de = cfg.get('density_evolution')
+cfg_cont = cfg_de.get('ga_continuous')
+cfg_disc = cfg_de.get('ga_discrete')
 run_id = cfg.get('run_id')
 
 
@@ -228,29 +232,29 @@ def rho(x, coeffs):
     return y
 
 
-def init_pdf(rber, file_path, n_grid=512, llr_max=30):
+def init_pdf(rber, n_grid=512, llr_max=30):
     """Returns density values of a DMC pdf and its grid in F and G from a look up table."""
     mu1 = -1
     mu2 = 1
 
     # Load database if not loaded
     global data
+    file_path = cfg_de.get("dmc_file")
     if data is None:
-        data = np.loadtxt(file_path, delimiter=",", skiprows=1)
+        data = np.loadtxt(file_path, delimiter=" ", skiprows=1)
 
     # Interpolate values on rber
-    rber_step = data[1, 1] - data[0, 1]
-    rber_index = (rber - data[0, 1])/rber_step
+    rber_step = data[1, 0] - data[0, 0]
+    rber_index = (rber - data[0, 0])/rber_step
     index0 = int(np.floor(rber_index)) - 1
     index1 = int(np.ceil(rber_index)) - 1
     values = data[index0, :] + \
         (data[index1] - data[index0]) * (rber_index - index0)
 
     # Set values
-    sigma = values[2]
-    skew = values[3]
-    sigma1 = sigma * (1-skew)
-    sigma2 = sigma * skew
+    sigma = values[1]
+    sigma1 = values[2]
+    sigma2 = values[3]
     thresholds = values[5:8]
     llrs = values[8:]
 
@@ -367,55 +371,47 @@ def bisection_search(min, max, rho_edge, lam_edge, tol=1e-4):
 def save_params():
     algorithm = cfg_de.get("algorithm")
     data = {
-        "R": cfg_de.get("R"),
-        "Np": cfg_de.get("Np"),
-        "generations": cfg_de.get("generations"),
-        "n_grid": cfg_de.get("n_grid"),
-        "algorithm": algorithm
+        
+        "Np": [cfg_de.get("Np")],
+        "generations": [cfg_de.get("generations")],
+        "n_grid": [cfg_de.get("n_grid")],
+        "algorithm": [algorithm]
     }
 
-    if algorithm == "da_continuous":
+    if algorithm == "ga_continuous" or algorithm == "ga_continuous_parallel":
         data_c = {
-            "F": cfg_de.get("F"),
-            "Cr": cfg_de.get("Cr"),
-            "dv": cfg_de.get("dv"),
-            "dc": cfg_de.get("dc")
+            "R": [cfg_cont.get("R")],
+            "F": [cfg_cont.get("F")],
+            "Cr": [cfg_cont.get("Cr")],
+            "dv": [cfg_cont.get("dv")],
+            "dc": [cfg_cont.get("dc")]
         }
         data.update(data_c)
 
-    if algorithm == "da_discrete":
+    if algorithm == "ga_discrete" or algorithm == "ga_discrete_parallel":
         data_d = {
-            "n_vn": cfg_de.get("n_vn"),
-            "n_cn": cfg_de.get("n_cn"),
-            "p_vertical": cfg_de.get("p_vertical"),
-            "p_horizontal": cfg_de.get("p_horizontal"),
-            "p_mutation": cfg_de.get("p_mutation")
+            "n_vn": [cfg_disc.get("n_vn")],
+            "n_cn": [cfg_disc.get("n_cn")],
+            "p_vertical": [cfg_disc.get("p_vertical")],
+            "p_horizontal": [cfg_disc.get("p_horizontal")],
+            "p_mutation": [cfg_disc.get("p_mutation")]
         }
         data.update(data_d)
 
     df = pd.DataFrame.from_dict(data)
 
     os.makedirs('../params_data', exist_ok=True)
-    fname = "../params_data/" + run_id + "_params.csv"
+    fname = "../params_data/" + run_id + "_de_params.csv"
     df.to_csv(fname)
 
 
-def save_fitness(fitness, generation):
-    if generation == 0:
-        mode = 'w'
-    else:
-        mode = 'a'
-
-    generation = str(generation)
-    data = {
-        generation: fitness
-    }
-    fname = "data/" + run_id + "_fitness.csv"
-    df = pd.DataFrame(data)
-    df.to_csv(fname, mode=mode, index=False, header=False)
-
-
-def save_population(population, fitness):
+def save_population(population, fitness,generation):
     fname = "data/" + run_id + ".npz"
     with open(fname, 'wb') as f:
-        np.savez(f, population=population, fitness=fitness)
+        np.savez(f, population=population, fitness=fitness, generation=np.array([generation]))
+
+
+def log(txt, options):
+    fname = "log/log.txt"
+    with open(fname,options) as f:
+        f.write(txt+"\n")

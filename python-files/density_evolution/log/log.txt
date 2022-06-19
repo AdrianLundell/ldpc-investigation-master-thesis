@@ -1,0 +1,27 @@
+
+    Running ga_continuous.py
+    ===================================================================
+    Optimizing code ensamble through differential evolution algorithm.
+    Code rate: 0.50.
+    Number of individuals: 10.
+    Number of generations: 10.
+    Max variable node degree: 10.
+    Max check node degree: 10.
+    Parameter settings: F = 0.5, Cr = 0.7
+    -------------------------------------------------------------------
+    
+0 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+1 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+2 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+3 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+4 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+5 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+6 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+7 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+8 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+9 generations completed.  Average fitness:0.00.  Individuals in domain: 0. Max RBER: 0.00. Min RBER: 0.00 
+
+    -------------------------------------------------------------------
+    Finished!
+    ===================================================================
+            

@@ -1,11 +1,13 @@
 import numpy as np
 import de_utils as de_u
 import matplotlib.pyplot as plt
+from multiprocessing import Pool, shared_memory, Value
 
 from config import cfg
 cfg_de = cfg.get('density_evolution')
 cfg_disc = cfg_de.get('ga_discrete')
 run_id = cfg.get("run_id")
+n_processes = cfg.get("n_processes")
 
 
 def init_population(n_pop, n_cn, n_vn):
@@ -49,31 +51,45 @@ def tournament(population, fitness, n_competitiors=3):
     return i_new, fitness_new
 
 
-def evaluate(i):
-    cn_degrees = np.sum(i, 0)
-    vn_degrees = np.sum(i, 1)
+def evaluate(j):
+    global pop_name, fit_name, pop_shape, fit_shape, i_idx
 
-    condition1 = np.all(cn_degrees >= 2) and np.all(vn_degrees >= 2)
-    condition2 = np.all(cn_degrees <= 25)
+    shm_pop = shared_memory.SharedMemory(name=pop_name)
+    shm_fit = shared_memory.SharedMemory(name=fit_name)
+    pop = np.ndarray(pop_shape, dtype=np.int64, buffer=shm_pop.buf)
+    fit = np.ndarray(fit_shape, dtype=np.float64, buffer=shm_fit.buf)
+    i = i_idx.value
 
-    if condition1 and condition2:
-        rho_node = np.bincount(vn_degrees)[1:]
-        rho_edge = np.arange(1, len(rho_node)+1) * rho_node / \
-            np.sum(np.arange(1, len(rho_node)+1) * rho_node)
-        lam_node = np.bincount(cn_degrees)[1:]
-        lam_edge = np.arange(1, len(lam_node)+1) * lam_node / \
-            np.sum(np.arange(1, len(lam_node)+1) * lam_node)
+    if fit[i, j] == -np.inf:
+        cn_degrees = np.sum(pop[j, :, :], 0)
+        vn_degrees = np.sum(pop[j, :, :], 1)
 
-        min = cfg_de.get("min_rber")
-        max = cfg_de.get("max_rber")
-        fitness = de_u.bisection_search(min, max, rho_edge, lam_edge)
-        return fitness*100
+        condition1 = np.all(cn_degrees >= 2) and np.all(vn_degrees >= 2)
+        condition2 = np.all(cn_degrees <= 25)
 
-    else:
-        return -100
+        if condition1 and condition2:
+            rho_node = np.bincount(vn_degrees)[1:]
+            rho_edge = np.arange(1, len(rho_node)+1) * rho_node / \
+                np.sum(np.arange(1, len(rho_node)+1) * rho_node)
+            lam_node = np.bincount(cn_degrees)[1:]
+            lam_edge = np.arange(1, len(lam_node)+1) * lam_node / \
+                np.sum(np.arange(1, len(lam_node)+1) * lam_node)
 
+            min = cfg_de.get("min_rber")
+            max = cfg_de.get("max_rber")
+            fitness = de_u.bisection_search(min, max, rho_edge, lam_edge)
+            fit[i,j] = fitness*100
 
-def ga_discrete():
+        else:
+            fit[i, j]  = -100
+    shm_pop.close()
+    shm_fit.close()
+
+def pool_initializer():
+    global pop_name, fit_name, pop_shape, i_idx
+
+def ga_discrete_parallel():
+    global pop_name, fit_name, pop_shape, fit_shape, i_idx
     load_population = cfg_de.get("load_population")
 
     n_pop = cfg_de.get("Np")
@@ -122,56 +138,81 @@ def ga_discrete():
     else:
         de_u.log(header, 'w')
 
+    
+    # Initialize shared_memory in multiprocessing
+    shm_pop = shared_memory.SharedMemory(create=True, size=population.nbytes)
+    shm_fit = shared_memory.SharedMemory(create=True, size=fitness.nbytes)
+
+    pop = np.ndarray(population.shape, dtype=np.int64, buffer=shm_pop.buf)
+    fit = np.ndarray(fitness.shape, dtype=np.float64, buffer=shm_fit.buf)
+
+    pop[:] = population[:]
+    fit[:] = fitness[:]
+
+    pop_name = shm_pop.name
+    fit_name = shm_fit.name
+
+    pop_shape = pop.shape
+    fit_shape = fit.shape
+
+    i_idx = Value('i', i_start)
+    i = i_start
+    # Use Pool for parallel computing
+    pool = Pool(processes=n_processes, initializer=pool_initializer)
+    pop_idx = range(n_pop)
+
     try:
         # Initial evaluation
-        for j in range(n_pop):
-            if fitness[0,j] == -np.inf:
-                fitness[0,j] = evaluate(population[j, :, :])
+        pool.map(evaluate,pop_idx)
+        #for j in range(n_pop):
+        #    if fit[0,j] == -np.inf:
+        #        fit[0,j] = evaluate(pop[j, :, :])
 
         for i in range(i_start,n_generations-1):
 
             # Select with elitism
-            population_new = np.zeros(population.shape, int)
-            #fitness_new = np.full(fitness.shape, -np.inf)
-            population_new[0] = population[np.argmax(fitness[i,:])]
-            fitness[i+1,0] = fitness[i,np.argmax(fitness[i,:])]
+            pop_new = np.zeros(pop.shape, int)
+            #fit_new = np.full(fit.shape, -np.inf)
+            pop_new[0] = pop[np.argmax(fit[i,:])]
+            fit[i+1,0] = fit[i,np.argmax(fit[i,:])]
             for j in range(1, n_pop):
-                population_new[j], fitness[i+1,j] = tournament(
-                    population, fitness[i,:])
-            population = population_new
-            #fitness = fitness_new
+                pop_new[j], fit[i+1,j] = tournament(
+                    pop, fit[i,:])
+            pop[:] = pop_new[:]
+            #fit = fit_new
 
             # Crossover
             for j in range(1, n_pop-1, 2):
                 if np.random.rand() < p_vertical:
-                    population[j], population[j +
-                                              1] = vertical_crossover(population[j], population[j+1])
-                    fitness[i,j], fitness[i,j+1] = -np.inf, -np.inf
+                    pop[j], pop[j+1] = vertical_crossover(pop[j], pop[j+1])
+                    fit[i,j], fit[i,j+1] = -np.inf, -np.inf
                 if np.random.rand() < p_horizontal:
-                    population[j], population[j +
-                                              1] = horizontal_crossover(population[j], population[j+1])
-                    fitness[i+1,j], fitness[i+1,j+1] = -np.inf, -np.inf
+                    pop[j], pop[j+1] = horizontal_crossover(pop[j], pop[j+1])
+                    fit[i+1,j], fit[i+1,j+1] = -np.inf, -np.inf
 
             # Mutation
             for j in range(1, n_pop):
                 if np.random.rand():
-                    population[j] = mutation(population[j])
-                    fitness[i+1,j] = -np.inf
+                    pop[j] = mutation(pop[j])
+                    fit[i+1,j] = -np.inf
 
             # Evaluate new individuals
-            for j in range(n_pop):
-                if fitness[i+1,j] == -np.inf:
-                    fitness[i+1,j] = evaluate(population[j, :, :])
+            i_idx.value += 1
+            pool.map(evaluate, pop_idx)
+            #for j in range(n_pop):
+            #    if fit[i+1,j] == -np.inf:
+            #        fit[i+1,j] = evaluate(pop[j, :, :])
 
             
-            status = f"{i} generations completed. RBER: best: {np.max(fitness[i+1,:]):.2f}, min: {np.min(fitness[i+1,:]):.2f}, mean: {np.mean(fitness[i+1,:]):.2f}, variance: {np.var(fitness[i+1,:]):.2f}.                                "
+            status = f"{i} generations completed. RBER: best: {np.max(fit[i+1,:]):.2f}, min: {np.min(fit[i+1,:]):.2f}, mean: {np.mean(fit[i+1,:]):.2f}, variance: {np.var(fit[i+1,:]):.2f}.                                "
             if print_terminal:    
                 print(status, end='\r', flush=True)
             else:
                 de_u.log(status, 'a')
 
             if i % int(cfg_de.get("save_interval")) == 0:
-                de_u.save_population(population,fitness,i)
+                de_u.save_population(pop,fit,i)
+
 
     
         status = f"""
@@ -185,4 +226,8 @@ def ga_discrete():
             de_u.log(status,'a')
 
     finally:
-        de_u.save_population(population, fitness, i)
+        de_u.save_population(pop, fit, i)
+        shm_pop.close()
+        shm_fit.close()
+        shm_pop.unlink()
+        shm_fit.unlink()
