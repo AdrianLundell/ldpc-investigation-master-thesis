@@ -258,25 +258,24 @@ def make_invertable(G):
     """
     Reorder the QC_tanner_graph G such that the last m columns of parity equations in the protograph form a matrix invertible in GF(N+1) 
     <==> last n_cn equations in H invertible in GF(2)
-    Solution found through exhausive search.
+    Solution found by deleting rows while checking invertibility
     """
     H = galois.GF2(G.get_H().astype(int))
-    success = False
-    H2 = galois.GF2(np.zeros((G.n_cn, G.n_cn)).astype(int))
+    assert np.linalg.matrix_rank(H) == G.n_cn, "Bad matrix rank"
+    H_indexes = np.arange(H.shape[1])
 
-    for i, column_indexes in enumerate(combinations((range(G.n)), G.m)):
-        for i, j in enumerate(column_indexes):
-            H2[:,i*G.N:i*G.N+G.N] = H[:, j*G.N:j*G.N+G.N]
-        
-        if not np.linalg.det(H2) == 0:
-            success = True
-            break
-
-    if not success:
-        print("Invertion not possible")
+    for i in np.arange(0, H.shape[1], G.N):
+        indexes = np.arange(i,(i+G.N))
+        H_new = H.copy()
+        H_new[:, indexes] = 0
     
-    reminding_columns = [i for i in range(G.n) if i not in column_indexes]
-    new_order = reminding_columns + list(column_indexes)
+        if np.linalg.matrix_rank(H_new) == H.shape[0]:
+            H = H_new 
+            H_indexes[indexes] = -1
+
+    H_indexes = H_indexes[H_indexes >= 0]
+    reminding_columns = [i for i in range(G.n) if i not in H_indexes]
+    new_order = reminding_columns + list(H_indexes)
     G_invertible = G.reordered(new_order)
 
     return G_invertible
@@ -332,10 +331,10 @@ def strategy1(max_girth, cn_girths, G, vn_index, cn_degrees):
         candidate_nodes = np.argwhere(np.logical_and(cond1, cond2))
         
         if len(candidate_nodes) > 0:
-            swap_node = np.random.choice(candidate_nodes)
+            swap_node = np.random.choice(candidate_nodes.flatten())
             x = G.proto_index(swap_node)
             new_val = cn_degrees[swap_node]
-            cn_degrees[x*G.N:(x+1)*G.N] = cn_degrees[survivor]
+            cn_degrees[int(x*G.N):int((x+1)*G.N)] = cn_degrees[survivor]
             cn_degrees[survivor] = new_val
         else:
             cn_girths[girth_survivors] = -np.inf

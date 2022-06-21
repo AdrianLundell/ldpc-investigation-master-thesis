@@ -8,7 +8,7 @@ import peg_utils
 
 #Load settings
 try:
-    with open(None, "r") as ymlfile:
+    with open("config.yml", "r") as ymlfile:
         settings = yaml.safe_load(ymlfile)
         data = np.load(settings["input_fname"])
 except:
@@ -16,9 +16,9 @@ except:
     settings = {
                 "n" : 73,
                 "m" : 9,
-                "scaling_factor" : 3,
-                "girth_search_depth" : 3,
-                "seed" : 0,
+                "scaling_factor" : 256,
+                "girth_search_depth" : 1    ,
+                "seed" : None,
                 "gcd" : False,
                 "input_fname" : None,
                 "output_fname" : "test.qc"
@@ -32,16 +32,20 @@ except:
 header = f"""
 ===================================================================
 Creating ({settings["m"]},{settings["n"]},{settings["scaling_factor"]}) code with the {settings["girth_search_depth"]}-edge QC-PEGA algorithm for 
-variable node edge distribution {peg_utils.vn_polynomial_repr(data["vn_degree_node"])}
+variable node edge distribution.
 ===================================================================
 """
 print(header)
 G = graphs.QC_tanner_graph(settings["m"], settings["n"], settings["scaling_factor"])
-vn_degrees = peg_utils.to_degree_distribution(data["vn_degree_node"], G.n_vn)
-cn_degrees = peg_utils.to_degree_distribution(data["cn_degree_node"], G.n_cn)
+#vn_degrees = peg_utils.to_degree_distribution(data["vn_degree_node"], G.n_vn)
+#cn_degrees = peg_utils.to_degree_distribution(data["cn_degree_node"], G.n_cn)
 
-if not settings["seed"] == None:
-    np.random.seed(settings["seed"])
+best_individual = data["population"][np.argmax(data["fitness"][-1,:])]
+vn_degrees = np.repeat(np.sum(best_individual, 0), settings["scaling_factor"])
+cn_degrees = np.repeat(np.sum(best_individual, 1), settings["scaling_factor"])
+
+if not settings["seed"] == 'None':
+    np.random.seed(int(settings["seed"]))
 t0 = time.time()
 
 for current_vn_index in range(0, G.n_vn, G.N):
@@ -63,24 +67,15 @@ for current_vn_index in range(0, G.n_vn, G.N):
 
 print("")
 print(f"Edge growth finsihed. Total elapsed time: {int(dt//60)} minutes, {dt % 60:.2f} seconds.")
-print(np.bincount(G.get_check_degrees())[1:]/G.n_cn)
-print(data["cn_degree_node"])
-print(np.bincount(G.get_var_degrees())[1:]/G.n_vn)
-print(data["vn_degree_node"])
 
-peg_utils.graph_stats(G)
 
-H = galois.GF2(G.get_H().astype(int))
-assert np.linalg.matrix_rank(H) == G.n_cn, "Bad matrix rank"
 G_reordered = peg_utils.make_invertable(G)
-
 print("Matrix invertion sucessfull, saving file...")
 
 metadata = f"""
 # QC-code generated with the r-edge metric constrained QC-PEG algorithm.
 # 
 # Name   : {settings["output_fname"]}
-# D      : {peg_utils.vn_polynomial_repr(data["vn_degree_node"])}
 # R      : {settings["girth_search_depth"]}
 # Metric : Minimum distance
 # Date   : {datetime.datetime.now()}
@@ -92,3 +87,11 @@ f.close()
 
 print("MM-QC-PEGA completed.")
 
+
+
+print(np.bincount(G.get_check_degrees()))
+print(np.bincount(cn_degrees))
+print(np.bincount(G.get_var_degrees()))
+print(np.bincount(vn_degrees))
+
+peg_utils.graph_stats(G)

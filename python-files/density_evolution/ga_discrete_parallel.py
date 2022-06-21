@@ -1,7 +1,7 @@
 import numpy as np
 import de_utils as de_u
 import matplotlib.pyplot as plt
-from multiprocessing import Pool, shared_memory, Value
+#from multiprocessing import Pool, shared_memory, Value
 
 from config import cfg
 cfg_de = cfg.get('density_evolution')

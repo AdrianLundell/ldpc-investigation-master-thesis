@@ -5,7 +5,7 @@ from scipy.optimize import linprog
 from scipy.linalg import null_space
 import de_utils as de_u
 import random
-from multiprocessing import Pool, shared_memory
+#from multiprocessing import Pool, shared_memory
 from multiprocessing.sharedctypes import Value
 
 
