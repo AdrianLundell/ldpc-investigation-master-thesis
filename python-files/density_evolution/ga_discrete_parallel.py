@@ -1,7 +1,8 @@
 import numpy as np
 import de_utils as de_u
 import matplotlib.pyplot as plt
-#from multiprocessing import Pool, shared_memory, Value
+from multiprocessing import Pool, shared_memory
+from multiprocessing.sharedctypes import Value
 
 from config import cfg
 cfg_de = cfg.get('density_evolution')
@@ -206,7 +207,7 @@ def ga_discrete_parallel():
             
             status = f"{i} generations completed. RBER: best: {np.max(fit[i+1,:]):.2f}, min: {np.min(fit[i+1,:]):.2f}, mean: {np.mean(fit[i+1,:]):.2f}, variance: {np.var(fit[i+1,:]):.2f}.                                "
             if print_terminal:    
-                print(status, end='\r', flush=True)
+                print(status)
             else:
                 de_u.log(status, 'a')
 

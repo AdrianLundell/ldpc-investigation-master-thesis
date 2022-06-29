@@ -166,7 +166,7 @@ def ga_discrete():
             
             status = f"{i} generations completed. RBER: best: {np.max(fitness[i+1,:]):.2f}, min: {np.min(fitness[i+1,:]):.2f}, mean: {np.mean(fitness[i+1,:]):.2f}, variance: {np.var(fitness[i+1,:]):.2f}.                                "
             if print_terminal:    
-                print(status, end='\r', flush=True)
+                print(status)
             else:
                 de_u.log(status, 'a')
 

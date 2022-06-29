@@ -5,7 +5,7 @@ from scipy.optimize import linprog
 from scipy.linalg import null_space
 import de_utils as de_u
 import random
-#from multiprocessing import Pool, shared_memory
+from multiprocessing import Pool, shared_memory
 from multiprocessing.sharedctypes import Value
 
 
@@ -260,9 +260,9 @@ def differential_evolution(C_c, x_0, dc):
                 rber_max = 0
                 rber_min = 0
             t1_stop = process_time()
-            status = f"{g} generations completed.  Average fitness:{ave_fitness:.2f}.  Individuals in domain: {n_domain}. Max RBER: {rber_max:.2f}. Min RBER: {rber_min:.2f} "
+            status = f"{g} generations completed.  Average fitness:{ave_fitness:.2f}.  In domain: {n_domain}. RBER: max {rber_max:.2f}, min: {rber_min:.2f}."
             if print_terminal:    
-                print(status, end='\r', flush=True)
+                print(status)
             else:
                 de_u.log(status,'a')
 
