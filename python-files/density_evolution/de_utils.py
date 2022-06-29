@@ -400,8 +400,8 @@ def save_params():
 
     df = pd.DataFrame.from_dict(data)
 
-    os.makedirs('../params_data', exist_ok=True)
-    fname = "../params_data/" + run_id + "_de_params.csv"
+    os.makedirs('data/', exist_ok=True)
+    fname = "data/" + run_id + "_de_params.csv"
     df.to_csv(fname)
 
 
