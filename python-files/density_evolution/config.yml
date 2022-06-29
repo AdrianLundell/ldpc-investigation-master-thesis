@@ -1,14 +1,13 @@
 run_id: "discrete_test1"
 n_processes: 4 # number of process to be used for multiprocessing. Only need if running parallel scripts
-compute_dmc:
 density_evolution:
   Np: 100 # number of individuals in population
-  generations: 1000 # number of generations.
+  generations: 10000 # number of generations.
   n_grid: 512 # number of bins in pdf
   min_rber: 0.001 # lowest rber in search interval (>=0.001)
   max_rber: 0.4 # highest rber in search interval (<0.5)
-  algorithm: "ga_discrete" # choose between "ga_discrete", "ga_continuous", "ga_discrete_parallel" or "ga_continuous_parallel"
-  load_population: False # if previous training has been done, one can start from that by setting to True
+  algorithm: "ga_continuous_parallel" # choose between "ga_discrete", "ga_continuous", "ga_discrete_parallel" or "ga_continuous_parallel"
+  load_population: True # if previous training has been done, one can start from that by setting to True
   save_interval: 1 # how many generations that should pass before saving population
   print_terminal: True # if set to true the log will be outputed in terminal. Otherwise written to log/log.txt
   dmc_file: "../compute_dmc/data/4_05_AWGN.csv" # file from compute_dmc calculation
@@ -17,7 +16,7 @@ density_evolution:
     F: 0.5 # mutation variable. Usually in interval [0.1,1].
     Cr: 0.7 # recombination probability, [0,1].
     dv: 5 # max variable node edge-perspective degree
-    dc: 25 # max check node edge-perspective degree
+    dc: 20 # max check node edge-perspective degree
   ga_discrete:
     n_vn: 73
     n_cn: 9
