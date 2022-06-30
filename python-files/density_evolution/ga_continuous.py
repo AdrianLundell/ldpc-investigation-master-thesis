@@ -125,7 +125,6 @@ def differential_evolution(C_c, x_0, dc):
         eta_Np = data["population"]
         fitness_Np = data["fitness"]
         g_start = int(data["generation"][0])+1
-        best_idx = int(data["best_idx"][0])
         dim_0 = np.size(fitness_Np, axis=0)
         if gens != np.size(fitness_Np, axis=0):
             fitness_Np_new = np.zeros((gens, Np))
@@ -135,7 +134,6 @@ def differential_evolution(C_c, x_0, dc):
         eta_Np = np.random.rand(D, Np)
         fitness_Np = np.zeros((gens,Np))
         g_start = 0
-        best_idx = 0
 
     domain_Np = np.full(Np, False)
     
@@ -244,6 +242,6 @@ def ga_continous():
     # 3. Add degree 1 to x_0 and C_c matrix
     C_c, x_0 = add_one_degree(C_c, x_0, dc)
     de_u.set_continuous_params(x_0, C_c)
-    
+
     # 4. Perform optimization through differential evolution
     differential_evolution(C_c, x_0, dc)

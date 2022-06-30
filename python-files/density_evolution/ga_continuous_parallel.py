@@ -125,7 +125,6 @@ def differential_evolution(C_c, x_0, dc):
         eta_Np = data["population"]
         fitness_Np = data["fitness"]
         g_start = int(data["generation"][0])+1
-        best_idx = int(data["best_idx"][0])
         dim_0 = np.size(fitness_Np, axis=0)
         if gens != np.size(fitness_Np, axis=0):
             fitness_Np_new = np.zeros((gens, Np))
@@ -184,6 +183,7 @@ def differential_evolution(C_c, x_0, dc):
             
             ave_fitness = np.sum(fitness[g,:])/Np
             best_idx = np.argmax(fitness[g,:])
+            best_rber = np.max(fitness[g,:])
             # Write current status
             
             n_domain = domain.sum()
@@ -201,7 +201,7 @@ def differential_evolution(C_c, x_0, dc):
                 de_u.log(status,'a')
 
             if g % int(cfg_de.get("save_interval")) == 0:
-                de_u.save_population(eta, fitness, g, best_idx,"continuous")
+                de_u.save_population(eta, fitness, g, best_idx, best_rber,"continuous")
 
         status = f"""
     -------------------------------------------------------------------
@@ -213,7 +213,8 @@ def differential_evolution(C_c, x_0, dc):
         else:
             de_u.log(status,'a')
     finally:
-        de_u.save_population(eta, fitness, g, best_idx, "continuous")
+        de_u.save_population(eta, fitness, g, best_idx,
+                             best_rber, "continuous")
         status = f"""
     -------------------------------------------------------------------
     Optimization interrupted.
@@ -252,7 +253,7 @@ def ga_continous_parallel():
     # 3. Add degree 1 to x_0 and C_c matrix
     C_c, x_0 = ga_c.add_one_degree(C_c, x_0, dc)
     de_u.set_continuous_params(x_0,C_c)
-    
+
     # 4. Perform optimization through differential evolution
     differential_evolution(C_c, x_0, dc)
 

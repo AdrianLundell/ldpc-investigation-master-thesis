@@ -164,6 +164,7 @@ def ga_discrete():
                     fitness[i+1,j] = evaluate(population[j, :, :])
 
             best_idx = np.argmax(fitness[i+1, :])
+            best_rber = np.max(fitness[i+1, :])
 
             status = f"{i} generations completed. RBER: best: {np.max(fitness[i+1,:]):.2f}, min: {np.min(fitness[i+1,:]):.2f}, mean: {np.mean(fitness[i+1,:]):.2f}, variance: {np.var(fitness[i+1,:]):.2f}.                                "
             if print_terminal:    
@@ -172,7 +173,7 @@ def ga_discrete():
                 de_u.log(status, 'a')
 
             if i % int(cfg_de.get("save_interval")) == 0:
-                de_u.save_population(population,fitness,i,best_idx,"discrete")
+                de_u.save_population(population,fitness,i,best_idx, best_rber,"discrete")
 
     
         status = f"""
@@ -186,7 +187,7 @@ def ga_discrete():
             de_u.log(status,'a')
 
     finally:
-        de_u.save_population(population, fitness, i, best_idx, "discrete")
+        de_u.save_population(population, fitness, i, best_idx, best_rber, "discrete")
         status = f"""
     -------------------------------------------------------------------
     Optimization interrupted.

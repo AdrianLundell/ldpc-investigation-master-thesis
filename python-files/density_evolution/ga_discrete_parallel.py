@@ -70,7 +70,6 @@ def ga_discrete_parallel():
         population = data["population"]
         fitness = data["fitness"]
         i_start = int(data["generation"][0]) + 1
-        best_idx = int(data["best_idx"][0])
         dim_0 = np.size(fitness, axis=0)
         if n_generations != np.size(fitness, axis=0):
             fitness_new = np.zeros((n_generations, n_generations))
@@ -80,7 +79,6 @@ def ga_discrete_parallel():
         population = ga_d.init_population(n_pop, n_cn, n_vn)
         fitness = np.full((n_generations, n_pop), -np.inf)
         i_start = 0
-        best_idx = 0
 
     code_rate = (n_vn-n_cn)/n_vn
     
@@ -167,6 +165,7 @@ def ga_discrete_parallel():
             #        fit[i+1,j] = evaluate(pop[j, :, :])
 
             best_idx = np.argmax(fit[i+1, :])
+            best_rber = np.max(fit[i+1, :])
             
             status = f"{i} generations completed. RBER: best: {np.max(fit[i+1,:]):.2f}, min: {np.min(fit[i+1,:]):.2f}, mean: {np.mean(fit[i+1,:]):.2f}, variance: {np.var(fit[i+1,:]):.2f}.                                "
             if print_terminal:    
@@ -175,7 +174,7 @@ def ga_discrete_parallel():
                 de_u.log(status, 'a')
 
             if i % int(cfg_de.get("save_interval")) == 0:
-                de_u.save_population(pop,fit,i,best_idx,"discrete")
+                de_u.save_population(pop,fit,i,best_idx, best_rber,"discrete")
 
 
     
@@ -190,7 +189,7 @@ def ga_discrete_parallel():
             de_u.log(status,'a')
 
     finally:
-        de_u.save_population(pop, fit, i, best_idx,"discrete")
+        de_u.save_population(pop, fit, i, best_idx, best_rber,"discrete")
         status = f"""
     -------------------------------------------------------------------
     Optimization interrupted.
