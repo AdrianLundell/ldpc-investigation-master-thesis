@@ -53,6 +53,7 @@ last_gen = int(data["generation"][0])+1
 best_idx = int(data["best_idx"][0])
 lam_node = data["lam_node"]
 rho_node = data["rho_node"]
+best_rber = data["best_rber"][0]
 print(f"Lambda node degeree distribution: \n {lam_node}")
 print(f"Rho node degeree distribution: \n {rho_node}")
-print(f"Best RBER: {fitness[last_gen-1,best_idx]}")
+print(f"Best RBER: {best_rber}")
