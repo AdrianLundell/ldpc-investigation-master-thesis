@@ -367,6 +367,38 @@ def bisection_search(min, max, rho_edge, lam_edge, tol=1e-4):
 
     return (min + max)/2
 
+def convert_edge_to_node(p_edge):
+    p_node = p_edge/(np.arange(1, len(p_edge)+1)*np.sum(1/np.arange(1, len(p_edge)+1)*p_edge))
+    return p_node
+
+
+
+def set_continuous_params(start_pt,const_mat):
+    global x_0, C_c
+    x_0 = start_pt 
+    C_c = const_mat
+
+def best_individual_discrete(best_ind):
+    cn_degrees = np.sum(best_ind, 0)
+    vn_degrees = np.sum(best_ind, 1)
+    rho_node = np.bincount(vn_degrees)[1:]
+    lam_node = np.bincount(cn_degrees)[1:]
+    rho_node = rho_node/np.sum(rho_node)
+    lam_node = lam_node/np.sum(lam_node)
+    return lam_node, rho_node
+
+
+def best_individual_continous(best_ind):
+    global x_0, C_c
+    x = x_0 + np.matmul(C_c, best_ind)
+    dc = cfg_cont.get("dc")
+    dv = cfg_cont.get("dv")
+    rho_edge = x[:dc]
+    lam_edge = x[dc:]
+    lam_node = convert_edge_to_node(lam_edge)
+    rho_node = convert_edge_to_node(rho_edge)
+    return lam_node, rho_node
+    
 
 def save_params():
     algorithm = cfg_de.get("algorithm")
@@ -405,10 +437,15 @@ def save_params():
     df.to_csv(fname)
 
 
-def save_population(population, fitness,generation):
+def save_population(population, fitness, generation, best_idx, best_rber, algorithm):
+    if algorithm == "discrete":
+        lam_node, rho_node = best_individual_discrete(population[best_idx,:,:])
+    elif algorithm == "continuous":
+        lam_node, rho_node = best_individual_continous(population[:,best_idx])
+        
     fname = "data/" + run_id + ".npz"
     with open(fname, 'wb') as f:
-        np.savez(f, population=population, fitness=fitness, generation=np.array([generation]))
+        np.savez(f, population=population, fitness=fitness, generation=np.array([generation]), best_idx=np.array([best_idx]), best_rber=np.array([best_rber]),  lam_node=lam_node, rho_node=rho_node)
 
 
 def log(txt, options):

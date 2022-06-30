@@ -5,6 +5,7 @@ from scipy.optimize import linprog
 from scipy.linalg import null_space
 import de_utils as de_u
 import random
+import ga_continuous as ga_c
 from multiprocessing import Pool, shared_memory
 from multiprocessing.sharedctypes import Value
 
@@ -14,74 +15,6 @@ cfg_de = cfg.get('density_evolution')
 cfg_cont = cfg_de.get('ga_continuous')
 run_id = cfg.get("run_id")
 n_processes = cfg.get("n_processes")
-
-
-def start_point(R, dv, dc):
-    # lam and rho are assumed to begin at degree 2
-    k = 1/np.arange(2, dc+1)
-    i = 1/np.arange(2, dv+1)
-
-    # C is the constraint matrix.
-    # 1st row: code rate constraint
-    # 2nd row: coefficients of rho should sum to 1
-    # 3rd row: coefficients of lam should sum to 1
-    # lb: coefficients of rho and lam should be positive (>0)
-    c1 = np.concatenate((k, -(1-R)*i))
-    c2 = np.concatenate((np.ones(dc-1), np.zeros(dv-1)))
-    c3 = np.concatenate((np.zeros(dc-1), np.ones(dv-1)))
-    C = np.stack((c1, c2, c3))
-
-    d = np.array([[0], [1], [1]])
-    lb = np.zeros((dv+dc-2, 1))
-    f = np.ones((dv+dc-2, 1))
-
-    sol = linprog(f, A_ub=None, b_ub=None, A_eq=C,
-                  b_eq=d, method='interior-point')
-    x_0 = sol.x
-
-    return C, x_0
-
-
-def add_one_degree(C_c, x_0, dc):
-
-    # %% Add degree 1
-    x_0 = np.concatenate(([0], x_0[:dc-1], [0], x_0[dc-1:]))
-    D = np.size(C_c, 1)
-    z_vec = np.zeros((1, D))
-    C_c = np.vstack((z_vec, C_c[:dc-1, :], z_vec, C_c[dc-1:, :]))
-
-    return C_c, x_0
-
-# Differential evolution help functions
-
-
-def compute_x(x_0, C_c, eta):
-    return x_0 + np.matmul(C_c, eta)
-
-
-def poly_eval(p, x):
-    exp = np.arange(0, p.size)
-    return p*x**exp
-
-
-def compute_fitness(x, dc):
-    fitness = 0
-    in_domain = True
-    for xi in x:
-        if xi < 0:
-            fitness += -100 + 10*xi
-            in_domain = False
-
-    if fitness == 0:
-        rho = x[:dc]
-        lam = x[dc:]
-        min = cfg_de.get("min_rber")
-        max = cfg_de.get("max_rber")
-        result = de_u.bisection_search(
-            min, max, rho, lam)
-        fitness = 100*result
-
-    return fitness, in_domain
 
 # Function that is parallelized through Pool in multiprocessing
 def de_individual(i):
@@ -120,13 +53,13 @@ def de_individual(i):
 
     # Selection
     if g_idx.value == 0:
-        x = compute_x(x_0, C_c, eta[:, i])
-        fit, in_domain = compute_fitness(x, dc)
+        x = ga_c.compute_x(x_0, C_c, eta[:, i])
+        fit, in_domain = ga_c.compute_fitness(x, dc)
         fitness[g, i] = fit
         domain[i] = in_domain
     else:
-        x = compute_x(x_0, C_c, u[:, i])
-        fit, in_domain = compute_fitness(x, dc)
+        x = ga_c.compute_x(x_0, C_c, u[:, i])
+        fit, in_domain = ga_c.compute_fitness(x, dc)
 
         if fit > fitness[g-1, i]:
             eta[:, i] = u[:, i]
@@ -249,7 +182,8 @@ def differential_evolution(C_c, x_0, dc):
             g_idx.value += 1
             
             ave_fitness = np.sum(fitness[g,:])/Np
-
+            best_idx = np.argmax(fitness[g,:])
+            best_rber = np.max(fitness[g,:])
             # Write current status
             
             n_domain = domain.sum()
@@ -267,7 +201,7 @@ def differential_evolution(C_c, x_0, dc):
                 de_u.log(status,'a')
 
             if g % int(cfg_de.get("save_interval")) == 0:
-                de_u.save_population(eta, fitness, g)
+                de_u.save_population(eta, fitness, g, best_idx, best_rber,"continuous")
 
         status = f"""
     -------------------------------------------------------------------
@@ -279,7 +213,18 @@ def differential_evolution(C_c, x_0, dc):
         else:
             de_u.log(status,'a')
     finally:
-        de_u.save_population(eta_Np, fitness_Np, g)
+        de_u.save_population(eta, fitness, g, best_idx,
+                             best_rber, "continuous")
+        status = f"""
+    -------------------------------------------------------------------
+    Optimization interrupted.
+    ===================================================================
+            """
+        if print_terminal:
+            print(status)
+        else:
+            de_u.log(status, 'a')
+
         shm_eta.close()
         shm_u.close()
         shm_fit.close()
@@ -299,14 +244,15 @@ def ga_continous_parallel():
 
     # x = [rho;lam]
     # 1. Compute an initial start point
-    C, x_0 = start_point(R, dv, dc)
-
+    C, x_0 = ga_c.start_point(R, dv, dc)
+    
     # 2. Find the complement of constraint matrix.
     # This gives us the allowed directions to step around in
     C_c = null_space(C)
-
+    
     # 3. Add degree 1 to x_0 and C_c matrix
-    C_c, x_0 = add_one_degree(C_c, x_0, dc)
+    C_c, x_0 = ga_c.add_one_degree(C_c, x_0, dc)
+    de_u.set_continuous_params(x_0,C_c)
 
     # 4. Perform optimization through differential evolution
     differential_evolution(C_c, x_0, dc)
