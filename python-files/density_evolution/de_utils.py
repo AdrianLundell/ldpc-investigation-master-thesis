@@ -437,7 +437,7 @@ def save_params():
     df.to_csv(fname)
 
 
-def save_population(population, fitness, generation, best_idx, algorithm):
+def save_population(population, fitness, generation, best_idx, best_rber, algorithm):
     if algorithm == "discrete":
         lam_node, rho_node = best_individual_discrete(population[best_idx,:,:])
     elif algorithm == "continuous":
@@ -445,7 +445,7 @@ def save_population(population, fitness, generation, best_idx, algorithm):
         
     fname = "data/" + run_id + ".npz"
     with open(fname, 'wb') as f:
-        np.savez(f, population=population, fitness=fitness, generation=np.array([generation]), best_idx=np.array([best_idx]), lam_node=lam_node, rho_node=rho_node)
+        np.savez(f, population=population, fitness=fitness, generation=np.array([generation]), best_idx=np.array([best_idx]), best_rber=np.array([best_rber]),  lam_node=lam_node, rho_node=rho_node)
 
 
 def log(txt, options):
