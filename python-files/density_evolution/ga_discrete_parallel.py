@@ -1,6 +1,7 @@
 import numpy as np
 import de_utils as de_u
 import matplotlib.pyplot as plt
+import ga_discrete as ga_d
 from multiprocessing import Pool, shared_memory
 from multiprocessing.sharedctypes import Value
 
@@ -9,47 +10,6 @@ cfg_de = cfg.get('density_evolution')
 cfg_disc = cfg_de.get('ga_discrete')
 run_id = cfg.get("run_id")
 n_processes = cfg.get("n_processes")
-
-
-def init_population(n_pop, n_cn, n_vn):
-    population = np.zeros((n_pop, n_cn, n_vn), int)
-    for i in range(n_pop):
-        for j in range(n_vn):
-            k = np.random.choice(n_cn, 2, replace=False)
-            population[i, k, j] = 1
-
-    return population
-
-
-def vertical_crossover(i1, i2):
-    crossover_point = np.random.randint(i1[0, :].size)
-    i1_new = np.hstack((i1[:, :crossover_point], i2[:, crossover_point:]))
-    i2_new = np.hstack((i1[:, crossover_point:], i2[:, :crossover_point]))
-    return i1_new, i2_new
-
-
-def horizontal_crossover(i1, i2):
-    crossover_point = np.random.randint(i1[:, 0].size)
-    i1_new = np.vstack((i1[:crossover_point, :], i2[crossover_point:, :]))
-    i2_new = np.vstack((i1[crossover_point:, :], i2[:crossover_point, :]))
-    return i1_new, i2_new
-
-
-def mutation(i):
-    mutation_i = np.random.randint(0, i[:, 0].size)
-    mutation_j = np.random.randint(0, i[0, :].size)
-    i[mutation_i, mutation_j] = not i[mutation_i, mutation_j]
-    return i
-
-
-def tournament(population, fitness, n_competitiors=3):
-    n_pop = cfg_de.get("Np")
-    competitors_index = np.random.choice(n_pop, n_competitiors, replace=False)
-    competitors_fitness = fitness[competitors_index]
-    winner_index = competitors_index[np.argmax(competitors_fitness)]
-    i_new = population[winner_index, :, :]
-    fitness_new = fitness[winner_index]
-    return i_new, fitness_new
 
 
 def evaluate(j):
@@ -110,15 +70,17 @@ def ga_discrete_parallel():
         population = data["population"]
         fitness = data["fitness"]
         i_start = int(data["generation"][0]) + 1
+        best_idx = int(data["best_idx"][0])
         dim_0 = np.size(fitness, axis=0)
         if n_generations != np.size(fitness, axis=0):
             fitness_new = np.zeros((n_generations, n_generations))
             fitness_new[:dim_0] = fitness
             fitness = fitness_new
     else:
-        population = init_population(n_pop, n_cn, n_vn)
+        population = ga_d.init_population(n_pop, n_cn, n_vn)
         fitness = np.full((n_generations, n_pop), -np.inf)
         i_start = 0
+        best_idx = 0
 
     code_rate = (n_vn-n_cn)/n_vn
     
@@ -177,7 +139,7 @@ def ga_discrete_parallel():
             pop_new[0] = pop[np.argmax(fit[i,:])]
             fit[i+1,0] = fit[i,np.argmax(fit[i,:])]
             for j in range(1, n_pop):
-                pop_new[j], fit[i+1,j] = tournament(
+                pop_new[j], fit[i+1,j] = ga_d.tournament(
                     pop, fit[i,:])
             pop[:] = pop_new[:]
             #fit = fit_new
@@ -185,16 +147,16 @@ def ga_discrete_parallel():
             # Crossover
             for j in range(1, n_pop-1, 2):
                 if np.random.rand() < p_vertical:
-                    pop[j], pop[j+1] = vertical_crossover(pop[j], pop[j+1])
+                    pop[j], pop[j+1] = ga_d.vertical_crossover(pop[j], pop[j+1])
                     fit[i,j], fit[i,j+1] = -np.inf, -np.inf
                 if np.random.rand() < p_horizontal:
-                    pop[j], pop[j+1] = horizontal_crossover(pop[j], pop[j+1])
+                    pop[j], pop[j+1] = ga_d.horizontal_crossover(pop[j], pop[j+1])
                     fit[i+1,j], fit[i+1,j+1] = -np.inf, -np.inf
 
             # Mutation
             for j in range(1, n_pop):
                 if np.random.rand():
-                    pop[j] = mutation(pop[j])
+                    pop[j] = ga_d.mutation(pop[j])
                     fit[i+1,j] = -np.inf
 
             # Evaluate new individuals
@@ -204,6 +166,7 @@ def ga_discrete_parallel():
             #    if fit[i+1,j] == -np.inf:
             #        fit[i+1,j] = evaluate(pop[j, :, :])
 
+            best_idx = np.argmax(fit[i+1, :])
             
             status = f"{i} generations completed. RBER: best: {np.max(fit[i+1,:]):.2f}, min: {np.min(fit[i+1,:]):.2f}, mean: {np.mean(fit[i+1,:]):.2f}, variance: {np.var(fit[i+1,:]):.2f}.                                "
             if print_terminal:    
@@ -212,7 +175,7 @@ def ga_discrete_parallel():
                 de_u.log(status, 'a')
 
             if i % int(cfg_de.get("save_interval")) == 0:
-                de_u.save_population(pop,fit,i)
+                de_u.save_population(pop,fit,i,best_idx,"discrete")
 
 
     
@@ -227,7 +190,17 @@ def ga_discrete_parallel():
             de_u.log(status,'a')
 
     finally:
-        de_u.save_population(pop, fit, i)
+        de_u.save_population(pop, fit, i, best_idx,"discrete")
+        status = f"""
+    -------------------------------------------------------------------
+    Optimization interrupted.
+    ===================================================================
+            """
+        if print_terminal:
+            print(status)
+        else:
+            de_u.log(status, 'a')
+
         shm_pop.close()
         shm_fit.close()
         shm_pop.unlink()

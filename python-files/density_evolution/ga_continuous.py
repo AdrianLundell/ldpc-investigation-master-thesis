@@ -13,7 +13,6 @@ cfg_de = cfg.get('density_evolution')
 cfg_cont = cfg_de.get('ga_continuous')
 run_id = cfg.get("run_id")
 
-
 def start_point(R, dv, dc):
     # lam and rho are assumed to begin at degree 2
     k = 1/np.arange(2, dc+1)
@@ -126,6 +125,7 @@ def differential_evolution(C_c, x_0, dc):
         eta_Np = data["population"]
         fitness_Np = data["fitness"]
         g_start = int(data["generation"][0])+1
+        best_idx = int(data["best_idx"][0])
         dim_0 = np.size(fitness_Np, axis=0)
         if gens != np.size(fitness_Np, axis=0):
             fitness_Np_new = np.zeros((gens, Np))
@@ -135,6 +135,7 @@ def differential_evolution(C_c, x_0, dc):
         eta_Np = np.random.rand(D, Np)
         fitness_Np = np.zeros((gens,Np))
         g_start = 0
+        best_idx = 0
 
     domain_Np = np.full(Np, False)
     
@@ -182,6 +183,7 @@ def differential_evolution(C_c, x_0, dc):
                         fitness_Np[g, i] = fitness_Np[g-1, i]
 
             ave_fitness = np.sum(fitness_Np[g,:])/Np
+            best_idx = np.argmax(fitness_Np[g,:])
 
             # Write current status
             
@@ -200,7 +202,7 @@ def differential_evolution(C_c, x_0, dc):
                 de_u.log(status,'a')
 
             if g % int(cfg_de.get("save_interval")) == 0:
-                de_u.save_population(eta_Np, fitness_Np, g)
+                de_u.save_population(eta_Np, fitness_Np, g,best_idx,"continuous")
 
         status = f"""
     -------------------------------------------------------------------
@@ -212,7 +214,16 @@ def differential_evolution(C_c, x_0, dc):
         else:
             de_u.log(status,'a')
     finally:
-        de_u.save_population(eta_Np, fitness_Np, g)
+        de_u.save_population(eta_Np, fitness_Np, g, best_idx, "continuous")
+        status = f"""
+    -------------------------------------------------------------------
+    Optimization interrupted.
+    ===================================================================
+            """
+        if print_terminal:
+            print(status)
+        else:
+            de_u.log(status, 'a')
 
 
 def ga_continous():
@@ -228,9 +239,11 @@ def ga_continous():
     # 2. Find the complement of constraint matrix.
     # This gives us the allowed directions to step around in
     C_c = null_space(C)
+    
 
     # 3. Add degree 1 to x_0 and C_c matrix
     C_c, x_0 = add_one_degree(C_c, x_0, dc)
-
+    de_u.set_continuous_params(x_0, C_c)
+    
     # 4. Perform optimization through differential evolution
     differential_evolution(C_c, x_0, dc)
