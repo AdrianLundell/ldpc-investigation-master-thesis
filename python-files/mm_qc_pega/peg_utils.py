@@ -280,17 +280,45 @@ def make_invertable(G):
 
     return G_invertible
 
-def to_degree_distribution(vn_polynomial, n_vn):
-    assert sum(vn_polynomial) == 1
-    D = np.zeros(n_vn)
-    x = 0
-    for degree, coeff in enumerate(vn_polynomial):
-        if coeff:   
-            n_vns = int(coeff * n_vn)
-            D[x:x+n_vns] = degree + 1 
-            x += n_vns 
+def discretize_polynomial(polynomial,n_nodes,D):
+    diff = np.sum(D)-n_nodes
+    discrete_prob = 1/n_nodes
+    if diff > 0:
+        while diff != 0:
+            tmp_arr = np.abs(polynomial/(discrete_prob) - \
+                (0.5+ np.floor(polynomial/(discrete_prob))))
+            idx = np.amin(tmp_arr)
+            D[idx] -= 1
+            diff -= 1
+            polynomial[idx] -= discrete_prob
+    elif diff < 0:
+        while diff != 0:
+            tmp_arr = np.abs(polynomial/(discrete_prob) - 
+                   (0.5 + np.floor(polynomial/(discrete_prob))))
+            idx = np.amin(tmp_arr)
+            D[idx] += 1
+            diff += 1
+            polynomial[idx] += discrete_prob
 
     return D
+
+
+
+def to_degree_distribution(polynomial, n_nodes):
+    assert np.sum(polynomial) - 1 <1e-7
+    D = np.around(polynomial*n_nodes).astype(int)
+    x = np.sum(D)
+    
+    if x != n_nodes:
+        D = discretize_polynomial(polynomial,n_nodes,D)
+
+    C = np.zeros(n_nodes,dtype=int)
+    current_idx = 0
+    for degree, coeff in enumerate(D):
+        if coeff:   
+            C[current_idx:current_idx+coeff] = degree + 1 
+            current_idx = current_idx+coeff
+    return C
 
 def vn_polynomial_repr(vn_polynomial):
     s = ""
