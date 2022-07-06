@@ -278,6 +278,10 @@ def make_invertable(G):
     new_order = reminding_columns + list(H_indexes)
     G_invertible = G.reordered(new_order)
 
+    H = galois.GF2(G_invertible.get_H().astype(int))
+    np.linalg.inv(H[:,-9*4:])
+    assert np.linalg.matrix_rank(H) == G.n_cn, "Bad matrix rank"
+
     return G_invertible
 
 def to_degree_distribution(vn_polynomial, n_vn):
