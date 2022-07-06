@@ -449,6 +449,6 @@ def save_population(population, fitness, generation, best_idx, best_rber, algori
 
 
 def log(txt, options):
-    fname = "log/log.txt"
+    fname = "data/log_" + run_id + ".txt"
     with open(fname,options) as f:
         f.write(txt+"\n")
