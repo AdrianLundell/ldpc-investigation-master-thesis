@@ -5,6 +5,7 @@ import datetime
 import time 
 import graphs 
 import peg_utils
+import os
 
 #Load settings
 try:
@@ -87,6 +88,7 @@ metadata = f"""
 # Metric : Minimum distance
 # Date   : {datetime.datetime.now()}
 """
+os.makedirs('data/', exist_ok=True)
 G_reordered.save(settings["output_fname"])
 f = open(settings["output_fname"], 'a')
 f.write(metadata)
