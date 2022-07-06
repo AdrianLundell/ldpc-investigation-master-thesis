@@ -16,8 +16,8 @@ except:
     settings = {
                 "n" : 73,
                 "m" : 9,
-                "scaling_factor" : 1,
-                "girth_search_depth" : 3    ,
+                "scaling_factor" : 4,
+                "girth_search_depth" : 1,
                 "seed" : 'None',
                 "gcd" : False,
                 "input_fname" : None,
@@ -45,11 +45,11 @@ G = graphs.QC_tanner_graph(settings["m"], settings["n"], settings["scaling_facto
 # Get the node perspective degree distributions from density evolution optimization
 lam_node = data["lam_node"]
 rho_node = data["rho_node"]
-vn_degrees = peg_utils.to_degree_distribution(lam_node,G.n_vn)
+vn_degrees = np.flip(peg_utils.to_degree_distribution(lam_node,G.n_vn))
 cn_degrees = peg_utils.to_degree_distribution(rho_node,G.n_cn)
 
-#vn_degrees = np.repeat(np.sum(best_individual, 0), settings["scaling_factor"])
-#cn_degrees = np.repeat(np.sum(best_individual, 1), settings["scaling_factor"])
+#vn_degrees = np.repeat(vn_degrees, settings["scaling_factor"])
+#cn_degrees = np.repeat(cn_degrees, settings["scaling_factor"])
 
 if not settings["seed"] == 'None':
     np.random.seed(int(settings["seed"]))
@@ -75,6 +75,10 @@ for current_vn_index in range(0, G.n_vn, G.N):
 print("")
 print(f"Edge growth finsihed. Total elapsed time: {int(dt//60)} minutes, {dt % 60:.2f} seconds.")
 
+print(np.bincount(G.get_check_degrees()))
+print(np.bincount(cn_degrees))
+print(np.bincount(G.get_var_degrees()))
+print(np.bincount(vn_degrees))
 
 G_reordered = peg_utils.make_invertable(G)
 print("Matrix invertion sucessfull, saving file...")
@@ -93,12 +97,5 @@ f.write(metadata)
 f.close()
 
 print("MM-QC-PEGA completed.")
-
-
-
-print(np.bincount(G.get_check_degrees()))
-print(np.bincount(cn_degrees))
-print(np.bincount(G.get_var_degrees()))
-print(np.bincount(vn_degrees))
 
 peg_utils.graph_stats(G)

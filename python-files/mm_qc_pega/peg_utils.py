@@ -243,15 +243,17 @@ def graph_stats(G):
                 girths.append(min(cycles.values()))
             else:
                 girths.append(-10)
-                
+
+        print(girths)
+        
         parity_eqs = np.zeros((G.m*G.N,G.n*G.N))
         parity_eqs[:,-G.m*G.N:] = 0.2
 
-        plt.subplot(2,1,1)
-        plt.imshow(1 - np.maximum(H, parity_eqs), cmap="gray")
-        plt.subplot(2,1,2)
-        plt.hist(girths)
-        plt.show()
+        # plt.subplot(2,1,1)
+        # plt.imshow(1 - np.maximum(H, parity_eqs), cmap="gray")
+        # plt.subplot(2,1,2)
+        # plt.hist(girths)
+        # plt.show()
         
 
 def make_invertable(G):
@@ -262,6 +264,9 @@ def make_invertable(G):
     """
     H = galois.GF2(G.get_H().astype(int))
     assert np.linalg.matrix_rank(H) == G.n_cn, "Bad matrix rank"
+    
+    non_invertible_H = H[:,-9*2:]
+
     H_indexes = np.arange(H.shape[1])
 
     for i in np.arange(0, H.shape[1], G.N):
@@ -274,12 +279,16 @@ def make_invertable(G):
             H_indexes[indexes] = -1
 
     H_indexes = H_indexes[H_indexes >= 0]
-    reminding_columns = [i for i in range(G.n) if i not in H_indexes]
+
+    invertible_H = np.take(H, H_indexes, axis = 1)
+    np.linalg.inv(invertible_H)
+
+    reminding_columns = [i for i in range(G.n_vn) if i not in H_indexes]
     new_order = reminding_columns + list(H_indexes)
     G_invertible = G.reordered(new_order)
 
     H = galois.GF2(G_invertible.get_H().astype(int))
-    np.linalg.inv(H[:,-9*4:])
+    np.linalg.inv(H[:,-G.n_cn:])
     assert np.linalg.matrix_rank(H) == G.n_cn, "Bad matrix rank"
 
     return G_invertible
@@ -334,9 +343,11 @@ def vn_polynomial_repr(vn_polynomial):
 
 def strategy1(max_girth, cn_girths, G, vn_index, cn_degrees):
     #Enforce single weight circulant matrices
+    max_girth = np.max(cn_girths)
     for cn in range(G.n_cn):
         if G.has_cyclical_edge_set((cn, vn_index)):
             cn_girths[cn] == -np.inf
+            
     #Keep edges of maximal r-girth
     girth_survivors = np.argwhere(cn_girths == np.max(cn_girths))
     
@@ -369,7 +380,7 @@ def strategy1(max_girth, cn_girths, G, vn_index, cn_degrees):
             cn_degrees[int(x*G.N):int((x+1)*G.N)] = cn_degrees[survivor]
             cn_degrees[survivor] = new_val
         else:
-            cn_girths[girth_survivors] = -np.inf
+            cn_girths[survivor] = -np.inf
             max_girth = np.max(cn_girths)
             survivor = strategy1(max_girth, cn_girths, G, vn_index, cn_degrees)
 

@@ -240,7 +240,7 @@ class QC_tanner_graph(Tanner_graph):
         for i, row in enumerate(self.proto):
             for j, shift in enumerate(row):
                 if not shift == -1:
-                    vn_index = int(np.argwhere(index_list == j) * self.N + shift)
+                    vn_index = int(np.argwhere(index_list == j*self.N) + shift)
                     cn_index = int(i * self.N)
                     G.add_cyclical_edge_set(cn_index, vn_index)
                 
