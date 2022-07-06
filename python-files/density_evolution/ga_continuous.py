@@ -213,15 +213,16 @@ def differential_evolution(C_c, x_0, dc):
             de_u.log(status,'a')
     finally:
         de_u.save_population(eta_Np, fitness_Np, g, best_idx, "continuous")
-        status = f"""
-    -------------------------------------------------------------------
-    Optimization interrupted.
-    ===================================================================
-            """
-        if print_terminal:
-            print(status)
-        else:
-            de_u.log(status, 'a')
+        if g < gens-1:
+            status = f"""
+        -------------------------------------------------------------------
+        Optimization interrupted.
+        ===================================================================
+                """
+            if print_terminal:
+                print(status)
+            else:
+                de_u.log(status, 'a')
 
 
 def ga_continous():
