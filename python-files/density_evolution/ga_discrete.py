@@ -95,7 +95,7 @@ def ga_discrete():
         i_start = int(data["generation"][0]) + 1
         dim_0 = np.size(fitness, axis=0)
         if n_generations != np.size(fitness, axis=0):
-            fitness_new = np.zeros((n_generations, n_generations))
+            fitness_new = np.zeros((n_generations, n_pop))
             fitness_new[:dim_0] = fitness
             fitness = fitness_new
     else:
@@ -124,20 +124,22 @@ def ga_discrete():
 
     try:
         # Initial evaluation
-        for j in range(n_pop):
-            if fitness[0,j] == -np.inf:
-                fitness[0,j] = evaluate(population[j, :, :])
+        if i_start == 0:
+            for j in range(n_pop):
+                if fitness[i_start,j] == -np.inf:
+                    fitness[i_start,j] = evaluate(population[j, :, :])
+            i_start += 1
 
-        for i in range(i_start,n_generations-1):
+        for i in range(i_start,n_generations):
 
             # Select with elitism
             population_new = np.zeros(population.shape, int)
             #fitness_new = np.full(fitness.shape, -np.inf)
-            population_new[0] = population[np.argmax(fitness[i,:])]
-            fitness[i+1,0] = fitness[i,np.argmax(fitness[i,:])]
+            population_new[0] = population[np.argmax(fitness[i-1,:])]
+            fitness[i,0] = fitness[i-1,np.argmax(fitness[i-1,:])]
             for j in range(1, n_pop):
-                population_new[j], fitness[i+1,j] = tournament(
-                    population, fitness[i,:])
+                population_new[j], fitness[i,j] = tournament(
+                    population, fitness[i-1,:])
             population = population_new
             #fitness = fitness_new
 
@@ -146,27 +148,27 @@ def ga_discrete():
                 if np.random.rand() < p_vertical:
                     population[j], population[j +
                                               1] = vertical_crossover(population[j], population[j+1])
-                    fitness[i,j], fitness[i,j+1] = -np.inf, -np.inf
+                    fitness[i-1,j], fitness[i-1,j+1] = -np.inf, -np.inf
                 if np.random.rand() < p_horizontal:
                     population[j], population[j +
                                               1] = horizontal_crossover(population[j], population[j+1])
-                    fitness[i+1,j], fitness[i+1,j+1] = -np.inf, -np.inf
+                    fitness[i,j], fitness[i,j+1] = -np.inf, -np.inf
 
             # Mutation
             for j in range(1, n_pop):
                 if np.random.rand():
                     population[j] = mutation(population[j])
-                    fitness[i+1,j] = -np.inf
+                    fitness[i,j] = -np.inf
 
             # Evaluate new individuals
             for j in range(n_pop):
-                if fitness[i+1,j] == -np.inf:
-                    fitness[i+1,j] = evaluate(population[j, :, :])
+                if fitness[i,j] == -np.inf:
+                    fitness[i,j] = evaluate(population[j, :, :])
 
-            best_idx = np.argmax(fitness[i+1, :])
-            best_rber = np.max(fitness[i+1, :])
+            best_idx = np.argmax(fitness[i, :])
+            best_rber = np.max(fitness[i, :])
 
-            status = f"{i} generations completed. RBER: best: {np.max(fitness[i+1,:]):.2f}, min: {np.min(fitness[i+1,:]):.2f}, mean: {np.mean(fitness[i+1,:]):.2f}, variance: {np.var(fitness[i+1,:]):.2f}.                                "
+            status = f"{i} generations completed. RBER: best: {np.max(fitness[i,:]):.2f}, min: {np.min(fitness[i,:]):.2f}, mean: {np.mean(fitness[i,:]):.2f}, variance: {np.var(fitness[i,:]):.2f}.                                "
             if print_terminal:    
                 print(status)
             else:
@@ -188,13 +190,14 @@ def ga_discrete():
 
     finally:
         de_u.save_population(population, fitness, i, best_idx, best_rber, "discrete")
-        status = f"""
+        if i < n_generations-1:
+            status = f"""
     -------------------------------------------------------------------
     Optimization interrupted.
     ===================================================================
-            """
-        if print_terminal:
-            print(status)
-        else:
-            de_u.log(status, 'a')
+                """
+            if print_terminal:
+                print(status)
+            else:
+                de_u.log(status, 'a')
             

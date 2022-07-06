@@ -72,7 +72,7 @@ def ga_discrete_parallel():
         i_start = int(data["generation"][0]) + 1
         dim_0 = np.size(fitness, axis=0)
         if n_generations != np.size(fitness, axis=0):
-            fitness_new = np.zeros((n_generations, n_generations))
+            fitness_new = np.zeros((n_generations, n_pop))
             fitness_new[:dim_0] = fitness
             fitness = fitness_new
     else:
@@ -124,21 +124,29 @@ def ga_discrete_parallel():
 
     try:
         # Initial evaluation
-        pool.map(evaluate,pop_idx)
-        #for j in range(n_pop):
-        #    if fit[0,j] == -np.inf:
-        #        fit[0,j] = evaluate(pop[j, :, :])
+        if i_start == 0:
+            pool.map(evaluate,pop_idx)           
+            best_idx = np.argmax(fit[i_start, :])
+            best_rber = np.max(fit[i_start, :])
+            
+            status = f"{i} generations completed. RBER: best: {np.max(fit[i_start,:]):.2f}, min: {np.min(fit[i_start,:]):.2f}, mean: {np.mean(fit[i_start,:]):.2f}, variance: {np.var(fit[i_start,:]):.2f}.                                "
+            if print_terminal:
+                print(status)
+            else:
+                de_u.log(status, 'a')
+            
+            i_start += 1
+            i_idx.value += 1
 
-        for i in range(i_start,n_generations-1):
+        for i in range(i_start,n_generations):
 
             # Select with elitism
             pop_new = np.zeros(pop.shape, int)
-            #fit_new = np.full(fit.shape, -np.inf)
-            pop_new[0] = pop[np.argmax(fit[i,:])]
-            fit[i+1,0] = fit[i,np.argmax(fit[i,:])]
+            pop_new[0] = pop[np.argmax(fit[i-1,:])]
+            fit[i,0] = fit[i-1,np.argmax(fit[i-1,:])]
             for j in range(1, n_pop):
-                pop_new[j], fit[i+1,j] = ga_d.tournament(
-                    pop, fit[i,:])
+                pop_new[j], fit[i,j] = ga_d.tournament(
+                    pop, fit[i-1,:])
             pop[:] = pop_new[:]
             #fit = fit_new
 
@@ -146,28 +154,27 @@ def ga_discrete_parallel():
             for j in range(1, n_pop-1, 2):
                 if np.random.rand() < p_vertical:
                     pop[j], pop[j+1] = ga_d.vertical_crossover(pop[j], pop[j+1])
-                    fit[i,j], fit[i,j+1] = -np.inf, -np.inf
+                    fit[i-1,j], fit[i-1,j+1] = -np.inf, -np.inf
                 if np.random.rand() < p_horizontal:
                     pop[j], pop[j+1] = ga_d.horizontal_crossover(pop[j], pop[j+1])
-                    fit[i+1,j], fit[i+1,j+1] = -np.inf, -np.inf
+                    fit[i,j], fit[i,j+1] = -np.inf, -np.inf
 
             # Mutation
             for j in range(1, n_pop):
                 if np.random.rand():
                     pop[j] = ga_d.mutation(pop[j])
-                    fit[i+1,j] = -np.inf
+                    fit[i,j] = -np.inf
 
             # Evaluate new individuals
-            i_idx.value += 1
             pool.map(evaluate, pop_idx)
-            #for j in range(n_pop):
-            #    if fit[i+1,j] == -np.inf:
-            #        fit[i+1,j] = evaluate(pop[j, :, :])
-
-            best_idx = np.argmax(fit[i+1, :])
-            best_rber = np.max(fit[i+1, :])
             
-            status = f"{i} generations completed. RBER: best: {np.max(fit[i+1,:]):.2f}, min: {np.min(fit[i+1,:]):.2f}, mean: {np.mean(fit[i+1,:]):.2f}, variance: {np.var(fit[i+1,:]):.2f}.                                "
+            i_idx.value += 1
+
+            # Keep track of best individual
+            best_idx = np.argmax(fit[i, :])
+            best_rber = np.max(fit[i, :])
+            
+            status = f"{i} generations completed. RBER: best: {np.max(fit[i,:]):.2f}, min: {np.min(fit[i,:]):.2f}, mean: {np.mean(fit[i,:]):.2f}, variance: {np.var(fit[i,:]):.2f}.                                "
             if print_terminal:    
                 print(status)
             else:
@@ -190,15 +197,16 @@ def ga_discrete_parallel():
 
     finally:
         de_u.save_population(pop, fit, i, best_idx, best_rber,"discrete")
-        status = f"""
+        if i < n_generations-1:
+            status = f"""
     -------------------------------------------------------------------
     Optimization interrupted.
     ===================================================================
-            """
-        if print_terminal:
-            print(status)
-        else:
-            de_u.log(status, 'a')
+                """
+            if print_terminal:
+                print(status)
+            else:
+                de_u.log(status, 'a')
 
         shm_pop.close()
         shm_fit.close()
