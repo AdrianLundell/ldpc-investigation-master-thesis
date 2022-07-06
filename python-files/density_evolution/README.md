@@ -29,7 +29,7 @@ Essentiallly, you want to create an environment for example
 
 ```
 $ conda create --name ldpc_master_thesis python=3.8.5
-$ activate ldpc_master_thesis
+$ source activate ldpc_master_thesis
 ```
 
 Check that you are in the correct environment and start installing using conda install. You should now have the correct version of python when running scripts.

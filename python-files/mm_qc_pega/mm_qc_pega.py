@@ -16,9 +16,9 @@ except:
     settings = {
                 "n" : 73,
                 "m" : 9,
-                "scaling_factor" : 256,
-                "girth_search_depth" : 1    ,
-                "seed" : None,
+                "scaling_factor" : 1,
+                "girth_search_depth" : 3    ,
+                "seed" : 'None',
                 "gcd" : False,
                 "input_fname" : None,
                 "output_fname" : "test.qc"
@@ -33,6 +33,8 @@ header = f"""
 ===================================================================
 Creating ({settings["m"]},{settings["n"]},{settings["scaling_factor"]}) code with the {settings["girth_search_depth"]}-edge QC-PEGA algorithm for 
 variable node edge distribution.
+Input file: {settings["input_fname"]}
+Output file: {settings["output_fname"]}
 ===================================================================
 """
 print(header)
@@ -40,9 +42,14 @@ G = graphs.QC_tanner_graph(settings["m"], settings["n"], settings["scaling_facto
 #vn_degrees = peg_utils.to_degree_distribution(data["vn_degree_node"], G.n_vn)
 #cn_degrees = peg_utils.to_degree_distribution(data["cn_degree_node"], G.n_cn)
 
-best_individual = data["population"][np.argmax(data["fitness"][-1,:])]
-vn_degrees = np.repeat(np.sum(best_individual, 0), settings["scaling_factor"])
-cn_degrees = np.repeat(np.sum(best_individual, 1), settings["scaling_factor"])
+# Get the node perspective degree distributions from density evolution optimization
+lam_node = data["lam_node"]
+rho_node = data["rho_node"]
+vn_degrees = peg_utils.to_degree_distribution(lam_node,G.n_vn)
+cn_degrees = peg_utils.to_degree_distribution(rho_node,G.n_cn)
+
+#vn_degrees = np.repeat(np.sum(best_individual, 0), settings["scaling_factor"])
+#cn_degrees = np.repeat(np.sum(best_individual, 1), settings["scaling_factor"])
 
 if not settings["seed"] == 'None':
     np.random.seed(int(settings["seed"]))

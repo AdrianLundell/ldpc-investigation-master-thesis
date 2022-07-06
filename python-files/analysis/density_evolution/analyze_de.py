@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # Discrete analysis
 ######################################
 
-fname =  "../data/discrete_test2.npz"
+fname =  "../data/discrete_run1_v2.npz"
 data = np.load(fname)
 population = data["population"]
 fitness = data["fitness"]
@@ -13,6 +13,7 @@ last_gen = int(data["generation"][0])+1
 best_idx = int(data["best_idx"][0])
 lam_node = data["lam_node"]
 rho_node = data["rho_node"]
+best_rber = data["best_rber"][0]
 
 def get_degree_distrubutions(i):
     cn_degrees = np.sum(i, 0)
@@ -34,13 +35,11 @@ def convert_edge_to_node(p_edge):
 
 best_idx = np.argmax(fitness[last_gen,:])
 lam_edge, rho_edge = get_degree_distrubutions(population[best_idx,:,:])
-print(f"Lambda edge degeree distribution: \n {lam_edge}")
-print(f"Rho edge degeree distribution: \n {rho_edge}")
-print(f"Lambda node degeree distribution: \n {lam_node}")
-print(f"Rho node degeree distribution: \n {rho_node}")
-
-p_node = convert_edge_to_node(lam_edge)
-print(f"Lambda node degeree distribution: \n {p_node}")
+#print(f"Lambda edge degree distribution: \n {lam_edge}")
+#print(f"Rho edge degree distribution: \n {rho_edge}")
+print(f"Lambda node degree distribution: \n {lam_node}")
+print(f"Rho node degree distribution: \n {rho_node}")
+print(f"Best RBER: {best_rber}")
 
 ######################################
 # Continuous analysis
@@ -54,6 +53,6 @@ best_idx = int(data["best_idx"][0])
 lam_node = data["lam_node"]
 rho_node = data["rho_node"]
 best_rber = data["best_rber"][0]
-print(f"Lambda node degeree distribution: \n {lam_node}")
-print(f"Rho node degeree distribution: \n {rho_node}")
+print(f"Lambda node degree distribution: \n {lam_node}")
+print(f"Rho node degree distribution: \n {rho_node}")
 print(f"Best RBER: {best_rber}")

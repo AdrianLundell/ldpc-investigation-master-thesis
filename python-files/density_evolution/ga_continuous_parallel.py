@@ -215,15 +215,16 @@ def differential_evolution(C_c, x_0, dc):
     finally:
         de_u.save_population(eta, fitness, g, best_idx,
                              best_rber, "continuous")
-        status = f"""
+        if g < gens-1:
+            status = f"""
     -------------------------------------------------------------------
     Optimization interrupted.
     ===================================================================
-            """
-        if print_terminal:
-            print(status)
-        else:
-            de_u.log(status, 'a')
+                """
+            if print_terminal:
+                print(status)
+            else:
+                de_u.log(status, 'a')
 
         shm_eta.close()
         shm_u.close()
