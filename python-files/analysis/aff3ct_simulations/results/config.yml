@@ -1,0 +1,3 @@
+# This config script allows for easily seeing which variable can be changed by the user
+input_files: ["data/random.txt","data/continous_run1_v2.txt"] # Array of files of which data should be plotted
+plot_type: "rber_to_ber" # Choose the type of plot you want. Each script is named as [x_variable]_to_[y_variable].py
