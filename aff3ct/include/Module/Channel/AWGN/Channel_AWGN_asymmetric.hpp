@@ -40,13 +40,11 @@ namespace aff3ct
 
 			virtual void set_noise(tools::Sigma_asymmetric<R> &sigmas);
 			R get_sigma(unsigned voltage_level) const;
-			void generate_sigmas();
-			void set_sigma_generator_seed(const int seed);
-			void set_noise_generator_seed(const int seed);
+			R get_sigma_ave() const;
 
 			virtual void add_noise(const unsigned *voltage_level_indexes, R *noisy_voltage_levels, const int frame_id = -1);
 			R get_snr(const unsigned threshold_index) const;
-			R get_sigma_ratio(const unsigned threshold_index) const;
+			R get_skew(const unsigned threshold_index) const;
 			virtual void check_noise();
 
 			// protected:

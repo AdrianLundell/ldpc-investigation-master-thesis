@@ -50,21 +50,9 @@ R Channel_AWGN_asymmetric<R>::get_sigma(unsigned voltage_level_index) const
 }
 
 template <typename R>
-void Channel_AWGN_asymmetric<R>::generate_sigmas()
+R Channel_AWGN_asymmetric<R>::get_sigma_ave() const
 {
-	this->sigmas.generate_sigmas();
-}
-
-template <typename R>
-void Channel_AWGN_asymmetric<R>::set_sigma_generator_seed(const int seed)
-{
-	this->sigmas.set_seed(seed);
-}
-
-template <typename R>
-void Channel_AWGN_asymmetric<R>::set_noise_generator_seed(const int seed)
-{
-	this->noise_generator.set_seed(seed);
+	return sigmas.get_sigma_ave();
 }
 
 template <typename R>
@@ -92,17 +80,26 @@ void Channel_AWGN_asymmetric<R>::add_noise(const unsigned *voltage_level_indexes
 template <typename R>
 R Channel_AWGN_asymmetric<R>::get_snr(const unsigned threshold_index) const
 {
-	R signal_term = 10 * log10(pow(voltage_levels[threshold_index] - voltage_levels[threshold_index + 1], (R)2.0));
-	R noise_term = sigmas.get_threshold_noise(threshold_index);
-	R result = signal_term + noise_term;
+	// R signal_term = 10 * log10(pow(voltage_levels[threshold_index] - voltage_levels[threshold_index + 1], (R)2.0));
+	// R noise_term = sigmas.get_threshold_noise(threshold_index);
+	// R result = signal_term + noise_term;
 
 	return sigmas.get_ebn0();
 }
 
 template <typename R>
-R Channel_AWGN_asymmetric<R>::get_sigma_ratio(const unsigned threshold_index) const
+R Channel_AWGN_asymmetric<R>::get_skew(const unsigned threshold_index) const
 {
-	return sigmas.get_ratio(threshold_index);
+	if (threshold_index > 0)
+	{
+		std::stringstream message;
+		message << "The SIGMA_ASYMMETRIC only contains two adjacent distributions and thus, the threshold index cannot be above 0. It is: " << threshold_index << ").";
+		throw tools::invalid_argument(__FILE__, __LINE__, __func__, message.str());
+	}
+
+	R sigma1 = sigmas.get_sigma(0);
+	R sigma2 = sigmas.get_sigma(1);
+	return (sigma2) / (sigma1 + sigma2);
 }
 
 template <typename R>
