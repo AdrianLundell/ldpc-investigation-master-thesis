@@ -1,6 +1,11 @@
 /*!
  * \file
  * \brief Class tools::Sigma_asymmetric.
+ *
+ * \section Definition:
+ * Sigma_asymmetric represents two adjacent normal distributions that are asymmetric. The class inherits from Sigma.
+ * sigma_ave, ebn0, esn0 represent the channel parameters if the distributions were symmetric.
+ * sigma for each distribution is computed as (2*sigma_ave)*skew for the leftmost distribution and (2*sigma_ave)*(1-skew) for the rightmost distribution.
  */
 #ifndef SIGMA_ASYMMETRIC_HPP_
 #define SIGMA_ASYMMETRIC_HPP_
@@ -23,13 +28,12 @@ namespace aff3ct
 			Sigma_asymmetric();
 			explicit Sigma_asymmetric(const Sigma_asymmetric<R> &other);
 			virtual ~Sigma_asymmetric() = default;
-			void set_sigmas(R sigma_tot, unsigned n_sigmas, R sigma_min, R ebn0, R esn0);
-			void set_sigmas(std::vector<R>& sigmas);
+			void set_sigmas(R sigma_ave, R ebn0, R esn0, R skew);
+			void set_skewness(std::vector<R> &sigmas);
 			R get_sigma(unsigned voltage_level_index) const;
+			R get_sigma_ave() const;
 			std::vector<R> get_sigmas() const;
 			bool has_sigmas() const noexcept;
-			void generate_sigmas();
-			void set_seed(const int seed);
 			R get_threshold_noise(unsigned threshold_index) const;
 			R get_ratio(unsigned threshold_index) const;
 
@@ -39,12 +43,9 @@ namespace aff3ct
 			// virtual Sigma_asymmetric<R> *clone() const;
 
 		protected:
-			void compute_sigma_ratios();
 			std::vector<R> sigmas; // Maps a sigma to a given voltage level
-			std::vector<R> sigma_ratios;
+			R skew;
 			bool sigmas_exist = false;
-			R min_sigma;
-			tools::Random_sigma_generator<R> sigma_generator;
 		};
 
 	}
