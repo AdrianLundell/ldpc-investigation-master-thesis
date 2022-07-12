@@ -1,6 +1,6 @@
 n_thresholds: 3
 skew: 0.5
-rber_range: [0.001, 0.5]
-n_rber: 100
+rber_range: [0.0005, 0.15]
+n_rber:  100
 output: "data/4_05_AWGN.csv"
 symmetric_thresholds: True

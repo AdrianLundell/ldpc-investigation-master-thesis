@@ -1,3 +1,4 @@
+#%%
 import yaml
 import numpy as np 
 import dmc_utils
@@ -12,9 +13,9 @@ except:
                 "n_thresholds" : 3,
                 "skew" : 0.5,
                 "rber_range" : [0.001, 0.5],
-                "n_rber" : 100,
-                "output" : "3_05_AWGN.csv",
-                "symmetric_threshods" : True
+                "n_rber" : 10,
+                "output" : "4_05_AWGN_test.csv",
+                "symmetric_thresholds" : True
                 }
 
 try:
@@ -29,8 +30,14 @@ try:
         sigma1 = (1-settings["skew"])*sigma
         sigma2 = settings["skew"]*sigma
 
-        t, capacity = dmc_utils.optimize_thresholds(sigma1, sigma2, symmetric=settings["symmetric_thresholds"])
-        llr = dmc_utils.llrs(t, sigma1, sigma2)
+        if settings["n_thresholds"] == 3:
+            t, capacity = dmc_utils.optimize_thresholds(sigma1, sigma2, symmetric=settings["symmetric_thresholds"])
+            llr = dmc_utils.llrs(t, sigma1, sigma2)
+        elif settings["n_thresholds"] == 1:
+            t = dmc_utils.mid_point(sigma1, sigma2)
+            capacity = 0
+            llr = dmc_utils.llrs([t], sigma1, sigma2)
+
 
         row = np.hstack((rber, sigma, sigma1, sigma2, capacity, t, llr))
         result[i, :] = row
