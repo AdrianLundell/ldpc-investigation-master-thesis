@@ -13,14 +13,13 @@ namespace aff3ct
 	namespace tools
 	{
 		template <typename R, typename Q>
-		Flash_reader<R, Q>::Flash_reader(const unsigned page_type, const unsigned read_type, std::string fpath) :
-																											  thresholds(page_type),
-																											  bin_values(page_type),
-																											  my_page_type(page_type),
-																											  my_read_type(read_type)
+		Flash_reader<R, Q>::Flash_reader(const unsigned page_type, const unsigned read_type, std::string fpath) : thresholds(page_type),
+																												  bin_values(page_type),
+																												  my_page_type(page_type),
+																												  my_read_type(read_type)
 		{
 			n_thresholds = read_type;
-			n_bin_values = read_type+1;
+			n_bin_values = read_type + 1;
 			init_data(fpath);
 		}
 
@@ -31,65 +30,66 @@ namespace aff3ct
 			float x, y;
 			for (auto i = 0; i < this->get_page_type(); i++)
 			{
-				x = channel.get_snr(i);
-				y = channel.get_sigma_ratio(i);
+				float sigma_ave = (float)channel.get_sigma_ave();
 				this->thresholds[i] = std::vector<R>(this->get_n_thresholds());
 				this->bin_values[i] = std::vector<R>(this->get_n_bin_values());
 
-				this->_update(x, y, this->thresholds[i], this->bin_values[i]);
+				this->_update(sigma_ave, this->thresholds[i], this->bin_values[i]);
 			}
 		}
 
 		template <typename R, typename Q>
-		void Flash_reader<R, Q>::_update(const float x, const float y, std::vector<R> &thresholds, std::vector<Q> &bin_values)
+		void Flash_reader<R, Q>::_update(const float sigma_ave, std::vector<R> &thresholds, std::vector<Q> &bin_values)
 		{
+			// Important! When generating file from compute dmc, make sure to match the skewness with the one used in aff3ct
 
-			float x1, x2, y1, y2;
-			// Loop over data to find boundary points assuming increasing values row wise and (snr, ratio) within limits
-			for (auto i = 0; i < this->data.size(); i++)
+			const float sigma = 2 * sigma_ave; // sigma represents a total sigma
+
+			// Bisection search to find the interval of sigma to interpolat from
+			unsigned lower_idx = 0;
+			unsigned upper_idx = this->data.size() - 1;
+
+			// Firstly check that sigma_tot is within range
+			float sigma_lower = data[lower_idx][1];
+			float sigma_upper = data[upper_idx][1];
+			if (sigma < sigma_lower || sigma > sigma_upper)
 			{
-				if ((this->data)[i][0] >= x && this->data[i][1] >= y)
-				{
-					// Weighted mean interpolation: https://en.wikipedia.org/wiki/Bilinear_interpolation#Weighted_mean
-					std::vector<R> &q22 = this->data[i];
-					std::vector<R> &q21 = this->data[i - 1];
-					std::vector<R> &q12 = this->data[i - this->n_y];
-					std::vector<R> &q11 = this->data[i - this->n_y - 1];
+				std::stringstream message;
+				message << "sigma is out of range. sigma = " << sigma << ". Should be in range [" << sigma_lower << "," << sigma_upper << "].";
+				throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+			}
 
-					x1 = q11[0];
-					x2 = q22[0];
-					y1 = q11[1];
-					y2 = q22[1];
+			// Search for interpolation range thorugh bisections search
+			unsigned mid_idx = (upper_idx + lower_idx) / 2;
+			float sigma_mid = data[mid_idx][1];
 
-					float w11, w12, w21, w22, c;
-					c = (x2 - x1) * (y2 - y1);
-					w11 = (x2 - x) * (y2 - y) / c;
-					w12 = (x2 - x) * (y - y1) / c;
-					w21 = (x - x1) * (y2 - y) / c;
-					w22 = (x - x1) * (y - y1) / c;
+			while (upper_idx - lower_idx != 1)
+			{
+				if (sigma > sigma_mid)
+					lower_idx = mid_idx;
+				else
+					upper_idx = mid_idx;
 
-					int j;
-					for (auto k = 0; k < this->n_thresholds; k++)
-					{
-						j = k + 2;
-						thresholds[k] = w11 * q11[j] + w21 * q21[j] + w12 * q12[j] + w22 * q22[j];
-					}
+				mid_idx = (upper_idx + lower_idx) / 2;
+				sigma_mid = data[mid_idx][1];
+			}
 
-					for (auto k = 0; k < this->n_bin_values; k++)
-					{
-						j = k + 2 + this->n_thresholds;
-						bin_values[k] = w11 * q11[j] + w21 * q21[j] + w12 * q12[j] + w22 * q22[j];
-					}
+			// Interpolate values
+			sigma_lower = data[lower_idx][1];
+			sigma_upper = data[upper_idx][1];
+			float weight = (sigma - sigma_lower) / (sigma_upper - sigma_lower);
 
-					break;
-				}
+			unsigned j;
+			for (auto k = 0; k < this->n_thresholds; k++)
+			{
+				j = k + 5;
+				thresholds[k] = data[lower_idx][j] + weight * (data[upper_idx][j] - data[lower_idx][j]);
+			}
 
-				if (i == this->data.size()-1) {
-					std::stringstream message;
-					message << "(x,y) out of interpolation limits";
-					throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
-		
-				}
+			for (auto k = 0; k < this->n_bin_values; k++)
+			{
+				j = k + 5 + this->n_thresholds;
+				bin_values[k] = data[lower_idx][j] + weight * (data[upper_idx][j] - data[lower_idx][j]);
 			}
 		}
 
@@ -219,11 +219,11 @@ namespace aff3ct
 #include "Tools/types.h"
 #ifdef AFF3CT_MULTI_PREC
 template class aff3ct::tools::Flash_reader<float, float>;
-//template class aff3ct::tools::Flash_reader<R_32, R_32>;
-//template class aff3ct::tools::Flash_reader<R_64, R_64>;
-//template class aff3ct::tools::Flash_reader<R_64, Q_32>;
-//TODO: More template instanciations
+// template class aff3ct::tools::Flash_reader<R_32, R_32>;
+// template class aff3ct::tools::Flash_reader<R_64, R_64>;
+// template class aff3ct::tools::Flash_reader<R_64, Q_32>;
+// TODO: More template instanciations
 #else
-template class aff3ct::tools::Flash_readerc<R, Q>;
+template class aff3ct::tools::Flash_reader<R, Q>;
 #endif
 //==================================================================================== explicit template instantiation
