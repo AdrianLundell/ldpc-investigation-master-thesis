@@ -26,13 +26,13 @@ namespace aff3ct
 
 			Q read(const R level, const std::vector<unsigned> &threshold_indexes);
 
-			enum read_type: unsigned
+			enum read_type : unsigned
 			{
 				hard = 1,
 				soft_single = 3,
 				soft_double = 5
 			};
-			enum page_type: unsigned
+			enum page_type : unsigned
 			{
 				lower = 1,
 				upper = 2,
@@ -40,7 +40,7 @@ namespace aff3ct
 			};
 
 		private:
-			void _update(const float x, const float y, std::vector<R> &thresholds, std::vector<Q> &bin_values);
+			void _update(const float sigma_ave, std::vector<R> &thresholds, std::vector<Q> &bin_values);
 
 			void init_data(const std::string &fpath);
 			int count_unique(const std::vector<R> &x);
