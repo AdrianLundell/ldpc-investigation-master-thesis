@@ -28,21 +28,40 @@ def llrs(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
 
 def mutual_info(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
     """Calculates the mutual infromation of the A-BIAWGN channel discretized with thresholds t"""
-    p = np.array([stats.norm.cdf(np.array(t), mu1, sigma1),
-                  stats.norm.cdf(np.array(t), mu2, sigma2)])
+    p = (np.array([[stats.norm.cdf(t[0], -1, sigma1), stats.norm.cdf(t[1], -1, sigma1), stats.norm.cdf(t[2], -1, sigma1), 1],
+            [stats.norm.cdf(t[0], 1, sigma2), stats.norm.cdf(t[1], 1, sigma2), stats.norm.cdf(t[2], 1, sigma2), 1]]))
     
-    yx_prob = np.array(([np.ediff1d(p[0,:], to_begin = p[0,0])],
-                       [np.ediff1d(p[1,:], to_begin = p[1,0])]))
+    yx_prob = np.array([p[0, 0], p[0, 1] - p[0, 0], p[0,2] - p[0, 1], p[0, 3] - p[0, 2], 
+                        p[1, 0], p[1, 1] - p[1, 0], p[1,2] - p[1, 1], p[1, 3] - p[1, 2]])
 
-    y_prob = 0.5 * (yx_prob[0,:] + yx_prob[1,:])
+    y_prob = np.array([(yx_prob[0]+yx_prob[4])*0.5, (yx_prob[1]+yx_prob[5])*0.5, 
+                       (yx_prob[2]+yx_prob[6])*0.5, (yx_prob[3]+yx_prob[7])*0.5])
 
-    y_prob = y_prob.flatten()
+    yx_prob = yx_prob[yx_prob>0]
+    y_prob = y_prob[y_prob>0]
+
     y_entropy = -(y_prob @ np.log2(y_prob))
+    yx_entropy = -(yx_prob @ np.log2(yx_prob))
 
-    yx_prob = yx_prob.flatten()
-    yx_entropy = -(yx_prob @ np.log2(yx_prob))*0.5
+    #Note: H(Y|X) = 1/2H(Y|X=0) + 1/2H(Y|X=1)
+    #here both terms are concatenated.
 
-    return y_entropy - yx_entropy
+    return y_entropy - yx_entropy*0.5
+    # p = np.array([stats.norm.cdf(np.array(t), mu1, sigma1),
+    #               stats.norm.cdf(np.array(t), mu2, sigma2)])
+    
+    # yx_prob = np.array(([np.ediff1d(p[0,:], to_begin = p[0,0])],
+    #                    [np.ediff1d(p[1,:], to_begin = p[1,0])]))
+
+    # y_prob = 0.5 * (yx_prob[0,:] + yx_prob[1,:])
+
+    # y_prob = y_prob.flatten()
+    # y_entropy = -(y_prob @ np.log2(y_prob))
+
+    # yx_prob = yx_prob.flatten()
+    # yx_entropy = -(yx_prob @ np.log2(yx_prob))*0.5
+
+    # return y_entropy - yx_entropy
 
 def optimize_thresholds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, offsets = np.arange(7.5e-3, 1, 7.5e-3)):
     """Returns optimal offsets for three thresholds
@@ -61,7 +80,10 @@ def optimize_thresholds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, of
             for j, negative_offset in enumerate(offsets):
                 t = [m-negative_offset, m, m+positive_offset]
                 mi_result[i, j] = mutual_info(t, sigma1, sigma2, mu1, mu2)
+    
 
+    plt.plot(mi_result[mi_result>0])
+    plt.show()
     max_mi = np.max(mi_result)
     max_mi_index = np.unravel_index(np.argmax(mi_result), mi_result.shape)
     pos_offset = offsets[max_mi_index[0]]
