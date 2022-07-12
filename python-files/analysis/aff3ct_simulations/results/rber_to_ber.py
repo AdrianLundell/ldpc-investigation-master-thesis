@@ -27,10 +27,10 @@ def plot():
 
         ber = df["BER"].to_numpy()
 
-        plt.plot(rberdB,ber,'o')
+        plt.plot(rber, ber, 'o')
     
     plt.legend([fname for fname in data_dict])
     plt.ylabel("BER")
-    plt.xlabel('RBER_{db}')
+    plt.xlabel('RBER')
     plt.show()
     
