@@ -81,9 +81,6 @@ def optimize_thresholds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, of
                 t = [m-negative_offset, m, m+positive_offset]
                 mi_result[i, j] = mutual_info(t, sigma1, sigma2, mu1, mu2)
     
-
-    plt.plot(mi_result[mi_result>0])
-    plt.show()
     max_mi = np.max(mi_result)
     max_mi_index = np.unravel_index(np.argmax(mi_result), mi_result.shape)
     pos_offset = offsets[max_mi_index[0]]
