@@ -7,18 +7,17 @@ https://arxiv.org/pdf/2001.01249.pdf [2]
 
 """
 
+from threading import Thread
+from config import cfg
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+import numpy as np
+import scipy.signal as sp
+import pandas as pd
+import os
 import sys
 sys.path.insert(
     0, '/home/fredrikblomgren/CAS/MasterThesis/ldpc-investigation-master-thesis/python-files')
-
-import os
-import pandas as pd
-import scipy.signal as sp
-import numpy as np
-from scipy.stats import norm
-import matplotlib.pyplot as plt
-from config import cfg
-from threading import Thread
 
 
 global data
@@ -246,9 +245,9 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     # Interpolate values on rber
     rber_step = data[1, 0] - data[0, 0]
     rber_index = (rber - data[0, 0])/rber_step
-    index0 = int(np.floor(rber_index)) - 1
-    index1 = int(np.ceil(rber_index)) - 1
-    values = data[index0, :] + \
+    index0 = int(np.floor(rber_index))
+    index1 = int(np.ceil(rber_index))
+    values = data[index0] + \
         (data[index1] - data[index0]) * (rber_index - index0)
 
     # Set values
@@ -279,7 +278,7 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     return x1, x2, y
 
 
-def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, n_iter=50, tol=1e-3, plot=False, prnt=False):
+def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, tol, n_iter=cfg_de.get("de_iter"),  plot=False, prnt=False):
     if plot:
         fig, axes = plt.subplots(3, 2)
 
@@ -315,7 +314,7 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
             axes[2, 0].plot(pl)
             axes[2, 1].scatter(i, error)
 
-        is_converged = (diff < 1e-9)
+        is_converged = (diff < float(cfg_de.get("is_converged_tol")))
         is_zero = (error < tol)
         max_iter = (i == n_iter)
 
@@ -348,12 +347,12 @@ def eval(rber, rho_edge, lam_edge):
         plt.show()
 
     result = symmetric_density_evolution(
-        cdf, f_grid, g_grid, rho_edge, lam_edge, plot=False)
+        cdf, f_grid, g_grid, rho_edge, lam_edge, tol=rber*float(cfg_de.get("de_tol")),  plot=False)
 
     return result
 
 
-def bisection_search(min, max, rho_edge, lam_edge, tol=1e-4):
+def bisection_search(min, max, rho_edge, lam_edge, tol=float(cfg_de.get("bs_tol"))):
     while max - min > tol:
         x = (min + max)/2
         result = eval(x, rho_edge, lam_edge)
@@ -367,16 +366,18 @@ def bisection_search(min, max, rho_edge, lam_edge, tol=1e-4):
 
     return (min + max)/2
 
+
 def convert_edge_to_node(p_edge):
-    p_node = p_edge/(np.arange(1, len(p_edge)+1)*np.sum(1/np.arange(1, len(p_edge)+1)*p_edge))
+    p_node = p_edge/(np.arange(1, len(p_edge)+1) *
+                     np.sum(1/np.arange(1, len(p_edge)+1)*p_edge))
     return p_node
 
 
-
-def set_continuous_params(start_pt,const_mat):
+def set_continuous_params(start_pt, const_mat):
     global x_0, C_c
-    x_0 = start_pt 
+    x_0 = start_pt
     C_c = const_mat
+
 
 def best_individual_discrete(best_ind):
     cn_degrees = np.sum(best_ind, 0)
@@ -398,12 +399,12 @@ def best_individual_continous(best_ind):
     lam_node = convert_edge_to_node(lam_edge)
     rho_node = convert_edge_to_node(rho_edge)
     return lam_node, rho_node
-    
+
 
 def save_params():
     algorithm = cfg_de.get("algorithm")
     data = {
-        
+
         "Np": [cfg_de.get("Np")],
         "generations": [cfg_de.get("generations")],
         "n_grid": [cfg_de.get("n_grid")],
@@ -439,16 +440,18 @@ def save_params():
 
 def save_population(population, fitness, generation, best_idx, best_rber, algorithm):
     if algorithm == "discrete":
-        lam_node, rho_node = best_individual_discrete(population[best_idx,:,:])
+        lam_node, rho_node = best_individual_discrete(
+            population[best_idx, :, :])
     elif algorithm == "continuous":
-        lam_node, rho_node = best_individual_continous(population[:,best_idx])
-        
+        lam_node, rho_node = best_individual_continous(population[:, best_idx])
+
     fname = "data/" + run_id + ".npz"
     with open(fname, 'wb') as f:
-        np.savez(f, population=population, fitness=fitness, generation=np.array([generation]), best_idx=np.array([best_idx]), best_rber=np.array([best_rber]),  lam_node=lam_node, rho_node=rho_node)
+        np.savez(f, population=population, fitness=fitness, generation=np.array([generation]), best_idx=np.array(
+            [best_idx]), best_rber=np.array([best_rber]),  lam_node=lam_node, rho_node=rho_node)
 
 
 def log(txt, options):
     fname = "data/log_" + run_id + ".txt"
-    with open(fname,options) as f:
+    with open(fname, options) as f:
         f.write(txt+"\n")
