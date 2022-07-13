@@ -254,8 +254,15 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     sigma = values[1]
     sigma1 = values[2]
     sigma2 = values[3]
-    thresholds = values[5:8]
-    llrs = values[8:]
+    
+    if len(values) == 8:
+        thresholds = np.array([values[5]])
+        llrs = values[6:]
+    elif len(values) == 12:
+        thresholds = values[5:8]
+        llrs = values[8:]
+    else:
+        raise Exception("Invalid dmc-file")
 
     # Calculate probabilities
     p0 = norm.cdf(np.append(thresholds, np.inf), mu2, sigma2)
@@ -314,7 +321,7 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
             axes[2, 0].plot(pl)
             axes[2, 1].scatter(i, error)
 
-        is_converged = (diff < float(cfg_de.get("is_converged_tol")))
+        is_converged = False #(diff < float(cfg_de.get("is_converged_tol")))
         is_zero = (error < tol)
         max_iter = (i == n_iter)
 
