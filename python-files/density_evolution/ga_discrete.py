@@ -104,7 +104,10 @@ def ga_discrete():
         i_start = 0
 
     code_rate = (n_vn-n_cn)/n_vn
-    
+    best_idx = 0
+    best_rber = 0
+    i = i_start
+
     header = f"""
     Running ga_disrete.py
     ===================================================================
