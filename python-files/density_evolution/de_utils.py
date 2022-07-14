@@ -1,7 +1,7 @@
 """
 This file contains methods for a numeric discretized implementation of density evolution for a general distribution.
 
-Sources: 
+Sources:
 https://arxiv.org/pdf/cs/0509014.pdf [1]
 https://arxiv.org/pdf/2001.01249.pdf [2]
 
@@ -53,9 +53,9 @@ def convolution_pad(x, final_size):
 def gamma(F, F_grid, G_grid):
     """
     Given a discrete stochastic variable f defined by a cdf with probabilities F for each value on F_grid,
-    calculates the cdf of the transformed variable 
+    calculates the cdf of the transformed variable
         g = gamma(f)
-    with gamma defined as in [1]. 
+    with gamma defined as in [1].
     Because G has to be an equidistant grid for numeric purposes, this creates a small quantization error.
     """
     zero_index = F.size//2
@@ -75,7 +75,7 @@ def gamma(F, F_grid, G_grid):
 def gamma_inv(G, F_grid, G_grid):
     """
     Given a discrete stochastic variable g defined by a 2 dimensional cdf with probabilities G for each value on (GF(2) x G_grid),
-    calculates the cdf of the transformed variable 
+    calculates the cdf of the transformed variable
         f = gamma^-1(g)
     with gamma^-1 defined as the inverse of gamma in [2].
     """
@@ -254,7 +254,7 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     sigma = values[1]
     sigma1 = values[2]
     sigma2 = values[3]
-    
+
     if len(values) == 8:
         thresholds = np.array([values[5]])
         llrs = values[6:]
@@ -285,12 +285,64 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     return x1, x2, y
 
 
+def compute_cbp(pdf, f_grid):
+    y = np.exp(-f_grid/2)*pdf
+    ber = np.sum(pdf[:int(f_grid.size/2)])
+    cbp_avg = np.sum(y)
+    #is_valid = (2*ber <= cbp_avg and cbp_avg <= 2*np.sqrt(ber*(1-ber)))
+    # if not is_valid:
+    #    message = f"CBP should be bounded by 2*ber<= CBP <= 2*sqrt(ber*(1-ber)). CBP = {cbp_avg}. BER = {ber}."
+    #    print(message)
+    #plt.plot(f_grid, y)
+    # plt.show()
+    return cbp_avg
+
+
+def poly_eval(poly, x):
+    # sum = 0
+    # for i, coeff in enumerate(poly):
+    #    sum += coeff*x**i
+    #
+    # return sum
+    return np.sum(poly*x**(np.arange(poly.size)))
+
+
+def compute_eps(lam, rho, r):
+    lam_2 = lam[1]
+    rho_prime = rho[1:]*np.arange(1, rho.size)
+
+    rho_prime_1 = poly_eval(rho_prime, 1)
+    f1 = lam_2*rho_prime_1*r
+
+    if f1 < 1:
+        if np.abs(lam_2-1) > 1e-1:
+            f2 = poly_eval(lam, rho_prime_1)*r
+            eps = (1-f1)/(f2-f1)
+            if eps > r or eps < 0:
+                eps = 1
+        else:
+            eps = -1
+    else:
+        eps = -1
+    return eps
+
+
+def compute_threshold(pdf, f_grid, lam, rho):
+    # Based on "C. Stability" section of:
+    # https://arxiv.org/pdf/cs/0509014.pdf
+    r = compute_cbp(pdf, f_grid)
+
+    eps = compute_eps(lam, rho, r)
+
+    return eps
+
+
 def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, tol, n_iter=cfg_de.get("de_iter"),  plot=False, prnt=False):
     if plot:
         fig, axes = plt.subplots(3, 2)
 
-    #assert np.sum(rho_coeffs[1:]) == 1, "Invalid rho polynom"
-    #assert np.sum(lambda_coeffs[1:]) == 1, "Invalid lambda polynom"
+    # assert np.sum(rho_coeffs[1:]) == 1, "Invalid rho polynom"
+    # assert np.sum(lambda_coeffs[1:]) == 1, "Invalid lambda polynom"
 
     pl = cdf
     p0 = cdf
@@ -321,8 +373,17 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
             axes[2, 0].plot(pl)
             axes[2, 1].scatter(i, error)
 
-        is_converged = False #(diff < float(cfg_de.get("is_converged_tol")))
-        is_zero = (error < tol)
+        is_converged = False  # (diff < float(cfg_de.get("is_converged_tol")))
+        # Stability criterion
+        pdf_l = to_pdf(pl)
+        if i == 0:
+            coeff = pl.size/f_grid.size
+            start = coeff*f_grid[0]
+            step = f_grid[1]-f_grid[0]
+            f_grid_l = np.arange(start, -start, step)
+
+        cbp = compute_cbp(pdf_l, f_grid_l)
+        is_zero = (cbp < tol)
         max_iter = (i == n_iter)
 
         if is_zero:
@@ -353,8 +414,14 @@ def eval(rber, rho_edge, lam_edge):
         plt.plot(f_grid, cdf)
         plt.show()
 
-    result = symmetric_density_evolution(
-        cdf, f_grid, g_grid, rho_edge, lam_edge, tol=rber*float(cfg_de.get("de_tol")),  plot=False)
+    eps = compute_threshold(pdf, f_grid, lam_edge, rho_edge)
+    if eps == -1:  # will not converge to zero
+        result = 1
+    elif eps == 1:  # will converge to zero
+        result = 0
+    else:
+        result = symmetric_density_evolution(
+            cdf, f_grid, g_grid, rho_edge, lam_edge, tol=eps,  plot=False)
 
     return result
 
