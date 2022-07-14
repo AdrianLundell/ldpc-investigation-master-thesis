@@ -11,21 +11,22 @@ using namespace aff3ct;
 
 struct params
 {
-	int K = 18688 - 2304;	// number of information bits
+	int K = 16384;	// number of information bits
 	int N = 18688;			// codeword size
+
 	int fe = 100;			// number of frame errors
 	int seed = 0;			// PRNG seed for the AWGN channel
-	float ebn0_min = -0.7f; // minimum SNR value
-	float ebn0_max = 7.3f;	// maximum SNR value
+	float ebn0_min = 2.f; // minimum SNR value
+	float ebn0_max = 7.9f;	// maximum SNR value
 	float ebn0_step = .5f;	// SNR step
 	float R;				// code rate (R=K/N)
 	float min_sigma = 0.5;	// Set minimum value for individual sigmas (NOT IN USE)
 	float skew = 0.5;
 
 	std::vector<float> voltage_levels{-1, 1};
-	std::string reader_fpath = "../../python-files/compute_dmc/data/4_05_AWGN_aff3ct.csv";
-	std::string output_fpath = "../../python-files/analysis/aff3ct_simulations/results/data/discrete_run1_v2.txt";
-	std::string ldpc_fpath = "../../python-files/mm_qc_pega/data/discrete_run1_v2.qc";
+	std::string reader_fpath = "../../python-files/compute_dmc/data/4_05_AWGN.csv";
+	std::string output_fpath = "../../python-files/analysis/aff3ct_simulations/results/data/random_2bit-awgn.txt";
+	std::string ldpc_fpath = "../../python-files/analysis/qc_ldpc/data/random.qc";
 	int page_type = tools::Flash_reader<float, float>::lower;
 	int read_type = tools::Flash_reader<float, float>::soft_single;
 	int cell_type = tools::Flash_cell::SLC;
@@ -88,9 +89,12 @@ int main(int argc, char **argv)
 	u.terminal->legend();
 
 	// loop over the various SNRs
-	for (auto ebn0 = p.ebn0_min; ebn0 < p.ebn0_max; ebn0 += p.ebn0_step)
+	std::vector<float> ebn0_range = {7.90643737,  7.69459263,  7.47266019,  7.23966357,  6.99448019, 6.73581115,  6.46214283,  6.17169751,  5.86236912,  5.53163847, 5.17645948,  4.79310398, 4.37694552,  3.9221514 ,  3.42123233, 2.86436372,  2.23832529,  1.52477269,  0.69726958, -0.28414939};
+	
+	for (auto ebn0_index = 19; ebn0_index >= 0; ebn0_index -= 1)
 	{
 		// compute the current sigma for the channel noise
+		const auto ebn0 = ebn0_range[ebn0_index];
 		const auto esn0 = tools::ebn0_to_esn0(ebn0, p.R);
 		const auto sigma_ave = tools::esn0_to_sigma(esn0);
 
@@ -173,7 +177,7 @@ void init_modules(const params &p, modules &m)
 	m.decoder = std::unique_ptr<module::Decoder_LDPC_BP_flooding_SPA<>>(new module::Decoder_LDPC_BP_flooding_SPA<>(
 		p.K,
 		p.N,
-		10,
+		50,
 		H,
 		p.info_bits));
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(new module::Monitor_BFER<>(p.K, p.fe));
