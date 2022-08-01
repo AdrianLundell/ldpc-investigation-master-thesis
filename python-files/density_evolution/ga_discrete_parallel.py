@@ -54,6 +54,7 @@ def pool_initializer():
 def ga_discrete_parallel():
     global pop_name, fit_name, pop_shape, fit_shape, i_idx
     load_population = cfg_de.get("load_population")
+    de_u.set_cfg(cfg)
 
     n_pop = cfg_de.get("Np")
     n_generations = cfg_de.get("generations")
