@@ -100,4 +100,4 @@ f.close()
 
 print("MM-QC-PEGA completed.")
 
-peg_utils.graph_stats(G)
+peg_utils.graph_stats(G,settings["output_fname"])

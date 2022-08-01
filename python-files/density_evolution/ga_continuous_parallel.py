@@ -238,6 +238,7 @@ def differential_evolution(C_c, x_0, dc):
 
 def ga_continous_parallel():
     global C_c, x_0, dc
+    de_u.set_cfg(cfg)
 
     R = cfg_cont.get('R')
     dv = cfg_cont.get('dv')

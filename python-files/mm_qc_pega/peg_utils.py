@@ -232,7 +232,7 @@ def shortest_cycles_gcd(G, cn, vn, vn_distances, cn_distances):
 
     return result
 
-def graph_stats(G):
+def graph_stats(G,file_name=None):
         """Plot H and girth distribution"""
         H = G.get_H()
 
@@ -242,9 +242,18 @@ def graph_stats(G):
             if cycles:
                 girths.append(min(cycles.values()))
             else:
-                girths.append(-10)
+                girths.append(0)
 
-        print(girths)
+        girths = np.bincount(girths)
+
+        if file_name == None:
+            print(girths)
+        else:
+            fname = file_name.split(".")
+            fname = fname[0] + ".txt"
+            f = open(fname, 'w')
+            f.write(str(girths))
+            f.close()
         
         parity_eqs = np.zeros((G.m*G.N,G.n*G.N))
         parity_eqs[:,-G.m*G.N:] = 0.2

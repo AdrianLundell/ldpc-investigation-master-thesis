@@ -1,14 +1,13 @@
 """
 This file contains methods for a numeric discretized implementation of density evolution for a general distribution.
 
-Sources: 
+Sources:
 https://arxiv.org/pdf/cs/0509014.pdf [1]
-https://arxiv.org/pdf/2001.01249.pdf [2]
+https://ieeexplore.ieee.org/abstract/document/910578?casa_token=27RtOEW11OcAAAAA:OX_XwVvok1YSH5PgL930MjWe1a1MySsUdVvu_CCVeIWA3X2m9AwPTN9MR6BS7gDfqQuq_U8o0A [2]
 
 """
 
 from threading import Thread
-from config import cfg
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 import numpy as np
@@ -20,14 +19,15 @@ sys.path.insert(
     0, '/home/fredrikblomgren/CAS/MasterThesis/ldpc-investigation-master-thesis/python-files')
 
 
-global data
+global data, cfg_de, cfg_cont, cfg_disc, run_id
 data = None
 
-cfg_de = cfg.get('density_evolution')
-cfg_cont = cfg_de.get('ga_continuous')
-cfg_disc = cfg_de.get('ga_discrete')
-run_id = cfg.get('run_id')
-
+def set_cfg(cfg):
+    global cfg_de, cfg_cont, cfg_disc, run_id
+    cfg_de = cfg.get('density_evolution')
+    cfg_cont = cfg_de.get('ga_continuous')
+    cfg_disc = cfg_de.get('ga_discrete')
+    run_id = cfg.get('run_id')
 
 def to_cdf(pdf):
     """Returns the discrete pdf from a given cdf"""
@@ -53,9 +53,9 @@ def convolution_pad(x, final_size):
 def gamma(F, F_grid, G_grid):
     """
     Given a discrete stochastic variable f defined by a cdf with probabilities F for each value on F_grid,
-    calculates the cdf of the transformed variable 
+    calculates the cdf of the transformed variable
         g = gamma(f)
-    with gamma defined as in [1]. 
+    with gamma defined as in [1].
     Because G has to be an equidistant grid for numeric purposes, this creates a small quantization error.
     """
     zero_index = F.size//2
@@ -75,7 +75,7 @@ def gamma(F, F_grid, G_grid):
 def gamma_inv(G, F_grid, G_grid):
     """
     Given a discrete stochastic variable g defined by a 2 dimensional cdf with probabilities G for each value on (GF(2) x G_grid),
-    calculates the cdf of the transformed variable 
+    calculates the cdf of the transformed variable
         f = gamma^-1(g)
     with gamma^-1 defined as the inverse of gamma in [2].
     """
@@ -231,7 +231,7 @@ def rho(x, coeffs):
     return y
 
 
-def init_pdf(rber, n_grid=512, llr_max=30):
+def init_pdf(rber, n_grid=512, llr_max=15):
     """Returns density values of a DMC pdf and its grid in F and G from a look up table."""
     mu1 = -1
     mu2 = 1
@@ -254,7 +254,7 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     sigma = values[1]
     sigma1 = values[2]
     sigma2 = values[3]
-    
+
     if len(values) == 8:
         thresholds = np.array([values[5]])
         llrs = values[6:]
@@ -267,8 +267,15 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     # Calculate probabilities
     p0 = norm.cdf(np.append(thresholds, np.inf), mu2, sigma2)
     p0 = np.ediff1d(p0, to_begin=p0[0])
-    p1 = 1 - norm.cdf(np.array(thresholds), mu1, sigma1)
+    #p1 = 1 - norm.cdf(np.array(thresholds), mu1, sigma1)
+    #p1 = np.ediff1d(p1, to_begin=p1[0])
+    p1 = norm.cdf(np.append(thresholds,np.inf),mu1,sigma1)
     p1 = np.ediff1d(p1, to_begin=p1[0])
+
+    # Symmetrize probabilities
+    # Source: https://books.google.se/books?hl=en&lr=&id=ZJrZPObOe60C&oi=fnd&pg=PR13&dq=modern+coding+theory+urbanke&ots=WogyOo3ipu&sig=qKPObOLJNFbt8_4h9NKPd-bzwo4&redir_esc=y#v=onepage&q=modern%20coding%20theory%20urbanke&f=false
+    p1 = np.flip(p1)
+    p_sym = (p0+p1)/2
 
     step = 2*llr_max / n_grid
     bins = np.round(-llrs / step) + n_grid//2
@@ -276,7 +283,7 @@ def init_pdf(rber, n_grid=512, llr_max=30):
 
     x1 = np.linspace(-llr_max, llr_max, n_grid, endpoint=False)
     y = np.zeros(x1.shape)
-    np.put(y, bins.astype(int), p0)
+    np.put(y, bins.astype(int), p_sym)
 
     f_step = abs(x1[1] - x1[0])
     max_val = -np.log(np.tanh(f_step))
@@ -285,12 +292,68 @@ def init_pdf(rber, n_grid=512, llr_max=30):
     return x1, x2, y
 
 
-def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, tol, n_iter=cfg_de.get("de_iter"),  plot=False, prnt=False):
+def compute_cbp(pdf, f_grid,is_zero):
+    y = np.exp(-f_grid/2)*pdf
+    ber = np.sum(pdf[:int(f_grid.size/2)])
+    cbp_avg = np.sum(y)
+    is_valid = (2*ber <= cbp_avg and cbp_avg <= 2*np.sqrt(ber*(1-ber)))
+    message = f"CBP should be bounded by 2*ber<= CBP <= 2*sqrt(ber*(1-ber)). CBP = {cbp_avg}. BER = {ber}."
+    #assert is_valid, message
+    # if not is_valid:
+    #    message = f"CBP should be bounded by 2*ber<= CBP <= 2*sqrt(ber*(1-ber)). CBP = {cbp_avg}. BER = {ber}."
+    #    print(message)
+    #plt.plot(f_grid, y)
+    # plt.show()
+    return cbp_avg
+
+
+def poly_eval(poly, x):
+    # sum = 0
+    # for i, coeff in enumerate(poly):
+    #    sum += coeff*x**i
+    #
+    # return sum
+    return np.sum(poly*x**(np.arange(poly.size)))
+
+
+def compute_eps(lam, rho, r):
+    lam_2 = lam[1]
+    rho_prime = rho[1:]*np.arange(1, rho.size)
+
+    rho_prime_1 = poly_eval(rho_prime, 1)
+    f1 = lam_2*rho_prime_1*r
+
+    if f1 < 1:
+        if np.abs(lam_2-1) > 1e-1:
+            f2 = poly_eval(lam, rho_prime_1)*r
+            eps = (1-f1)/(f2-f1)
+            if eps > r or eps < 0:
+                eps = 1
+        else:
+            eps = -1
+    else:
+        eps = -1
+    return eps
+
+
+def compute_threshold(pdf, f_grid, lam, rho):
+    # Based on "C. Stability" section of:
+    # https://arxiv.org/pdf/cs/0509014.pdf
+    r = compute_cbp(pdf, f_grid,True)
+
+    eps = compute_eps(lam, rho, r)
+
+    return eps
+
+
+def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, tol,  plot=False, prnt=False):
+    global cfg_de
+    n_iter = cfg_de.get("de_iter")
     if plot:
         fig, axes = plt.subplots(3, 2)
 
-    #assert np.sum(rho_coeffs[1:]) == 1, "Invalid rho polynom"
-    #assert np.sum(lambda_coeffs[1:]) == 1, "Invalid lambda polynom"
+    # assert np.sum(rho_coeffs[1:]) == 1, "Invalid rho polynom"
+    # assert np.sum(lambda_coeffs[1:]) == 1, "Invalid lambda polynom"
 
     pl = cdf
     p0 = cdf
@@ -299,11 +362,53 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
     diff = np.inf
     error = np.inf
     while True:
+        # Compute pdf to determine convergence to zero
+        pdf_l = to_pdf(pl)
+        pdf_l = np.where(pdf_l > 1e-10, pdf_l, 0) # Numerical thing
+        prob_l = np.sum(pdf_l)
+
+        is_valid = (np.abs(1-prob_l)<1e-5)
+        message = f"Total probability has to sum to one with tolerance 1e-5. Total probability = {prob_l:.6f}."
+        assert is_valid, message
+
+        # Compute correct f_grid
+        if i == 0 or i == 1:
+            coeff = pl.size/f_grid.size
+            start = coeff*f_grid[0]
+            step = (f_grid[-1]-f_grid[0])/(f_grid.size-1)
+            f_grid_l = np.arange(start, -start, step)
+
+        # Check convergence
+        cbp = compute_cbp(pdf_l, f_grid_l,False)
+        is_zero = (cbp < tol)
+        max_iter = (i == n_iter)
+        is_converged = False
+
+        if is_zero:
+            error = 0
+            if prnt:
+                print("Is zero")
+        if is_converged and prnt:
+            print("Converged")
+        if max_iter and prnt:
+            print("MAX")
+        if is_zero or is_converged or max_iter:
+            if error < 0:
+                me = "Tjabba"
+            if plot:
+                plt.show()
+
+            return error
+
+        is_zero = (cbp < tol)
+        
+        # Perform one iteration of density evolution
         x1 = gamma(pl, f_grid, g_grid)
         x2 = rho(x1, rho_coeffs)
         x3 = gamma_inv(x2, f_grid, g_grid)
         x4 = lambd(x3, lambda_coeffs)
         pl = conv(x4, p0)
+        pl[np.argwhere(pl<1e-16)] = 0 # Numerical thing
 
         diff = sum((pl_old - pl)**2)
         pl_old = pl
@@ -321,24 +426,6 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
             axes[2, 0].plot(pl)
             axes[2, 1].scatter(i, error)
 
-        is_converged = False #(diff < float(cfg_de.get("is_converged_tol")))
-        is_zero = (error < tol)
-        max_iter = (i == n_iter)
-
-        if is_zero:
-            error = 0
-            if prnt:
-                print("Is zero")
-        if is_converged and prnt:
-            print("Converged")
-        if max_iter and prnt:
-            print("MAX")
-        if is_zero or is_converged or max_iter:
-            if plot:
-                plt.show()
-
-            return error
-
         i += 1
 
 
@@ -348,18 +435,26 @@ def eval(rber, rho_edge, lam_edge):
 
     f_grid, g_grid, pdf = init_pdf(rber, n_grid)
     cdf = to_cdf(pdf)
-
     if plot:
         plt.plot(f_grid, cdf)
         plt.show()
 
-    result = symmetric_density_evolution(
-        cdf, f_grid, g_grid, rho_edge, lam_edge, tol=rber*float(cfg_de.get("de_tol")),  plot=False)
+    eps = compute_threshold(pdf, f_grid, lam_edge, rho_edge)
+    if eps == -1:  # will not converge to zero
+        result = 1
+    elif eps == 1:  # will converge to zero
+        result = 0
+    else:
+        result = symmetric_density_evolution(
+            cdf, f_grid, g_grid, rho_edge, lam_edge, tol=eps,  plot=False)
 
     return result
 
 
-def bisection_search(min, max, rho_edge, lam_edge, tol=float(cfg_de.get("bs_tol"))):
+def bisection_search(min, max, rho_edge, lam_edge):
+    global cfg_de
+    tol=float(cfg_de.get("bs_tol"))
+    
     while max - min > tol:
         x = (min + max)/2
         result = eval(x, rho_edge, lam_edge)
@@ -369,7 +464,8 @@ def bisection_search(min, max, rho_edge, lam_edge, tol=float(cfg_de.get("bs_tol"
         elif result > 0:
             max = x
         else:
-            raise Exception
+            error_message = f"The probability from density evolution is negative ({result})."
+            raise Exception(error_message)
 
     return (min + max)/2
 
