@@ -32,6 +32,8 @@ A csv-file with one row for each noise level and the following columns describin
     SIGMA2   : Variance of the second noise distribution
     CAPACITY : The capacity of the channel
 
+The output is useable both for the density-evolution files and the modified Aff3ct-library. 
+
 ## SOURCES:
 Channel Coding for Nonvolatile Memory Technologies: Theoretical Advances and Practical Considerations:
 https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7920318

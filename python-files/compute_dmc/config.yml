@@ -1,6 +1,6 @@
-n_thresholds: 3
-skew: 0.4
-rber_range: [0.001, 0.1]
-n_rber:  50
-output: "data/4_04_AWGN.csv"
-symmetric_thresholds: False
+n_thresholds: 3 #3 for soft read, 1 for hard read
+skew: 0.5 #The distribution of total variance: sigma_tot = sigma1*(1 - skew) + sigma2*skew
+rber_range: [0.001, 0.1] #Range of RBER
+n_rber:  50 #Number of rows
+output: "2-bit-BI-AWGN.csv" #Name of output-file
+symmetric_thresholds: False #Optimize threshold offset in both directions from mid-point

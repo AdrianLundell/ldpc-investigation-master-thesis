@@ -24,9 +24,9 @@ struct params
 	float skew = 0.45;
 
 	std::vector<float> voltage_levels{-1, 1};
-	std::string reader_fpath = "../../python-files/compute_dmc/data/4_04_AWGN.csv";
-	std::string output_fpath = "../../python-files/analysis/aff3ct_simulations/results/data/optimal_045skew_hard.txt";
-	std::string ldpc_fpath = "../../python-files/analysis/qc_ldpc/data/optimal_soft.qc";
+	std::string reader_fpath = "";
+	std::string output_fpath = "";
+	std::string ldpc_fpath = "";
 	int page_type = tools::Flash_reader<float, float>::lower;
 	int read_type = tools::Flash_reader<float, float>::soft_single;
 	int cell_type = tools::Flash_cell::SLC;
@@ -89,10 +89,9 @@ int main(int argc, char **argv)
 	u.terminal->legend();
 
 	// loop over the various SNRs
-	//std::vector<float> ebn0_range = {7.90643737,  7.69459263,  7.47266019,  7.23966357,  6.99448019, 6.73581115,  6.46214283,  6.17169751,  5.86236912,  5.53163847, 5.17645948,  4.79310398, 4.37694552,  3.9221514 ,  3.42123233, 2.86436372,  2.23832529,  1.52477269,  0.69726958, -0.28414939};
-	std::vector<float> ebn0_range = {6.73581115,  6.46214283, 6.17169751,  5.86236912,  5.53163847, 5.17645948,  4.79310398, 4.37694552,  3.9221514 ,  3.42123233, 2.86436372,  2.23832529,  1.52477269};
+	std::vector<float> ebn0_range = {7.90643737,  7.69459263,  7.47266019,  7.23966357,  6.99448019, 6.73581115,  6.46214283,  6.17169751,  5.86236912,  5.53163847, 5.17645948,  4.79310398, 4.37694552,  3.9221514 ,  3.42123233, 2.86436372,  2.23832529,  1.52477269,  0.69726958, -0.28414939};
 	
-	for (auto ebn0_index = 12; ebn0_index >= 0; ebn0_index -= 1)
+	for (auto ebn0_index = 20; ebn0_index >= 0; ebn0_index -= 1)
 	{
 		// compute the current sigma for the channel noise
 		const auto ebn0 = ebn0_range[ebn0_index];

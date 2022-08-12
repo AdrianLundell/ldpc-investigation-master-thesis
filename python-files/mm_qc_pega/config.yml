@@ -3,6 +3,5 @@ m : 9   #Number of check nodes (rows) in protograph
 scaling_factor : 8  #Scaling of the protograph, often refered to as N
 girth_search_depth : 1 #Maximum depth of the DFS search algorithm to calculate potential girth
 seed : None #Randomness seed, set to None to pick a new one every time.
-gcd : False #Use the gcd approximation to speed up algorithm. [NOT PROPERLY IMPLEMENTED]
-input_fname : "../density_evolution/data/discrete_test1.npz" #Input from the density_evolution_script.
-output_fname : "continous_test1.qc" #Output file useable with aff3ct
+input_fname : "../density_evolution/data/test.npz" #Input from the density_evolution_script.
+output_fname : "test.qc" #Output file useable with aff3ct

@@ -68,72 +68,73 @@ def rk_edge_local_girth(G, current_vn_index, rk, cn_degrees = None):
     return max_girth, cn_girths
 
 
-def rk_edge_local_girth_layer_gcd(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances, cn_degrees = None):
-    for current_cn_index in range(int(enumerated_cn_max[t])):
+# Non finished approximative versions
+# def rk_edge_local_girth_layer_gcd(G, current_vn_index, rk, t, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances, cn_degrees = None):
+#     for current_cn_index in range(int(enumerated_cn_max[t])):
         
-        if not G.has_cyclical_edge_set((current_cn_index, current_vn_index)):
-            enumerated_cn_indexes[t] = current_cn_index #Keep track of path of this branch of the DFS-search tree 
-            enumerated_cn_max[t+1] = current_cn_index   #In next step in DFS-search limit search to 
+#         if not G.has_cyclical_edge_set((current_cn_index, current_vn_index)):
+#             enumerated_cn_indexes[t] = current_cn_index #Keep track of path of this branch of the DFS-search tree 
+#             enumerated_cn_max[t+1] = current_cn_index   #In next step in DFS-search limit search to 
 
-            G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
+#             G.add_cyclical_edge_set(current_cn_index, current_vn_index) 
         
-            if not cn_degrees is None:
-                if len(G.get_adjecent_cn(current_cn_index)) == np.max(cn_degrees) + 1:
-                    new_girth == -np.inf
-            else:
-                new_girth = shortest_cycles_gcd(G, current_cn_index, current_vn_index, vn_distances, cn_distances)
+#             if not cn_degrees is None:
+#                 if len(G.get_adjecent_cn(current_cn_index)) == np.max(cn_degrees) + 1:
+#                     new_girth == -np.inf
+#             else:
+#                 new_girth = shortest_cycles_gcd(G, current_cn_index, current_vn_index, vn_distances, cn_distances)
 
-            girths[t+1] = min(girths[t], new_girth)
+#             girths[t+1] = min(girths[t], new_girth)
 
-            if max_girth[0] <= girths[t+1]:
-                if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
-                    cn_girths.flat[enumerated_cn_indexes[0:t+1]] = girths[t+1]
-                    max_girth[0] = girths[t+1]
+#             if max_girth[0] <= girths[t+1]:
+#                 if t == rk-1: #Iterate over 0...r_k-1 rather than 1...rk
+#                     cn_girths.flat[enumerated_cn_indexes[0:t+1]] = girths[t+1]
+#                     max_girth[0] = girths[t+1]
 
-                else: 
-                    vn_indexes = list(range(G.n_cn, G.n_nodes))
-                    vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
+#                 else: 
+#                     vn_indexes = list(range(G.n_cn, G.n_nodes))
+#                     vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
                     
-                    cn_distances = {}
-                    T = np.arange(G.N)
-                    for ci in range(0, G.n_cn, G.N):
-                        cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
-                        cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
+#                     cn_distances = {}
+#                     T = np.arange(G.N)
+#                     for ci in range(0, G.n_cn, G.N):
+#                         cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
+#                         cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
                 
-                    rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
-            else:
-                pass        
+#                     rk_edge_local_girth_layer(G, current_vn_index, rk, t+1, enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
+#             else:
+#                 pass        
 
-            G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
+#             G.remove_cyclical_edge_set(current_cn_index, current_vn_index)
 
-def rk_edge_local_girth_gcd(G, current_vn_index, rk, cn_degrees = None):
-    """
-    Calculate the maximum girth possible when adding an edge from current_vn_index to each check node, with a look-ahead depth of rk. 
-    """
-    t = 0
-    enumerated_cn_indexes = np.zeros(rk+1, dtype=int) #s in article
-    enumerated_cn_max = np.zeros(rk+1, dtype=int) #u in article
-    girths = np.zeros(rk+1) 
-    max_girth = np.array([-np.inf])
-    cn_girths = np.full(G.n_cn, -np.inf)
+# def rk_edge_local_girth_gcd(G, current_vn_index, rk, cn_degrees = None):
+#     """
+#     Calculate the maximum girth possible when adding an edge from current_vn_index to each check node, with a look-ahead depth of rk. 
+#     """
+#     t = 0
+#     enumerated_cn_indexes = np.zeros(rk+1, dtype=int) #s in article
+#     enumerated_cn_max = np.zeros(rk+1, dtype=int) #u in article
+#     girths = np.zeros(rk+1) 
+#     max_girth = np.array([-np.inf])
+#     cn_girths = np.full(G.n_cn, -np.inf)
 
-    enumerated_cn_max[0] = G.n_cn
-    girths[0] = np.inf 
+#     enumerated_cn_max[0] = G.n_cn
+#     girths[0] = np.inf 
 
-    #Calculate local girths from all variable nodes and from the circulant for i = 0, N, m-N
-    vn_indexes = list(range(G.n_cn, G.n_nodes))
-    vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
+#     #Calculate local girths from all variable nodes and from the circulant for i = 0, N, m-N
+#     vn_indexes = list(range(G.n_cn, G.n_nodes))
+#     vn_distances = shortest_distances(G, current_vn_index, vn_indexes)
     
-    cn_distances = {}
-    T = np.arange(G.N)
-    for ci in range(0, G.n_cn, G.N):
-        cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
-        cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
+#     cn_distances = {}
+#     T = np.arange(G.N)
+#     for ci in range(0, G.n_cn, G.N):
+#         cn_indexes = list(G.proto_index(ci)*G.N + G.proto_value(ci + T))
+#         cn_distances[ci] = shortest_distances(G, ci, cn_indexes)
 
-    rk_edge_local_girth_layer_gcd(G, current_vn_index, rk, t, 
-                        enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
+#     rk_edge_local_girth_layer_gcd(G, current_vn_index, rk, t, 
+#                         enumerated_cn_indexes, enumerated_cn_max, girths, max_girth, cn_girths, vn_distances, cn_distances)
 
-    return max_girth, cn_girths
+#     return max_girth, cn_girths
 
 def shortest_distances(G, node,  stop_nodes = []):
     """
@@ -314,7 +315,6 @@ def discretize_polynomial(polynomial,n_nodes,D):
             polynomial[idx] += discrete_prob
 
     return D
-
 
 
 def to_degree_distribution(polynomial, n_nodes):
