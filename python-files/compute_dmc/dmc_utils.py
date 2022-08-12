@@ -63,7 +63,7 @@ def mutual_info(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
 
     # return y_entropy - yx_entropy
 
-def optimize_thresholds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, offsets = np.arange(7.5e-3, 2, 7.5e-3)):
+def optimize_thresholds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, offsets = np.arange(15.e-3, 1, 15.e-3)):
     """Returns optimal offsets for three thresholds
     TODO: Generalize to arbitrary amount of thresholds
     TODO: More clever optimization strategy

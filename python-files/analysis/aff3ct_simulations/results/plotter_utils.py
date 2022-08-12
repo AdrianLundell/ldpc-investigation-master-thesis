@@ -1,6 +1,7 @@
+from distutils.command.config import config
 import numpy as np
 import pandas as pd
-
+from config import cfg
 
 def trim_data(lines):
     data = []
@@ -22,7 +23,10 @@ def trim_data(lines):
     return data
 
 def create_dataframe(data):
-    columns = ["Es/N0", "Eb/N0", "FRA", "BE", "FE", "BER", "FER", "SIM_THR"]
+    if data.shape[1] == 8:
+        columns = ["Es/N0", "Eb/N0", "FRA", "BE", "FE", "BER", "FER", "SIM_THR"]
+    elif data.shape[1] == 7:
+        columns = ["RBER", "FRA", "BE", "FE", "BER", "FER", "SIM_THR"]
     df = pd.DataFrame(data,columns=columns)
     return df
 

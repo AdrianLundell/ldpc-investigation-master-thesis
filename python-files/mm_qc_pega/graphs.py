@@ -173,7 +173,6 @@ class QC_tanner_graph(Tanner_graph):
         proto = np.loadtxt(filename, skiprows=2)
 
         G = QC_tanner_graph(m, n, N)
-        G.proto = proto
 
         for i in range(m):
             for j in range(n):
@@ -182,6 +181,7 @@ class QC_tanner_graph(Tanner_graph):
                     vn = j*N
 
                     G.add_cyclical_edge_set(cn, vn)
+        G.proto = proto
 
         return G
 

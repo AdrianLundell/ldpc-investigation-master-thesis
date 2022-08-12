@@ -8,8 +8,8 @@ https://arxiv.org/pdf/2001.01249.pdf
 """
 import ga_discrete as ga_d
 import ga_continuous as ga_c
-import ga_discrete_parallel as ga_d_p
-import ga_continuous_parallel as ga_c_p
+#import ga_discrete_parallel as ga_d_p
+#import ga_continuous_parallel as ga_c_p
 import matplotlib.pyplot as plt
 import numpy as np
 import de_utils as de_u

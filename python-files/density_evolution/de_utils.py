@@ -28,7 +28,6 @@ cfg_cont = cfg_de.get('ga_continuous')
 cfg_disc = cfg_de.get('ga_discrete')
 run_id = cfg.get('run_id')
 
-
 def to_cdf(pdf):
     """Returns the discrete pdf from a given cdf"""
     return np.cumsum(pdf)
@@ -96,67 +95,67 @@ def gamma_inv(G, F_grid, G_grid):
     return np.hstack((F_neg, f_0, F_pos))
 
 
-def rho(x, coeffs):
-    """
-    """
-    final_size = (x[0, :].size - 1)*len(coeffs) + 1
-    dx0, dx1 = to_pdf(x[0, :]), to_pdf(x[1, :])
-    x0, x1 = convolution_pad(
-        x[0, :], final_size), convolution_pad(x[1, :], final_size)
-    dx0, dx1 = convolution_pad(
-        dx0, final_size), convolution_pad(dx1, final_size)
+# def rho(x, coeffs):
+#     """
+#     """
+#     final_size = (x[0, :].size - 1)*len(coeffs) + 1
+#     dx0, dx1 = to_pdf(x[0, :]), to_pdf(x[1, :])
+#     x0, x1 = convolution_pad(
+#         x[0, :], final_size), convolution_pad(x[1, :], final_size)
+#     dx0, dx1 = convolution_pad(
+#         dx0, final_size), convolution_pad(dx1, final_size)
 
-    x0_ft, x1_ft = np.fft.fft(x0), np.fft.fft(x1)
-    dx0_ft, dx1_ft = np.fft.fft(dx0), np.fft.fft(dx1)
-    y0_ft, y1_ft = np.zeros(x0.shape, complex), np.zeros(x1.shape, complex)
+#     x0_ft, x1_ft = np.fft.fft(x0), np.fft.fft(x1)
+#     dx0_ft, dx1_ft = np.fft.fft(dx0), np.fft.fft(dx1)
+#     y0_ft, y1_ft = np.zeros(x0.shape, complex), np.zeros(x1.shape, complex)
 
-    for coeff in coeffs[1:]:
-        x0_ft, x1_ft = x0_ft*dx0_ft + x1_ft*dx1_ft, \
-            x0_ft*dx1_ft + x1_ft*dx0_ft
-        y0_ft, y1_ft = y0_ft + coeff * x0_ft, y1_ft + coeff * x1_ft
+#     for coeff in coeffs[1:]:
+#         x0_ft, x1_ft = x0_ft*dx0_ft + x1_ft*dx1_ft, \
+#             x0_ft*dx1_ft + x1_ft*dx0_ft
+#         y0_ft, y1_ft = y0_ft + coeff * x0_ft, y1_ft + coeff * x1_ft
 
-    y = np.stack((np.abs(np.fft.ifft(y0_ft)[:final_size]), np.abs(
-        np.fft.ifft(y1_ft)[:final_size])))
-    y[0, np.argmax(y[0, :]):] = np.max(y[0, :])
-    y[1, np.argmax(y[1, :]):] = np.max(y[1, :])
+#     y = np.stack((np.abs(np.fft.ifft(y0_ft)[:final_size]), np.abs(
+#         np.fft.ifft(y1_ft)[:final_size])))
+#     y[0, np.argmax(y[0, :]):] = np.max(y[0, :])
+#     y[1, np.argmax(y[1, :]):] = np.max(y[1, :])
 
-    return y
-
-
-def lambd(x, coeffs):
-    """
-    """
-    final_size = (x.size - 1)*len(coeffs) + 1
-    dx = to_pdf(x)
-
-    x = convolution_pad(x, final_size)
-    dx = convolution_pad(dx, final_size)
-
-    x_ft = np.fft.fft(x)
-    dx_ft = np.fft.fft(dx)
-    y_ft = np.zeros(x.size, complex)
-
-    for coeff in coeffs[1:]:
-        x_ft = x_ft * dx_ft
-        y_ft += coeff*x_ft
-
-    y = np.abs(np.fft.ifft(y_ft)[:final_size])
-    y[np.argmax(y):] = 1
-    return y
+#     return y
 
 
-def conv(x, x0):
-    """
-    """
-    dx = to_pdf(x)
-    final_size = x.size + x0.size - 1
+# def lambd(x, coeffs):
+#     """
+#     """
+#     final_size = (x.size - 1)*len(coeffs) + 1
+#     dx = to_pdf(x)
 
-    x0 = convolution_pad(x0, final_size)
-    dx = convolution_pad(dx, final_size)
+#     x = convolution_pad(x, final_size)
+#     dx = convolution_pad(dx, final_size)
 
-    y = np.abs(np.fft.ifft(np.fft.fft(dx)*np.fft.fft(x0))[:final_size])
-    y[np.argmax(y):] = 1
-    return y
+#     x_ft = np.fft.fft(x)
+#     dx_ft = np.fft.fft(dx)
+#     y_ft = np.zeros(x.size, complex)
+
+#     for coeff in coeffs[1:]:
+#         x_ft = x_ft * dx_ft
+#         y_ft += coeff*x_ft
+
+#     y = np.abs(np.fft.ifft(y_ft)[:final_size])
+#     y[np.argmax(y):] = 1
+#     return y
+
+
+# def conv(x, x0):
+#     """
+#     """
+#     dx = to_pdf(x)
+#     final_size = x.size + x0.size - 1
+
+#     x0 = convolution_pad(x0, final_size)
+#     dx = convolution_pad(dx, final_size)
+
+#     y = np.abs(np.fft.ifft(np.fft.fft(dx)*np.fft.fft(x0))[:final_size])
+#     y[np.argmax(y):] = 1
+#     return y
 
 
 def conv(x, x0):
@@ -328,11 +327,11 @@ def symmetric_density_evolution(cdf, f_grid, g_grid, rho_coeffs, lambda_coeffs, 
         if is_zero:
             error = 0
             if prnt:
-                print("Is zero")
+                print("Is zero", error)
         if is_converged and prnt:
-            print("Converged")
+            print("Converged", error)
         if max_iter and prnt:
-            print("MAX")
+            print("MAX", error)
         if is_zero or is_converged or max_iter:
             if plot:
                 plt.show()
@@ -346,7 +345,8 @@ def eval(rber, rho_edge, lam_edge):
     plot = False
     n_grid = cfg_de.get("n_grid")
 
-    f_grid, g_grid, pdf = init_pdf(rber, n_grid)
+    global X1, X2
+    f_grid, g_grid, pdf = init_pdf(rber, X1, X2)
     cdf = to_cdf(pdf)
 
     if plot:
@@ -354,7 +354,7 @@ def eval(rber, rho_edge, lam_edge):
         plt.show()
 
     result = symmetric_density_evolution(
-        cdf, f_grid, g_grid, rho_edge, lam_edge, tol=rber*float(cfg_de.get("de_tol")),  plot=False)
+        cdf, f_grid, g_grid, rho_edge, lam_edge, tol=rber*float(cfg_de.get("de_tol")),  plot=False, prnt=True)
 
     return result
 
@@ -462,3 +462,5 @@ def log(txt, options):
     fname = "data/log_" + run_id + ".txt"
     with open(fname, options) as f:
         f.write(txt+"\n")
+
+# %%

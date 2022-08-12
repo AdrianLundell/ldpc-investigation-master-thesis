@@ -57,3 +57,4 @@ finally:
     np.savetxt(settings["output"], result, header = header)
 
     print(f"Computation done, file saved to {settings['output']}.")
+# %%

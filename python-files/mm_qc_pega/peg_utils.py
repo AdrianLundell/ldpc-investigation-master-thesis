@@ -242,9 +242,9 @@ def graph_stats(G):
             if cycles:
                 girths.append(min(cycles.values()))
             else:
-                girths.append(-10)
+                girths.append(0)
 
-        print(girths)
+        print(np.bincount(girths))
         
         parity_eqs = np.zeros((G.m*G.N,G.n*G.N))
         parity_eqs[:,-G.m*G.N:] = 0.2

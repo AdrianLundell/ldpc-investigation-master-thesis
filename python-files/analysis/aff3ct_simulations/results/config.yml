@@ -1,3 +1,27 @@
 # This config script allows for easily seeing which variable can be changed by the user
-input_files: ["data/random.txt","data/continous_run1_v2.txt"] # Array of files of which data should be plotted
+# input_files: ["data/1-bit/Optimized for 1-bit.txt","data/1-bit/Optimized for 2-bit.txt", "data/1-bit/Random.txt"]  # Array of files of which data should be plotted
+# limits: [0.01, 0.01684]
+# input_files: ["data/2-bit/Optimized for 1-bit.txt","data/2-bit/Optimized for 2-bit.txt", "data/2-bit/Random.txt"] # Array of files of which data should be plotted
+# limits: [0.01, 0.02818]
+# input_files: ["data/32-bit/Optimized for 1-bit.txt","data/32-bit/Optimized for 2-bit.txt", "data/32-bit/Random.txt"]  # Array of files of which data should be plotted
+# limits: [0.01, 0.03274]
+
+
+# input_files: [
+#               "data/skew/1-bit, λ = 0.3.txt",
+#               "data/skew/1-bit, λ = 0.3 (optimized).txt", 
+#               "data/skew/1-bit, λ = 0.45.txt",
+#               "data/skew/1-bit, λ = 0.45 (optimized).txt", 
+#               "data/skew/1-bit, λ = 0.5.txt",
+#               "data/skew/2-bit, λ = 0.4.txt",
+#               "data/skew/2-bit, λ = 0.45.txt",
+#               "data/skew/2-bit, λ = 0.5.txt",]
+# limits: []
+
+# input_files: ["data/decoding complexity/Sum-Product.txt", "data/decoding complexity/Min-Sum.txt"]
+# limits: []
+
+input_files: ["data/decoding complexity/Sum-Product.txt"]
+limits: []
+
 plot_type: "rber_to_ber" # Choose the type of plot you want. Each script is named as [x_variable]_to_[y_variable].py

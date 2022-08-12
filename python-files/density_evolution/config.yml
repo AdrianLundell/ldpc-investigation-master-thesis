@@ -3,7 +3,7 @@ n_processes: 4 # number of process to be used for multiprocessing. Only need if 
 density_evolution:
   Np: 10 # number of individuals in population
   generations: 1000 # number of generations.
-  n_grid: 512 # number of bins in pdf
+  n_grid: 2048 # number of bins in pdf
   min_rber: 0.0001 # lowest rber in search interval (>=0.001)
   max_rber: 0.059 # highest rber in search interval (<0.5)
   de_iter: 100 # max number of iterations to perform on density evolution
@@ -14,7 +14,7 @@ density_evolution:
   load_population: False # if previous training has been done, one can start from that by setting to True
   save_interval: 1 # how many generations that should pass before saving population
   print_terminal: True # if set to true the log will be outputed in terminal. Otherwise written to log/log.txt
-  dmc_file: "../compute_dmc/data/4_05_AWGN_test2.csv" # file from compute_dmc calculation
+  dmc_file: "../compute_dmc/data/2_05_AWGN.csv" # file from compute_dmc calculation
   ga_continuous:
     R: 0.87671232876 # code rate
     F: 0.5 # mutation variable. Usually in interval [0.1,1].

@@ -1,7 +1,8 @@
+#%%
 import os
 import datetime
 import numpy as np
-
+import galois 
 
 def save(G,n,m,N, filename):
     """
@@ -21,22 +22,55 @@ def save(G,n,m,N, filename):
 # Random QC-code that is guaranteed to be invertible.
 # 
 # Name   : {filename}
-# Metric : Minimum distance
 # Date   : {datetime.datetime.now()}
 """
         f.write(metadata)
 
 
-n = 73
-m = 9
+n_cn = 9
+n_vn = 73
 N = 256 # Scaling factor
 output_file = "data/random.qc"
 
 # Create generator matrix G that is guaranteed to be invertible
-G = np.random.randint(2, size=(m, n))-1
-I = np.identity(m,dtype=int)-1
-G[-m:,-m:] = I
+while True:
+    proto = np.zeros((n_cn, n_vn), int)
+    for j in range(n_vn):
+        connections = np.random.randint(2,4)
+        k = np.random.choice(n_cn, connections, replace=False)
+        proto[k, j] = 1
 
-save(G, n, m, N, output_file)
+    original = np.copy(proto)
+
+    if np.linalg.matrix_rank(galois.GF2(proto)) == n_cn: 
+        indexes = np.arange(proto.shape[1])
+
+        for i in indexes:
+            temp = proto.copy()
+            temp[:, i] = 0
+        
+            if np.linalg.matrix_rank(temp) == proto.shape[0]:
+                proto = temp
+                indexes[i] = -1
+
+        indexes = indexes[indexes >= 0]
+        reminding_columns = [i for i in range(n_vn) if i not in indexes]
+        new_order = reminding_columns + list(indexes)
+
+        proto = np.take(original, new_order, 1)
+
+        x = galois.GF2(proto[:,:n_cn])
+        try:
+            np.linalg.inv(x)
+            proto = proto-1
+            random = np.random.randint(257, size=(n_cn, n_vn))
+            proto[proto==0] = random[proto == 0]
+
+            save(proto, n_vn, n_cn, N, output_file)
+            break
+        except:
+            pass
 
 
+
+# %%

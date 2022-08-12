@@ -1,3 +1,4 @@
+#%%
 import rber_to_ber
 from config import cfg
 
@@ -6,3 +7,4 @@ if __name__ == '__main__':
     
     if plot_type == "rber_to_ber":
         rber_to_ber.plot()
+# %%
