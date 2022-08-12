@@ -11,7 +11,6 @@ from config import cfg
 # This script assumes that tests in aff3ct have been run with  printData = true in Channel_AWGN_asymmetric_test.cpp
 cfg = cfg.get('analyze_randomness')
 
-
 def plot(data, title, xlabel):
     plt.hist(data, bins=50)
     plt.xlabel(xlabel)
@@ -25,7 +24,6 @@ def compute_average(data):
 
 def compute_variance(data):
     return np.var(data)
-
 
 def main():
     sigmas = np.loadtxt(cfg.get('sigmas_file'), dtype=float)

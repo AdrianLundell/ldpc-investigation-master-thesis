@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import yaml
-
 sys.path.append("../../density_evolution")
 import de_utils as de_u
+
+
 config_file = "../../density_evolution/config.yml"
 with open(config_file, "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)

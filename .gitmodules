@@ -1,6 +1,3 @@
 [submodule "aff3ct/lib/aff3ct"]
 	path = aff3ct/lib/aff3ct
 	url = https://github.com/FredrikBlomgren/aff3ct.git
-[submodule "python-files/PyBER"]
-	path = python-files/PyBER
-	url = https://github.com/aff3ct/PyBER.git
