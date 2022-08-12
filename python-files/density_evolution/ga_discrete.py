@@ -75,6 +75,7 @@ def evaluate(i):
 
 def ga_discrete():
     load_population = cfg_de.get("load_population")
+    de_u.set_cfg(cfg)
 
     n_pop = cfg_de.get("Np")
     n_generations = cfg_de.get("generations")
@@ -94,6 +95,8 @@ def ga_discrete():
         fitness = data["fitness"]
         i_start = int(data["generation"][0]) + 1
         dim_0 = np.size(fitness, axis=0)
+        best_rber = data["best_rber"]
+        best_idx = data["best_idx"]
         if n_generations != np.size(fitness, axis=0):
             fitness_new = np.zeros((n_generations, n_pop))
             fitness_new[:dim_0] = fitness
@@ -102,10 +105,10 @@ def ga_discrete():
         population = init_population(n_pop, n_cn, n_vn)
         fitness = np.full((n_generations, n_pop), -np.inf)
         i_start = 0
+        best_idx = 0
+        best_rber = 0
 
     code_rate = (n_vn-n_cn)/n_vn
-    best_idx = 0
-    best_rber = 0
     i = i_start
 
     header = f"""

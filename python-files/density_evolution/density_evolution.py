@@ -12,7 +12,6 @@ import ga_continuous as ga_c
 #import ga_continuous_parallel as ga_c_p
 import matplotlib.pyplot as plt
 import numpy as np
-import de_utils as de_u
 import time
 from config import cfg
 
@@ -32,7 +31,8 @@ def main():
     elif algorithm == "ga_discrete_parallel":
         ga_d_p.ga_discrete_parallel()
     else:
-        raise Exception("No valid algorithm chosen.") 
+        raise Exception("No valid algorithm chosen.")
+
 
 if __name__ == "__main__":
     main()

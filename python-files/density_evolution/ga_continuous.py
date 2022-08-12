@@ -226,7 +226,8 @@ def differential_evolution(C_c, x_0, dc):
 
 
 def ga_continous():
-
+    de_u.set_cfg(cfg)
+    
     R = cfg_cont.get('R')
     dv = cfg_cont.get('dv')
     dc = cfg_cont.get('dc')
