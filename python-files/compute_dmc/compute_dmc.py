@@ -14,7 +14,7 @@ except:
                 "skew" : 0.5,
                 "rber_range" : [0.001, 0.5],
                 "n_rber" : 10,
-                "output" : "4_05_AWGN_test.csv",
+                "output" : "Test.csv",
                 "symmetric_thresholds" : True
                 }
 

@@ -47,9 +47,14 @@ def mutual_info(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
     #here both terms are concatenated.
 
     return y_entropy - yx_entropy*0.5
+
+
+# Non finished version of general number of thresholds-calculation
+#def mutual_info(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
+#    """Calculates the mutual infromation of the A-BIAWGN channel discretized with thresholds t"""
     # p = np.array([stats.norm.cdf(np.array(t), mu1, sigma1),
     #               stats.norm.cdf(np.array(t), mu2, sigma2)])
-    
+
     # yx_prob = np.array(([np.ediff1d(p[0,:], to_begin = p[0,0])],
     #                    [np.ediff1d(p[1,:], to_begin = p[1,0])]))
 
@@ -66,7 +71,7 @@ def mutual_info(t, sigma1, sigma2, mu1 = -1, mu2 = 1):
 def optimize_thresholds(sigma1, sigma2, mu1 = -1, mu2 = 1, symmetric = False, offsets = np.arange(15.e-3, 1, 15.e-3)):
     """Returns optimal offsets for three thresholds
     TODO: Generalize to arbitrary amount of thresholds
-    TODO: More clever optimization strategy
+    TODO: More clever optimization strategy (Current strategy evaluates for all given offsets and picks the best one)
     """
     m = mid_point(sigma1, sigma2, mu1, mu2)
 
