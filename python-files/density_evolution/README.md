@@ -1,4 +1,16 @@
+# Description
+The main script is [density_evolution.py](./density_evolution.py). The parameters that are meant to be adjusted by the user (along with a parameter description) can be found in [config.yml](./config.yml). Furthermore, [de_utils.py](./de_utils.py) contains code that implements density evolution along with some other functions that are used for optimization.
 
+There are two types of algorithms implemented to optimize degree distributions based on density evolution. The first ([ga_continuous.py](./ga_continuous.py)) uses the concept of differential evolution to find optimal solutions constrained by maximum allowed degree distributions. Furthermore, the degree distributions are considered continuous in this aspect. This algorithm is not error free and could be improved significantly.  
+
+The other algorithm, and the one that has been used most in this project ([ga_discrete.py](ga_discrete.py)), genetically optimizes degree distributions based on the constraints set by the size of the protograph used in [MM_QC_PEGA](../mm_qc_pega).
+
+Lastly, since the algorithms are rather complex, the multiprocessing library has been used to run the optimizations in parallel. An illustration of how multiprocessing has been used can be seen in [multiprocessing_illustration.py](multiprocessing_illustration.py).
+
+## Dealing with asymmetry of the channel
+It is important to mention that the concept used in this project to deal with asymmetry has been the one described on page 312 in [Modern Coding Theory](https://books.google.se/books?hl=en&lr=&id=ZJrZPObOe60C&oi=fnd&pg=PR13&dq=modern+coding+theory+urbanke&ots=WohuOu5lqr&sig=OaewAYIeWVBUZQYBnexWfgaHo3k&redir_esc=y#v=onepage&q&f=false), i.e. the channel has been symmetrized and then evaluated using symmetrical density evolution. This yielded some unexpected results, and it would be interesting to see that the results would be the same for asymmetric density evolution as described in [Wang's article](https://ieeexplore.ieee.org/abstract/document/1542413).
+
+# Running scripts on a remote server
 ## Install Anaconda on remote server
 To be able to run the script on a remote server you will need the correct version of python. In our versions, we have used python 3.8.5. Installing directly on the OS is not adviced, so install using some virtual environment, for example Anaconda. Here, we go trhough how to install with Anaconda.
 
