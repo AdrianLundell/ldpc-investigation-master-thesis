@@ -46,4 +46,6 @@ Run the tests through:
 
 # Make adjustments to simulations
 
-The simulations can be modified in the [src/main.cpp](src/main.cpp). Please refer to [aff3ct documentation](https://aff3ct.readthedocs.io/en/latest/) for more information on how to make adjustments.
+The simulations can be modified in the [src/main.cpp](src/main.cpp). Please, refer to [aff3ct documentation](https://aff3ct.readthedocs.io/en/latest/) for more information on how to make adjustments.
+
+The folders [include/](include) and [src](src) contain files that have been added to aff3ct. The [tests](tests) folder include tests for added files.
