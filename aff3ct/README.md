@@ -42,3 +42,8 @@ If you have created some tests, you can choose to compile those instead:
 Run the tests through:
 
 	$ ./tests/aff3ct_nand_flash
+
+
+# Make adjustments to simulations
+
+The simulations can be modified in the [src/main.cpp](src/main.cpp). Please refer to [aff3ct documentation](https://aff3ct.readthedocs.io/en/latest/) for more information on how to make adjustments.
