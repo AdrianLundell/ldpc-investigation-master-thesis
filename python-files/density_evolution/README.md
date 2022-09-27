@@ -1,4 +1,10 @@
-## Program description
+# Background
+
+
+An optimal LDPC code is typically defined by a waterfall region close to the Shannon limit of the channel. In principle, when finding an optimal code that performs well in the waterfall region, it would be possible to simulate a large number of codes and pick the code that performs the best. However, due to the large search space and the time it takes to simulate, this would take an immensely long time. Therefore, it is necessary to find a method in which the decoding performance at the waterfall region can be characterized through probabilistic measures of groups of codes. By looking at code ensembles, the search space becomes smaller and simulation times become much faster, which makes the optimization computationally feasible. To further motivate the use of code ensembles, it can be shown that decoding failures that characterize the type of failuresthat occur at the waterfall region are sharply concentrated around the ensemble average. This makes code ensembles representative of the decoding performance at the waterfall region of individual codes within.
+
+
+# Program description
 The main script is [density_evolution.py](./density_evolution.py). The parameters that are meant to be adjusted by the user (along with a parameter description) can be found in [config.yml](./config.yml). Furthermore, [de_utils.py](./de_utils.py) contains code that implements density evolution along with some other functions that are used for optimization.
 
 There are two types of algorithms implemented to optimize degree distributions based on density evolution. The first ([ga_continuous.py](./ga_continuous.py)) uses the concept of differential evolution to find optimal solutions constrained by maximum allowed degree distributions. Furthermore, the degree distributions are considered continuous in this aspect. This algorithm is not error free and could be improved significantly.  
@@ -73,3 +79,9 @@ If you have forgotten your screen name:
 ```
 $ screen -ls
 ```
+
+# Sources
+
+Design of capacity-approaching irregular low-density parity-check codes: [https://ieeexplore.ieee.org/document/910578](https://ieeexplore.ieee.org/document/910578)
+
+Density Evolution for Asymmetric Memoryless Channels: [https://arxiv.org/pdf/cs/0509014.pdf](https://arxiv.org/pdf/cs/0509014.pdf)
