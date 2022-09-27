@@ -1,4 +1,4 @@
-# Description
+## Program description
 The main script is [density_evolution.py](./density_evolution.py). The parameters that are meant to be adjusted by the user (along with a parameter description) can be found in [config.yml](./config.yml). Furthermore, [de_utils.py](./de_utils.py) contains code that implements density evolution along with some other functions that are used for optimization.
 
 There are two types of algorithms implemented to optimize degree distributions based on density evolution. The first ([ga_continuous.py](./ga_continuous.py)) uses the concept of differential evolution to find optimal solutions constrained by maximum allowed degree distributions. Furthermore, the degree distributions are considered continuous in this aspect. This algorithm is not error free and could be improved significantly.  
